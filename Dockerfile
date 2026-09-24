@@ -10,7 +10,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .
 RUN SECRET_KEY=build DATABASE_URL=postgis://x:x@localhost/x python manage.py collectstatic --noinput
-RUN useradd -r -u 10001 app && mkdir -p /app/media /app/exports && chown -R app:app /app
+RUN chmod +x /app/scripts/entrypoint.sh && useradd -r -u 10001 app && mkdir -p /app/media /app/exports && chown -R app:app /app
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -fsS http://127.0.0.1:${PORT:-8000}/healthz || exit 1
