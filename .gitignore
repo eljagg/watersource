@@ -8,3 +8,8 @@ exports/
 .ruff_cache/
 *.egg-info/
 node_modules/
+.venv/
+venv/
+*.log
+.DS_Store
+Thumbs.db

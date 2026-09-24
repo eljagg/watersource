@@ -3,6 +3,7 @@
 set -euo pipefail
 PORT="${PORT:-8000}"
 WEB_CONCURRENCY="${WEB_CONCURRENCY:-$(( $(nproc) * 2 + 1 ))}"
+if [ "$WEB_CONCURRENCY" -gt 8 ]; then WEB_CONCURRENCY=8; fi   # cap: container CPU counts on shared hosts are misleading
 THREADS="${GUNICORN_THREADS:-4}"
 case "${1:-web}" in
   web)
