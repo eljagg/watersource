@@ -1,7 +1,7 @@
 from .base import *  # noqa: F401,F403
 
 DEBUG = False
-SECRET_KEY = "test-only"  # noqa: S105
+SECRET_KEY = "test-only"  # noqa: S105  # nosec B105
 ALLOWED_HOSTS = ["*"]
 CELERY_TASK_ALWAYS_EAGER = True
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"

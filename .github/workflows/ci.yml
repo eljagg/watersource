@@ -18,8 +18,8 @@ jobs:
       REDIS_URL: redis://localhost:6379/0
       SECRET_KEY: ci
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with: { python-version: "3.12" }
       - run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev libmagic1
       - run: pip install -r requirements-dev.txt
@@ -32,12 +32,12 @@ jobs:
       - name: Tests
         run: pytest --create-db
       - name: Deployment checks
-        run: DJANGO_SETTINGS_MODULE=config.settings.prod SECRET_KEY=ci ALLOWED_HOSTS=example.com python manage.py check --deploy --fail-level WARNING
+        run: DJANGO_SETTINGS_MODULE=config.settings.prod SECRET_KEY=ci-only-not-a-real-key-0123456789abcdefghijklmnopqrstuvwxyz ALLOWED_HOSTS=example.com python manage.py check --deploy --fail-level WARNING
   image:
     runs-on: ubuntu-24.04
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: docker build -t watersource:ci .
       - name: Image vulnerability scan
         uses: aquasecurity/trivy-action@0.30.0

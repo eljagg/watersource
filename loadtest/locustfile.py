@@ -16,7 +16,7 @@ class PublicVisitor(HttpUser):
 
     @task(3)
     def api_wells(self):
-        self.client.get("/api/v1/wells/?page=" + str(random.randint(1, 5)))
+        self.client.get("/api/v1/wells/?page=" + str(random.randint(1, 5)))  # noqa: S311
 
     @task(2)
     def api_levels(self):
