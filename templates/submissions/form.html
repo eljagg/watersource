@@ -1,0 +1,2 @@
+{% extends "base.html" %}{% block content %}<div class="mx-auto max-w-2xl rounded bg-white p-6 shadow"><h1 class="text-xl font-semibold mb-1">{{ category.name }}</h1><p class="text-xs text-slate-500 mb-4">Template version {{ version.version }}</p>
+<form method="post">{% csrf_token %}{% include "accounts/_form.html" %}<label class="block mb-3 text-sm">Note for the reviewer (optional)<textarea name="note" rows="2" class="w-full rounded border p-2"></textarea></label><button class="rounded bg-sky-800 px-4 py-2 text-white">Submit for review</button></form></div>{% endblock %}

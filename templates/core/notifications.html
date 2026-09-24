@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block content %}<h1 class="text-xl font-semibold mb-4">Notifications</h1>
+<ul class="divide-y rounded bg-white shadow">{% for n in notifications %}<li class="p-3 {% if not n.read_at %}bg-amber-50{% endif %}">
+<form method="post" action="{% url 'core:notification_read' n.pk %}">{% csrf_token %}<button class="text-left w-full"><div class="font-medium">{{ n.title }}</div><div class="text-sm text-slate-600">{{ n.body|linebreaksbr }}</div><div class="text-xs text-slate-400">{{ n.created_at }}</div></button></form></li>
+{% empty %}<li class="p-3 text-slate-500">No notifications.</li>{% endfor %}</ul>{% endblock %}

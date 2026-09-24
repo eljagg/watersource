@@ -1,0 +1,2 @@
+# Optional: only where HGA (SQL Server) extraction runs
+pyodbc>=5.2

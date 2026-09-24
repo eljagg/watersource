@@ -1,0 +1,44 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env: { POSTGRES_DB: watersource, POSTGRES_USER: ws, POSTGRES_PASSWORD: ws }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ws" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgis://ws:ws@localhost:5432/watersource
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev libmagic1
+      - run: pip install -r requirements-dev.txt
+      - name: Lint (ruff) and static security analysis (bandit)
+        run: ruff check . && bandit -q -r apps config -c pyproject.toml
+      - name: Dependency vulnerability scan
+        run: pip-audit -r requirements.txt
+      - name: Migrations are complete
+        run: python manage.py makemigrations --check --dry-run
+      - name: Tests
+        run: pytest --create-db
+      - name: Deployment checks
+        run: DJANGO_SETTINGS_MODULE=config.settings.prod SECRET_KEY=ci ALLOWED_HOSTS=example.com python manage.py check --deploy --fail-level WARNING
+  image:
+    runs-on: ubuntu-24.04
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t watersource:ci .
+      - name: Image vulnerability scan
+        uses: aquasecurity/trivy-action@0.30.0
+        with: { image-ref: watersource:ci, severity: "CRITICAL,HIGH", exit-code: "1" }

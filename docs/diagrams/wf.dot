@@ -1,0 +1,22 @@
+digraph WF {
+  graph [rankdir=LR, fontname="Helvetica", fontsize=11, nodesep=0.35, ranksep=0.7];
+  node [shape=box, style="rounded,filled", fillcolor="#e0f2fe", color="#0369a1", fontname="Helvetica", fontsize=10];
+  edge [fontname="Helvetica", fontsize=9, color="#334155"];
+  Draft [fillcolor="#f1f5f9", color="#64748b"];
+  Submitted [label="Submitted\n(WorkflowInstance started)"];
+  S1 [label="Stage 1\nIntake review\n(group: reviewer)"];
+  S2 [label="Stage 2\nHydrogeology review\n(group: reviewer)"];
+  S3 [label="Stage 3\nLicensing officer\n(group: approver)"];
+  S4 [label="Stage 4\nDirector approval\n(group: approver)"];
+  Info [label="Information requested\nfrom submitter", fillcolor="#fef3c7", color="#b45309"];
+  Approved [label="APPROVED\nhook: issue licence /\npromote data + classify", fillcolor="#dcfce7", color="#15803d"];
+  Rejected [label="REJECTED", fillcolor="#fee2e2", color="#b91c1c"];
+  Withdrawn [label="WITHDRAWN", fillcolor="#f1f5f9", color="#64748b"];
+  Draft -> Submitted [label="submit"];
+  Submitted -> S1;
+  S1 -> S2 [label="approve"]; S2 -> S3 [label="approve"]; S3 -> S4 [label="approve"]; S4 -> Approved [label="final approve\n(+ classification)"];
+  S2 -> S1 [label="return", style=dashed]; S3 -> S1 [label="return", style=dashed]; S3 -> S2 [label="return", style=dashed]; S4 -> S3 [label="return", style=dashed];
+  S1 -> Info [label="request info"]; S2 -> Info; S3 -> Info; Info -> S1 [label="resubmit", style=dotted]; Info -> S2 [style=dotted]; Info -> S3 [style=dotted];
+  S1 -> Rejected [label="reject (reason)"]; S2 -> Rejected; S3 -> Rejected; S4 -> Rejected;
+  Submitted -> Withdrawn [label="withdraw (submitter)", style=dashed];
+}

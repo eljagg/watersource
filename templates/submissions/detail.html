@@ -1,0 +1,2 @@
+{% extends "base.html" %}{% block content %}<h1 class="text-xl font-semibold mb-4">Submission #{{ sub.pk }}</h1>{% include "submissions/_summary.html" %}
+{% if workflow %}<div class="mt-4 rounded bg-white p-4 shadow text-sm"><h2 class="font-semibold mb-2">Progress</h2><p>{{ workflow.get_state_display }}{% if workflow.current_stage %} — at <strong>{{ workflow.current_stage.name }}</strong>{% endif %}{% if sub.classification %} · classified <strong>{{ sub.get_classification_display }}</strong>{% endif %}</p></div>{% endif %}{% endblock %}

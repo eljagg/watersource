@@ -1,0 +1,9 @@
+{
+  "name": "watersource-frontend",
+  "private": true,
+  "scripts": {
+    "build": "tailwindcss -i ./static/src/app.css -o ./static/css/app.css --minify",
+    "watch": "tailwindcss -i ./static/src/app.css -o ./static/css/app.css --watch"
+  },
+  "devDependencies": { "tailwindcss": "^3.4.17" }
+}

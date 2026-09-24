@@ -1,0 +1,55 @@
+# Local development and the WRA app-vm production layout (same images; see docs/deployment.md)
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment: { POSTGRES_DB: watersource, POSTGRES_USER: ws, POSTGRES_PASSWORD: ws }
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    ports: ["5432:5432"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U ws -d watersource"], interval: 5s, retries: 10 }
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.24.0-p1
+    environment:
+      DATABASE_URL: postgres://ws:ws@db:5432/watersource
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "2000"
+      DEFAULT_POOL_SIZE: "40"
+      AUTH_TYPE: scram-sha-256
+    depends_on: { db: { condition: service_healthy } }
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+  clamav:
+    image: clamav/clamav:1.4
+    profiles: ["security"]
+  web:
+    build: .
+    env_file: .env
+    environment: { DATABASE_URL: "postgis://ws:ws@pgbouncer:5432/watersource", REDIS_URL: "redis://redis:6379/0", CLAMAV_HOST: clamav }
+    depends_on: [pgbouncer, redis]
+    ports: ["8000:8000"]
+    volumes: ["media:/app/media", "exports:/app/exports"]
+  worker:
+    build: .
+    command: ["worker"]
+    env_file: .env
+    environment: { DATABASE_URL: "postgis://ws:ws@pgbouncer:5432/watersource", REDIS_URL: "redis://redis:6379/0", CLAMAV_HOST: clamav }
+    depends_on: [pgbouncer, redis]
+    volumes: ["media:/app/media", "exports:/app/exports"]
+  beat:
+    build: .
+    command: ["beat"]
+    env_file: .env
+    environment: { DATABASE_URL: "postgis://ws:ws@pgbouncer:5432/watersource", REDIS_URL: "redis://redis:6379/0" }
+    depends_on: [pgbouncer, redis]
+  metabase:
+    image: metabase/metabase:v0.55.x
+    profiles: ["bi"]
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabase
+      MB_DB_HOST: db
+      MB_DB_USER: ws
+      MB_DB_PASS: ws
+    ports: ["3000:3000"]
+    depends_on: { db: { condition: service_healthy } }
+volumes: { pgdata: {}, media: {}, exports: {} }

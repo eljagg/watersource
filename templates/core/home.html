@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block content %}
+<section class="grid gap-6 md:grid-cols-2">
+  <div class="rounded-lg bg-white p-6 shadow"><h1 class="text-2xl font-semibold mb-2">Apply for a water abstraction licence</h1>
+    <p class="text-slate-600 mb-4">Submit an application online, upload supporting documents, and follow it through each review stage.</p>
+    <a class="inline-block rounded bg-sky-800 px-4 py-2 text-white" href="{% url 'lic:application_create' %}">Start an application</a></div>
+  <div class="rounded-lg bg-white p-6 shadow"><h2 class="text-2xl font-semibold mb-2">Submit data</h2>
+    <p class="text-slate-600 mb-4">Licensed abstractors, laboratories and field staff submit abstraction and water-quality data by form, CSV or API.</p>
+    <a class="inline-block rounded bg-sky-800 px-4 py-2 text-white" href="{% url 'submissions:index' %}">Go to submissions</a></div>
+</section>
+{% endblock %}

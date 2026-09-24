@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block content %}<div class="mx-auto max-w-md rounded bg-white p-6 shadow"><h1 class="text-xl font-semibold mb-4">Sign in</h1>
+{% block intro %}{% endblock %}
+<form method="post">{% csrf_token %}{% include "accounts/_form.html" %}<button class="rounded bg-sky-800 px-4 py-2 text-white">Continue</button></form>
+{% block after %}<p class="mt-4 text-sm"><a class="underline" href="{% url 'accounts:password_reset' %}">Forgotten your password?</a> · <a class="underline" href="{% url 'accounts:register' %}">Register</a></p>{% endblock %}</div>{% endblock %}

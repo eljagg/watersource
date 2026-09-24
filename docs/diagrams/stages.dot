@@ -1,0 +1,10 @@
+digraph Stages {
+  graph [rankdir=LR, fontname="Helvetica", fontsize=10, nodesep=0.2, ranksep=0.35];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=9, fillcolor="#e0f2fe", color="#0369a1", width=1.9];
+  edge [color="#334155", arrowsize=0.7];
+  S0 [label="Stage 0 · Wk 1–2\nInitiation"]; S1 [label="Stage 1 · Wk 2–9\nRequirements & Design"]; S2 [label="Stage 2 · Wk 8–12\nFoundation build"];
+  S3 [label="Stage 3 · Wk 10–16\nConsolidated DB &\ncategory framework"]; S4 [label="Stage 4 · Wk 12–18\nLicensing app"]; S5 [label="Stage 5 · Wk 14–21\nData Submission app"];
+  S6 [label="Stage 6 · Wk 16–23\nIntegrations & API"]; S7 [label="Stage 7 · Wk 18–24\nBI, performance,\nsecurity hardening"]; S8 [label="Stage 8 · Wk 18–32\nData migration\n(initial → final)", fillcolor="#fef3c7", color="#b45309"];
+  S9 [label="Stage 9 · Wk 21–30\nSystem test, VAPT, UAT"]; S10 [label="Stage 10 · Wk 29–36\nTraining, go-live,\nstabilisation, handover", fillcolor="#dcfce7", color="#15803d"];
+  S0 -> S1 -> S2 -> S3 -> S4 -> S5 -> S6 -> S7 -> S9 -> S10; S3 -> S8 -> S9;
+}
