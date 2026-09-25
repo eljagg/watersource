@@ -5,5 +5,8 @@
     "build": "tailwindcss -i ./static/src/app.css -o ./static/css/app.css --minify",
     "watch": "tailwindcss -i ./static/src/app.css -o ./static/css/app.css --watch"
   },
-  "devDependencies": { "tailwindcss": "^3.4.17" }
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
 }

@@ -13,6 +13,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from csp.constants import NONCE, SELF
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -225,7 +226,7 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": ("'self'", "'nonce'"),  # nonce added by csp middleware; no inline scripts
+        "script-src": (SELF, NONCE),  # django-csp 4 sentinel: middleware replaces it with 'nonce-<random>' per request
         "style-src": ("'self'", "'unsafe-inline'"),  # Tailwind utility classes; tighten at build stage
         "img-src": ("'self'", "data:", "blob:"),
         "font-src": ("'self'",),

@@ -1,10 +1,36 @@
 {% extends "base.html" %}{% block content %}
-<section class="grid gap-6 md:grid-cols-2">
-  <div class="rounded-lg bg-white p-6 shadow"><h1 class="text-2xl font-semibold mb-2">Apply for a water abstraction licence</h1>
-    <p class="text-slate-600 mb-4">Submit an application online, upload supporting documents, and follow it through each review stage.</p>
-    <a class="inline-block rounded bg-sky-800 px-4 py-2 text-white" href="{% url 'lic:application_create' %}">Start an application</a></div>
-  <div class="rounded-lg bg-white p-6 shadow"><h2 class="text-2xl font-semibold mb-2">Submit data</h2>
-    <p class="text-slate-600 mb-4">Licensed abstractors, laboratories and field staff submit abstraction and water-quality data by form, CSV or API.</p>
-    <a class="inline-block rounded bg-sky-800 px-4 py-2 text-white" href="{% url 'submissions:index' %}">Go to submissions</a></div>
+<section class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 px-6 py-12 text-white shadow-(--shadow-card) sm:px-10 sm:py-16 dark:border-slate-800">
+  <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-400/20 blur-3xl" aria-hidden="true"></div>
+  <div class="pointer-events-none absolute -bottom-32 left-1/3 h-80 w-80 rounded-full bg-accent-400/10 blur-3xl" aria-hidden="true"></div>
+  <div class="relative max-w-2xl">
+    <p class="text-xs font-semibold uppercase tracking-wider text-brand-200">Water Resources Authority of Jamaica</p>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Licensing and water-data services, online.</h1>
+    <p class="mt-4 text-base text-brand-100/90 sm:text-lg">Apply for a water abstraction licence, follow it through each review stage, and submit abstraction and water-quality data by form, CSV or API — all in one place.</p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a class="btn-accent" href="{% url 'lic:application_create' %}">Start an application</a>
+      <a class="btn border border-white/30 bg-white/10 text-white hover:bg-white/20" href="{% url 'submissions:index' %}">Submit data</a>
+    </div>
+  </div>
+</section>
+
+<section class="mt-8 grid gap-5 md:grid-cols-3">
+  <div class="card p-6">
+    <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h6"/></svg></span>
+    <h2 class="mt-4 text-lg">Licence applications</h2>
+    <p class="text-body mt-2 text-sm">Complete the application online, upload supporting documents, and track its progress from screening to approval.</p>
+    <a class="link mt-4 inline-block text-sm" href="{% url 'lic:application_list' %}">View applications →</a>
+  </div>
+  <div class="card p-6">
+    <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg></span>
+    <h2 class="mt-4 text-lg">Data submissions</h2>
+    <p class="text-body mt-2 text-sm">Licensed abstractors, laboratories and field staff submit readings by form, CSV template or the REST API. Every row is validated on arrival.</p>
+    <a class="link mt-4 inline-block text-sm" href="{% url 'submissions:index' %}">Go to submissions →</a>
+  </div>
+  <div class="card p-6">
+    <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>
+    <h2 class="mt-4 text-lg">Secure by design</h2>
+    <p class="text-body mt-2 text-sm">Role-based access, two-factor authentication for staff, full audit trail, and personal data handled under the Data Protection Act, 2020.</p>
+    <a class="link mt-4 inline-block text-sm" href="/privacy/">Read the privacy notice →</a>
+  </div>
 </section>
 {% endblock %}

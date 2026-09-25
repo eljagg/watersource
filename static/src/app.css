@@ -1,8 +1,101 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* WaterSource Jamaica — Tailwind CSS v4 (CSS-first configuration; no tailwind.config.js).
+   Compiled by `npm run build` into static/css/app.css. No CDN in production; CSP-clean.
+   Theme: class-based dark mode (`<html class="dark">`), toggled by the header switch and
+   remembered in localStorage; defaults to the visitor's OS preference. */
+@import "tailwindcss";
 
+@source "../../templates";
+@source "../../apps";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  /* WRA brand blues + a warm accent for primary calls to action */
+  --color-brand-50: #eff8ff;
+  --color-brand-100: #dbeefe;
+  --color-brand-200: #bfe0fd;
+  --color-brand-300: #93cbfb;
+  --color-brand-400: #5faef6;
+  --color-brand-500: #3a8ff0;
+  --color-brand-600: #2470e0;
+  --color-brand-700: #1c5ac6;
+  --color-brand-800: #1d4aa0;
+  --color-brand-900: #1d407f;
+  --color-brand-950: #14284d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+  --radius-card: 0.875rem;
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 8px 24px -12px rgb(15 23 42 / 0.18);
+  --shadow-card-dark: 0 1px 2px 0 rgb(0 0 0 / 0.5), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+}
+
+/* ---------- Base: page surfaces, typography, forms ---------- */
 @layer base {
-  input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea { @apply w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600; }
-  label { @apply text-sm font-medium; }
+  html { color-scheme: light; scroll-behavior: smooth; }
+  html.dark { color-scheme: dark; }
+  body { @apply min-h-screen bg-slate-100 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-200; }
+  h1, h2, h3 { @apply font-semibold tracking-tight text-slate-900 dark:text-white; }
+  a { @apply transition-colors; }
+  ::selection { @apply bg-brand-500/30; }
+
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=submit]), select, textarea {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm
+           placeholder:text-slate-400 transition
+           focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30
+           dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500
+           dark:focus:border-brand-400 dark:focus:ring-brand-400/30;
+  }
+  input[type=file] { @apply block text-sm text-slate-600 dark:text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-slate-200 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-800 hover:file:bg-slate-300 dark:file:bg-slate-800 dark:file:text-slate-100 dark:hover:file:bg-slate-700; }
+  input[type=checkbox], input[type=radio] { @apply h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30 dark:border-slate-600 dark:bg-slate-900; }
+  label { @apply text-sm font-medium text-slate-700 dark:text-slate-300; }
+  dt { @apply text-slate-500 dark:text-slate-400; }
+  code { @apply rounded bg-slate-100 px-1 py-0.5 text-[0.85em] dark:bg-slate-800; }
+}
+
+/* ---------- Components: one class per surface so every template inherits both themes ---------- */
+@layer components {
+  .card { @apply rounded-(--radius-card) border border-slate-200/80 bg-white shadow-(--shadow-card) dark:border-slate-800 dark:bg-slate-900 dark:shadow-(--shadow-card-dark); }
+  .card-muted { @apply rounded-(--radius-card) border border-slate-200/80 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/60; }
+
+  .btn, .btn-primary, .btn-accent, .btn-secondary, .btn-ghost, .btn-success, .btn-warning, .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-sm { @apply px-3 py-1.5 text-sm; }
+  .btn-primary { @apply bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800 dark:bg-brand-500 dark:hover:bg-brand-400 dark:text-slate-950; }
+  .btn-accent { @apply bg-accent-400 text-slate-900 shadow-sm hover:bg-accent-500 active:bg-accent-600; }
+  .btn-secondary { @apply border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800; }
+  .btn-ghost { @apply text-slate-700 hover:bg-slate-200/70 dark:text-slate-300 dark:hover:bg-slate-800; }
+  .btn-success { @apply bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400; }
+  .btn-warning { @apply bg-amber-500 text-slate-950 hover:bg-amber-400; }
+  .btn-danger { @apply bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-400 dark:text-slate-950; }
+
+  .link { @apply font-medium text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800 hover:decoration-brand-600 dark:text-brand-300 dark:decoration-brand-700 dark:hover:text-brand-200; }
+  .text-muted { @apply text-slate-500 dark:text-slate-400; }
+  .text-body { @apply text-slate-700 dark:text-slate-300; }
+  .text-danger { @apply text-rose-700 dark:text-rose-400; }
+  .text-warn { @apply text-amber-700 dark:text-amber-400; }
+
+  .table-card { @apply w-full overflow-hidden rounded-(--radius-card) border border-slate-200/80 bg-white text-sm shadow-(--shadow-card) dark:border-slate-800 dark:bg-slate-900 dark:shadow-(--shadow-card-dark); }
+  .table-card thead, .thead { @apply bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-400; }
+  .table-card th { @apply px-3 py-2.5; }
+  .table-card td { @apply px-3 py-2.5 align-top; }
+  .row { @apply border-t border-slate-200 transition hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50; }
+  .row-danger { @apply bg-rose-50 dark:bg-rose-950/40; }
+  .row-warn { @apply bg-amber-50 dark:bg-amber-950/40; }
+
+  .alert, .alert-info, .alert-success, .alert-warning, .alert-danger { @apply rounded-lg border px-4 py-3 text-sm; }
+  .alert-info { @apply border-brand-200 bg-brand-50 text-brand-900 dark:border-brand-800 dark:bg-brand-950/60 dark:text-brand-100; }
+  .alert-success { @apply border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100; }
+  .alert-warning { @apply border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100; }
+  .alert-danger { @apply border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-100; }
+
+  .badge, .badge-accent, .badge-neutral { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium; }
+  .badge-accent { @apply bg-accent-400 text-slate-900; }
+  .badge-neutral { @apply bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300; }
+
+  .nav-link { @apply rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white; }
+  .page-title { @apply text-2xl font-semibold tracking-tight; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400; }
 }

@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% block content %}<h1 class="text-xl font-semibold mb-4">Review queue</h1>
-<table class="w-full rounded bg-white shadow text-sm"><thead class="bg-slate-100 text-left"><tr><th class="p-2">Item</th><th class="p-2">Workflow</th><th class="p-2">Stage</th><th class="p-2">Waiting since</th><th class="p-2">Submitted by</th></tr></thead>
-<tbody>{% for i in items %}<tr class="border-t"><td class="p-2"><a class="underline" href="{% url 'workflow:detail' i.pk %}">{{ i.summary }}</a></td><td class="p-2">{{ i.definition.name }}</td><td class="p-2">{{ i.current_stage.name }}</td><td class="p-2">{{ i.stage_entered_at|timesince }} ago</td><td class="p-2">{{ i.submitter.full_name|default:"—" }}</td></tr>
-{% empty %}<tr><td class="p-4 text-slate-500" colspan="5">Nothing waiting for you.</td></tr>{% endfor %}</tbody></table>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1 class="page-title mb-6">Review queue</h1>
+<table class="table-card"><thead><tr><th>Item</th><th>Workflow</th><th>Stage</th><th>Waiting since</th><th>Submitted by</th></tr></thead>
+<tbody>{% for i in items %}<tr class="row"><td><a class="link" href="{% url 'workflow:detail' i.pk %}">{{ i.summary }}</a></td><td>{{ i.definition.name }}</td><td>{{ i.current_stage.name }}</td><td>{{ i.stage_entered_at|timesince }} ago</td><td>{{ i.submitter.full_name|default:"—" }}</td></tr>
+{% empty %}<tr><td class="text-muted" colspan="5">Nothing waiting for you.</td></tr>{% endfor %}</tbody></table>{% endblock %}

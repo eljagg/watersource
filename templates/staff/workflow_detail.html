@@ -1,11 +1,11 @@
 {% extends "base.html" %}{% block content %}
-<h1 class="text-xl font-semibold mb-1">{{ instance.summary }}</h1>
-<p class="text-sm text-slate-600 mb-4">{{ instance.definition.name }} · {{ instance.get_state_display }}{% if instance.current_stage %} · stage: {{ instance.current_stage.name }}{% endif %}</p>
+<h1 class="page-title mb-1">{{ instance.summary }}</h1>
+<p class="text-body mb-4 text-sm">{{ instance.definition.name }} · {{ instance.get_state_display }}{% if instance.current_stage %} · stage: {{ instance.current_stage.name }}{% endif %}</p>
 <div class="grid gap-6 md:grid-cols-3">
   <div class="md:col-span-2 space-y-4">
     {% if subject.reference %}{% include "lic/_application_summary.html" with app=subject %}{% elif subject.category_version %}{% include "submissions/_summary.html" with sub=subject %}{% endif %}
-    <div class="rounded bg-white p-4 shadow"><h2 class="font-semibold mb-2">History</h2>
-      <ol class="text-sm space-y-2">{% for a in instance.actions.all %}<li><span class="text-slate-500">{{ a.at|date:"d M Y H:i" }}</span> · <strong>{{ a.get_action_display }}</strong> by {{ a.actor.full_name|default:"system" }}{% if a.to_stage %} → {{ a.to_stage.name }}{% endif %}{% if a.comment %}<div class="text-slate-700 pl-4">{{ a.comment|linebreaksbr }}</div>{% endif %}</li>{% endfor %}</ol></div>
+    <div class="card p-5"><h2 class="mb-3 text-base">History</h2>
+      <ol class="text-sm space-y-2">{% for a in instance.actions.all %}<li><span class="text-muted">{{ a.at|date:"d M Y H:i" }}</span> · <strong>{{ a.get_action_display }}</strong> by {{ a.actor.full_name|default:"system" }}{% if a.to_stage %} → {{ a.to_stage.name }}{% endif %}{% if a.comment %}<div class="text-body pl-4">{{ a.comment|linebreaksbr }}</div>{% endif %}</li>{% endfor %}</ol></div>
   </div>
   <div id="panel">{% include "staff/_workflow_panel.html" %}</div>
 </div>{% endblock %}

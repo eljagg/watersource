@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% block content %}<div class="mx-auto max-w-md rounded bg-white p-6 shadow"><h1 class="text-xl font-semibold mb-4">Set up two-factor authentication</h1>
-{% block intro %}<p class="text-sm text-slate-600 mb-3">Your role requires two-factor authentication. Add this account to an authenticator app (Microsoft Authenticator, Google Authenticator, Aegis) by entering the key below, then type the 6-digit code.</p><code class="block break-all rounded bg-slate-100 p-2 text-xs mb-3">{{ otpauth_url }}</code>{% endblock %}
-<form method="post">{% csrf_token %}{% include "accounts/_form.html" %}<button class="rounded bg-sky-800 px-4 py-2 text-white">Continue</button></form>
+{% extends "base.html" %}{% block content %}<div class="card mx-auto max-w-md p-6 sm:p-8"><h1 class="page-title mb-6">Set up two-factor authentication</h1>
+{% block intro %}<p class="text-body mb-3 text-sm">Your role requires two-factor authentication. Add this account to an authenticator app (Microsoft Authenticator, Google Authenticator, Aegis) by entering the key below, then type the 6-digit code.</p><code class="mb-3 block break-all rounded-lg bg-slate-100 p-3 text-xs dark:bg-slate-800">{{ otpauth_url }}</code>{% endblock %}
+<form method="post">{% csrf_token %}{% include "accounts/_form.html" %}<button class="btn-primary">Continue</button></form>
 {% block after %}{% endblock %}</div>{% endblock %}

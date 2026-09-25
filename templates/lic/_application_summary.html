@@ -1,7 +1,7 @@
-<div class="rounded bg-white p-4 shadow text-sm"><h2 class="font-semibold mb-2">Application {{ app.reference }}</h2>
+<div class="card p-5 text-sm"><h2 class="mb-3 text-base">Application {{ app.reference }}</h2>
 <dl class="grid grid-cols-3 gap-y-1"><dt>Applicant</dt><dd class="col-span-2">{{ app.applicant_name }} · {{ app.applicant_email }} · {{ app.applicant_phone }}</dd>
 <dt>Address</dt><dd class="col-span-2">{{ app.applicant_address|linebreaksbr }}</dd><dt>Parish</dt><dd class="col-span-2">{{ app.parish.name }}</dd>
 <dt>Source</dt><dd class="col-span-2">{{ app.get_water_source_display }} — {{ app.source_name }}{% if app.well %} (well: {{ app.well.name }}){% endif %}</dd>
 <dt>Volume requested</dt><dd class="col-span-2">{{ app.daily_volume_requested_m3 }} m³/day</dd><dt>Purpose</dt><dd class="col-span-2">{{ app.purpose }}</dd>
 <dt>Status</dt><dd class="col-span-2">{{ app.get_status_display }}</dd></dl>
-<h3 class="font-semibold mt-3 mb-1">Documents</h3><ul>{% for d in app.documents.all %}<li><a class="underline" href="{% url 'lic:document_download' d.pk %}">{{ d.original_name }}</a> <span class="text-xs text-slate-500">{{ d.get_kind_display }} · {{ d.size|filesizeformat }} · scan: {{ d.get_scan_status_display }}{% if d.dspace_handle %} · DSpace {{ d.dspace_handle }}{% endif %}</span></li>{% empty %}<li class="text-slate-500">None yet.</li>{% endfor %}</ul></div>
+<h3 class="mb-1 mt-4 text-base">Documents</h3><ul>{% for d in app.documents.all %}<li><a class="link" href="{% url 'lic:document_download' d.pk %}">{{ d.original_name }}</a> <span class="text-muted text-xs">{{ d.get_kind_display }} · {{ d.size|filesizeformat }} · scan: {{ d.get_scan_status_display }}{% if d.dspace_handle %} · DSpace {{ d.dspace_handle }}{% endif %}</span></li>{% empty %}<li class="text-muted">None yet.</li>{% endfor %}</ul></div>

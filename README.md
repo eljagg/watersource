@@ -17,7 +17,7 @@ Design reference: `WRA-2004-38/Design Plan/12_WRA_Technical_Design_and_Build_Pla
 
 ## Stack
 
-Python 3.12 · Django 5.2 LTS · PostgreSQL 16 + PostGIS 3.4 · Redis 7 · Celery 5 · HTMX 2 + Tailwind 3 (compiled, no CDN) ·
+Python 3.12 · Django 5.2 LTS · PostgreSQL 16 + PostGIS 3.4 · Redis 7 · Celery 5 · HTMX 2 + Tailwind CSS v4 (compiled, no CDN; light/dark theme) ·
 Django REST Framework + drf-spectacular · django-otp (TOTP MFA) · django-axes (lockout) · django-csp · Gunicorn behind nginx ·
 Metabase (open-source) · Docker Compose. Production runs on WRA's own server (Addendum 1 §6); Railway is used for
 development/staging only.
@@ -28,7 +28,7 @@ development/staging only.
 cp .env.example .env                       # edit DATABASE_URL / REDIS_URL if needed
 docker compose up -d db pgbouncer redis    # or use your own PostGIS + Redis
 pip install -r requirements-dev.txt
-npm install && npm run build               # compiles Tailwind into static/css/app.css
+npm install && npm run build               # compiles Tailwind v4 (static/src/app.css → static/css/app.css); commit the output
 python manage.py migrate
 python manage.py bootstrap_roles && python manage.py bootstrap_workflows && python manage.py bootstrap_categories
 python manage.py createsuperuser
