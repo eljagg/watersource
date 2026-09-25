@@ -1,11 +1,11 @@
 /* WaterSource Jamaica — Tailwind CSS v4 (CSS-first configuration; no tailwind.config.js).
-   Compiled by `npm run build` into static/css/app.css. No CDN in production; CSP-clean.
+   Source lives in frontend/ (outside STATICFILES_DIRS so collectstatic never sees the @import); `npm run build` compiles it to static/css/app.css. No CDN in production; CSP-clean.
    Theme: class-based dark mode (`<html class="dark">`), toggled by the header switch and
    remembered in localStorage; defaults to the visitor's OS preference. */
 @import "tailwindcss";
 
-@source "../../templates";
-@source "../../apps";
+@source "../templates";
+@source "../apps";
 
 @custom-variant dark (&:where(.dark, .dark *));
 

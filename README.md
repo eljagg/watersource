@@ -28,7 +28,7 @@ development/staging only.
 cp .env.example .env                       # edit DATABASE_URL / REDIS_URL if needed
 docker compose up -d db pgbouncer redis    # or use your own PostGIS + Redis
 pip install -r requirements-dev.txt
-npm install && npm run build               # compiles Tailwind v4 (static/src/app.css → static/css/app.css); commit the output
+npm install && npm run build               # compiles Tailwind v4 (frontend/app.css → static/css/app.css); commit the output
 python manage.py migrate
 python manage.py bootstrap_roles && python manage.py bootstrap_workflows && python manage.py bootstrap_categories
 python manage.py createsuperuser
