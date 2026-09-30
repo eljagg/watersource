@@ -1,5 +1,7 @@
-"""Upload validation: size, extension vs magic-byte MIME, optional ClamAV scan
-(ToR §9 'file upload validation', 'malware scanning of uploaded files')."""
+"""Upload validation: size, extension vs magic-byte MIME, optional ClamAV scan.
+
+ToR §9 'file upload validation', 'malware scanning of uploaded files'.
+"""
 import hashlib
 import socket
 from pathlib import Path
@@ -14,6 +16,7 @@ except ImportError:  # pragma: no cover
 
 
 def sha256_of(fileobj) -> str:
+    """SHA-256 hex digest of an uploaded file (rewinds the file)."""
     h = hashlib.sha256()
     for chunk in fileobj.chunks():
         h.update(chunk)
@@ -22,6 +25,7 @@ def sha256_of(fileobj) -> str:
 
 
 def validate_upload(fileobj, allowed=None):
+    """Raise ``ValidationError`` unless the file is within size limits and its content matches an allowed type; returns the detected MIME type."""
     allowed = allowed or settings.UPLOAD_ALLOWED_TYPES
     if fileobj.size > settings.UPLOAD_MAX_BYTES:
         raise ValidationError(f"File is larger than {settings.UPLOAD_MAX_BYTES // (1024 * 1024)} MB.")

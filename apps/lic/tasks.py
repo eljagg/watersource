@@ -1,3 +1,4 @@
+"""Celery tasks for licensing: expiry alerts (item 14.xvii–xviii)."""
 from datetime import date, timedelta
 
 from celery import shared_task

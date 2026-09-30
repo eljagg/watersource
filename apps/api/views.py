@@ -1,3 +1,4 @@
+"""REST API v1 (ToR F.7, H.xii): read-only classified data, categories, submissions."""
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -22,10 +23,12 @@ class ClassifiedReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields: list = []
 
     def get_queryset(self):
+        """Rows visible to the caller (public for guests, approved for staff, all for reviewers)."""
         return self.queryset.visible_to(self.request.user if self.request.user.is_authenticated else None)
 
 
 class WellViewSet(ClassifiedReadOnlyViewSet):
+    """Wells."""
     queryset = Well.objects.select_related("parish", "basin", "wmu")
     serializer_class = serializers.WellSerializer
     filterset_fields = ["parish", "basin", "wmu", "use", "is_licensed", "is_abandoned"]
@@ -33,37 +36,44 @@ class WellViewSet(ClassifiedReadOnlyViewSet):
 
 
 class StationViewSet(ClassifiedReadOnlyViewSet):
+    """Streamflow stations."""
     queryset = StreamflowStation.objects.select_related("parish", "river")
     serializer_class = serializers.StationSerializer
     filterset_fields = ["parish", "river", "is_active"]
 
 
 class WellWaterLevelViewSet(ClassifiedReadOnlyViewSet):
+    """Well water levels."""
     queryset = WellWaterLevel.objects.select_related("well")
     serializer_class = serializers.WellWaterLevelSerializer
     filterset_fields = {"well": ["exact"], "measured_at": ["gte", "lte"]}
 
 
 class AbstractionViewSet(ClassifiedReadOnlyViewSet):
+    """Abstraction records."""
     queryset = AbstractionRecord.objects.select_related("licence", "well")
     serializer_class = serializers.AbstractionSerializer
     filterset_fields = {"licence": ["exact"], "well": ["exact"], "over_limit": ["exact"], "period_start": ["gte", "lte"]}
 
 
 class WaterQualityViewSet(ClassifiedReadOnlyViewSet):
+    """Water-quality samples."""
     queryset = WaterQualitySample.objects.select_related("well", "station", "spring")
     serializer_class = serializers.WaterQualitySerializer
     filterset_fields = {"well": ["exact"], "station": ["exact"], "source_type": ["exact"], "sampled_at": ["gte", "lte"]}
 
 
 class ParishViewSet(viewsets.ReadOnlyModelViewSet):
+    """Parishes (always public)."""
     queryset = Parish.objects.all()
     serializer_class = serializers.ParishSerializer
     permission_classes = [permissions.AllowAny]
 
 
 class StaffOnly(permissions.BasePermission):
+    """Permission: WRA staff or superuser."""
     def has_permission(self, request, view):
+        """True for staff users."""
         u = request.user
         return u.is_authenticated and (u.is_staff_user or u.is_superuser)
 
@@ -78,6 +88,7 @@ class LicenceViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ApplicationViewSet(viewsets.ReadOnlyModelViewSet):
+    """Licence applications (staff only)."""
     queryset = LicenceApplication.objects.select_related("parish")
     serializer_class = serializers.ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -85,6 +96,7 @@ class ApplicationViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = "reference"
 
     def get_queryset(self):
+        """All applications, newest first."""
         u = self.request.user
         if getattr(self, "swagger_fake_view", False) or not u.is_authenticated:
             return self.queryset.none()
@@ -101,6 +113,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="template.csv")
     def template(self, request, code=None):
+        """Download the CSV template for a category."""
         from django.http import HttpResponse
 
         cat = self.get_object()
@@ -108,14 +121,14 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class SubmissionViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Programmatic submission (ToR F.7.iv(a)). POST rows for a category; the same
-    validation and approval workflow applies as for the web form and CSV."""
+    """Create and read data submissions over the API (``submissions:write`` scope)."""
 
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = serializers.SubmissionSerializer
     queryset = Submission.objects.none()
 
     def get_queryset(self):
+        """Own submissions for clients; all for staff."""
         qs = Submission.objects.select_related("category_version__category").prefetch_related("records")
         u = self.request.user
         if getattr(self, "swagger_fake_view", False) or not u.is_authenticated:
@@ -123,6 +136,7 @@ class SubmissionViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixi
         return qs if (u.is_staff_user or u.is_superuser) else qs.filter(submitter=u)
 
     def create(self, request, *args, **kwargs):
+        """Validate rows against the category and start the review workflow."""
         if not has_scope(request, "submissions:write"):
             return Response({"detail": "API key lacks scope submissions:write."}, status=status.HTTP_403_FORBIDDEN)
         ser = serializers.SubmissionCreateSerializer(data=request.data)

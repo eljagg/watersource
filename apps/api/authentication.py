@@ -1,5 +1,7 @@
 """API-key authentication for system-to-system clients (telemetry, laboratories).
-Header:  Authorization: Api-Key wsk_...   Keys are stored hashed; see accounts.APIKey."""
+
+Header: ``Authorization: Api-Key wsk_...``. Keys are stored hashed; see ``accounts.APIKey``.
+"""
 from django.utils import timezone
 from rest_framework import authentication, exceptions
 
@@ -7,9 +9,11 @@ from apps.accounts.models import APIKey
 
 
 class APIKeyAuthentication(authentication.BaseAuthentication):
+    """DRF authentication class for ``Api-Key`` headers."""
     keyword = "Api-Key"
 
     def authenticate(self, request):
+        """Return ``(user, key)`` for a valid, active key; ``None`` if no header."""
         header = request.META.get("HTTP_AUTHORIZATION", "")
         if not header.startswith(self.keyword + " "):
             return None
@@ -26,10 +30,12 @@ class APIKeyAuthentication(authentication.BaseAuthentication):
         return (key.user, key)
 
     def authenticate_header(self, request):
+        """The ``WWW-Authenticate`` value for 401 responses."""
         return self.keyword
 
 
 def has_scope(request, scope: str) -> bool:
+    """True when the request was authenticated with a key carrying ``scope`` (or by session)."""
     key = getattr(request, "api_key", None)
     if key is None:  # session-authenticated user: roles govern
         return True
@@ -41,10 +47,12 @@ try:
     from drf_spectacular.extensions import OpenApiAuthenticationExtension
 
     class APIKeyScheme(OpenApiAuthenticationExtension):
+        """Describes the Api-Key scheme in the OpenAPI document."""
         target_class = "apps.api.authentication.APIKeyAuthentication"
         name = "ApiKeyAuth"
 
         def get_security_definition(self, auto_schema):
+            """OpenAPI security definition for the header."""
             return {"type": "apiKey", "in": "header", "name": "Authorization", "description": "Authorization: Api-Key wsk_…"}
 except ImportError:  # pragma: no cover
     pass

@@ -6,6 +6,7 @@ from .models import Notification, NotificationKind
 
 
 def notify(user, title: str, body: str = "", *, kind=NotificationKind.SYSTEM, link: str = "", target=None) -> Notification:
+    """Create an in-app notification for ``user`` and queue its email."""
     n = Notification(user=user, title=title, body=body, kind=kind, link=link)
     if target is not None:
         n.content_type = ContentType.objects.get_for_model(target)
@@ -18,6 +19,7 @@ def notify(user, title: str, body: str = "", *, kind=NotificationKind.SYSTEM, li
 
 
 def notify_group(group_name: str, title: str, body: str = "", **kwargs):
+    """Notify every active user in the named role group."""
     from django.contrib.auth import get_user_model
 
     User = get_user_model()

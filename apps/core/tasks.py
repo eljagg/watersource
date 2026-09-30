@@ -1,3 +1,4 @@
+"""Celery tasks for core: notification email delivery."""
 import logging
 
 from celery import shared_task
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(bind=True, max_retries=5, default_retry_delay=120)
 def send_notification_email(self, notification_id: int):
+    """Send the email copy of a notification; retries on SMTP failure and records the outcome."""
     try:
         n = Notification.objects.select_related("user").get(pk=notification_id)
     except Notification.DoesNotExist:

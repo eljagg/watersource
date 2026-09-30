@@ -4,12 +4,20 @@ target-version = "py312"
 exclude = ["**/migrations/**"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP", "S", "DJ"]
-ignore = ["S101", "S308", "S603", "S607", "B008", "DJ001"]
+select = ["E", "F", "I", "B", "UP", "S", "DJ", "D"]
+# D104 package docstrings, D105 magic methods, D106 nested Meta, D107 __init__: noise for a Django codebase.
+ignore = ["S101", "S308", "S603", "S607", "B008", "DJ001", "D104", "D105", "D106", "D107"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S", "E501"]
+"tests/*" = ["S", "E501", "D"]
+"loadtest/*" = ["D"]
+"manage.py" = ["D100"]
+"config/*" = ["D100"]
 "apps/*/management/*" = ["E501"]
+"apps/*/migrations/*" = ["D"]
 
 [tool.bandit]
 exclude_dirs = ["tests", "migrations"]

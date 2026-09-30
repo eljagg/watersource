@@ -1,3 +1,4 @@
+"""Public pages and the notification centre."""
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import connection
@@ -10,6 +11,7 @@ from .models import Notification
 
 
 def home(request):
+    """Landing page."""
     return render(request, "core/home.html")
 
 
@@ -34,6 +36,7 @@ def healthz(request):
 
 @login_required
 def notifications(request):
+    """The user's notifications, newest first."""
     qs = request.user.notifications.all()[:100]
     return render(request, "core/notifications.html", {"notifications": qs})
 
@@ -41,6 +44,7 @@ def notifications(request):
 @login_required
 @require_POST
 def notification_read(request, pk):
+    """Mark one notification read and follow its link."""
     n = get_object_or_404(Notification, pk=pk, user=request.user)
     if n.read_at is None:
         n.read_at = timezone.now()
@@ -49,6 +53,9 @@ def notification_read(request, pk):
 
 
 def privacy(request):
-    """Privacy notice (DPA 2020 s.22 fair-processing information). Final wording is
-    agreed with WRA's Data Protection Officer in the Requirements Specification."""
+    """Privacy notice (DPA 2020).
+
+    The text is a placeholder until WRA's Data Protection Officer supplies the
+    approved notice in the Requirements Specification.
+    """
     return render(request, "core/privacy.html")

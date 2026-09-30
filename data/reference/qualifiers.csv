@@ -1,0 +1,18 @@
+# Observation qualifier codes (design doc 14 §3.2). applies_to: comma-separated series kinds
+# (well_level, station_stage, abstraction, water_quality) or blank for all. Extend freely in the admin.
+code,name,description,applies_to
+PUMPING,Well pumping,Level read while the well or a nearby well was pumping,well_level
+RECOVERING,Recovering,Level read shortly after pumping stopped; not yet static,well_level
+DRY,Well dry,Water level below the bottom of the well or sensor,well_level
+FLOOD,Overbank / flood,Stage above the rated range or gauge submerged,station_stage
+BACKWATER,Backwater,Stage affected by downstream obstruction or tide,station_stage
+TIDAL,Tidal influence,Reading affected by tide,"station_stage,water_quality"
+DEBRIS,Debris,Gauge or intake obstructed by debris or vegetation,station_stage
+EQUIP,Equipment fault,Logger or sensor malfunction suspected,
+DRIFT,Drift corrected,Sensor drift correction applied against manual reading,"well_level,station_stage"
+SHIFT,Datum shift,Value shifted to a new reference point (see reference-point history),"well_level,station_stage"
+PROVISIONAL,Provisional rating,Discharge from a provisional rating curve,station_stage
+SUSPECT,Suspect,Value looks wrong but has not been corrected,
+METER_FAULT,Meter fault,Abstraction meter faulty or unread; volume estimated,abstraction
+HOLD_TIME,Holding time exceeded,Sample analysed after the method holding time,water_quality
+FIELD_DUP,Field duplicate,Duplicate sample for QA,water_quality

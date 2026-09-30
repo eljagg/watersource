@@ -1,3 +1,4 @@
+"""JSON log formatter for the central log (docs/security.md)."""
 import json
 import logging
 from datetime import UTC, datetime
@@ -7,6 +8,7 @@ class JSONFormatter(logging.Formatter):
     """One JSON object per line; shipped by Promtail/Vector to the ops-vm."""
 
     def format(self, record):
+        """Serialise the record and its extras as one JSON line."""
         payload = {
             "ts": datetime.now(UTC).isoformat(),
             "level": record.levelname,

@@ -1,3 +1,4 @@
+"""URL routes for registration, login, MFA, password management and profile."""
 from django.urls import path
 
 from . import views

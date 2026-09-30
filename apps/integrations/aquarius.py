@@ -15,6 +15,7 @@ from django.conf import settings
 
 
 class AquariusClient:
+    """Thin wrapper over the Aquarius Time-Series publish API (read-only)."""
     def __init__(self):
         cfg = settings.AQUARIUS
         self.base = cfg["URL"].rstrip("/")
@@ -24,9 +25,11 @@ class AquariusClient:
 
     @property
     def enabled(self):
+        """True when ``AQUARIUS_URL`` and credentials are configured."""
         return bool(self.base and self.user)
 
     def connect(self):
+        """Authenticate and cache the session token."""
         r = self.session.post(f"{self.base}/AQUARIUS/Publish/v2/session", json={"Username": self.user, "Password": self.password}, timeout=30)
         r.raise_for_status()
         self.token = r.text.strip('"')
@@ -38,12 +41,15 @@ class AquariusClient:
         return r.json()
 
     def locations(self):
+        """List location identifiers (stations) known to Aquarius."""
         return self._get("GetLocationDescriptionList").get("LocationDescriptions", [])
 
     def time_series_for(self, location_identifier):
+        """Time-series descriptions for one location."""
         return self._get("GetTimeSeriesDescriptionList", LocationIdentifier=location_identifier).get("TimeSeriesDescriptions", [])
 
     def corrected_points(self, unique_id, query_from=None, query_to=None):
+        """Corrected (approved) points of a series between two timestamps."""
         params = {"TimeSeriesUniqueId": unique_id}
         if query_from:
             params["QueryFrom"] = query_from

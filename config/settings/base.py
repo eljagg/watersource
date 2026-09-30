@@ -1,5 +1,4 @@
-"""
-WaterSource Jamaica — base settings.
+"""WaterSource Jamaica — base settings.
 
 Project: WRA RFB No. 2026-08-28-WRA-B, Data Consolidation and Application
 Development Software and Services.  One Django project, two user-facing
@@ -163,7 +162,7 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TIMEZONE = "America/Jamaica"
 CELERY_BEAT_SCHEDULE = {
     "licence-expiry-alerts": {"task": "apps.lic.tasks.raise_expiry_alerts", "schedule": timedelta(hours=24)},
-    "refresh-bi-views": {"task": "apps.reports.tasks.refresh_bi_views", "schedule": timedelta(hours=24)},
+    "refresh-bi-views": {"task": "apps.reports.tasks.refresh_bi_views", "schedule": timedelta(minutes=5)},  # dashboards + wall (design doc 13 §6)
     "aquarius-sync": {"task": "apps.integrations.tasks.sync_aquarius", "schedule": timedelta(hours=24)},
     "hga-sync": {"task": "apps.integrations.tasks.sync_hga", "schedule": timedelta(hours=24)},
     "arcgis-export": {"task": "apps.integrations.tasks.export_arcgis", "schedule": timedelta(hours=24)},
@@ -195,7 +194,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "apps.accounts.validators.PasswordHistoryValidator", "OPTIONS": {"history": 10}},
 ]
 STAFF_PASSWORD_MAX_AGE_DAYS = env("STAFF_PASSWORD_MAX_AGE_DAYS")
-MFA_REQUIRED_GROUPS = ["approver", "administrator"]
+MFA_REQUIRED_GROUPS = ["approver", "administrator", "hydrologist", "hydrogeologist"]  # roles that approve data (ToR H.ii)
 
 # django-axes: lockout after repeated failures (ToR H.iii)
 AXES_FAILURE_LIMIT = env("AXES_FAILURE_LIMIT")

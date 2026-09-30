@@ -31,6 +31,8 @@ pip install -r requirements-dev.txt
 npm install && npm run build               # compiles Tailwind v4 (frontend/app.css → static/css/app.css); commit the output
 python manage.py migrate
 python manage.py bootstrap_roles && python manage.py bootstrap_workflows && python manage.py bootstrap_categories
+python manage.py load_reference_data              # parishes, basins, WMUs, HSUs, rivers, qualifiers from data/reference/*.csv
+python manage.py seed_demo_data                   # optional: 12 months of DEMO data + demo.* users (see docs/hydrology.md)
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -43,13 +45,18 @@ Everything in Docker: `docker compose up --build` (add `--profile bi` for Metaba
 ## Tests, lint, security checks
 
 ```bash
-pytest                                     # 26 tests: auth policy, workflow engine, category validation, promotion, corrections, API, expiry alerts
+pytest                                     # 36 tests: auth policy, workflow engine, category validation, promotion, corrections, API, expiry alerts
 ruff check . && bandit -q -r apps config -c pyproject.toml && pip-audit -r requirements.txt
 DJANGO_SETTINGS_MODULE=config.settings.prod SECRET_KEY=x ALLOWED_HOSTS=example.com python manage.py check --deploy
 locust -f loadtest/locustfile.py --host http://localhost:8000     # performance profile (docs/performance.md)
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same on every push plus a Trivy scan of the image.
+CI (`.github/workflows/ci.yml`) runs the same on every push plus a Trivy scan of the image. ruff enforces pydocstyle (Google
+convention): every module, class and public function must have a docstring — the code is handed over to WRA.
+
+Browser journeys (client applies for a licence; staff reviews) run with Playwright against any environment:
+`BASE_URL=https://watersource-production.up.railway.app python scripts/browser_journeys.py` (needs `pip install playwright && playwright install chromium`
+and the demo users from `seed_demo_data`).
 
 ## Railway (staging)
 
@@ -57,7 +64,8 @@ CI (`.github/workflows/ci.yml`) runs the same on every push plus a Trivy scan of
    and a **Redis** service.
 2. Add three services from this repo: `web` (default), `worker` (start command `/app/scripts/entrypoint.sh worker`) and
    `beat` (`/app/scripts/entrypoint.sh beat`). `railway.json` sets the Dockerfile build, `/healthz` health check and
-   the pre-deploy migration for `web`.
+   the pre-deploy migration for `web` (migrate → bootstrap roles/workflows/categories → load reference data → refresh bi views).
+   Set `DEMO_DATA=1` on the `web` service to (re)build the DEMO dataset on the next deploy; remove it afterwards.
 3. Variables on each service: `DJANGO_SETTINGS_MODULE=config.settings.prod`, `SECRET_KEY`, `ALLOWED_HOSTS`,
    `CSRF_TRUSTED_ORIGINS`, `SITE_URL`, `DATABASE_URL=${{PostGIS.DATABASE_URL}}` (use the private-network URL),
    `REDIS_URL=${{Redis.REDIS_URL}}`, `EMAIL_URL`.

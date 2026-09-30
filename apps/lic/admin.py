@@ -1,9 +1,11 @@
+"""Django admin for licence applications and licences (staff back-office)."""
 from django.contrib import admin
 
 from .models import ApplicationDocument, Licence, LicenceApplication, Sequence
 
 
 class DocumentInline(admin.TabularInline):
+    """Uploaded documents on the application page."""
     model = ApplicationDocument
     extra = 0
     readonly_fields = ("original_name", "content_type", "size", "sha256", "scan_status", "dspace_handle")
@@ -11,6 +13,7 @@ class DocumentInline(admin.TabularInline):
 
 @admin.register(LicenceApplication)
 class LicenceApplicationAdmin(admin.ModelAdmin):
+    """Applications with status, parish and source filters."""
     list_display = ("reference", "applicant_name", "parish", "water_source", "status", "submitted_at", "decided_at")
     list_filter = ("status", "water_source", "parish", "kind")
     search_fields = ("reference", "applicant_name", "source_name")
@@ -20,6 +23,7 @@ class LicenceApplicationAdmin(admin.ModelAdmin):
 
 @admin.register(Licence)
 class LicenceAdmin(admin.ModelAdmin):
+    """Issued licences with expiry filters."""
     list_display = ("number", "licensee", "parish", "water_source", "daily_volume_granted_m3", "issued_on", "expires_on", "status")
     list_filter = ("status", "water_source", "parish")
     search_fields = ("number", "licensee__name", "source_name")

@@ -1,3 +1,4 @@
+"""Django admin for users, API keys and email tokens (ToR H.i: administrators manage accounts here)."""
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
@@ -6,6 +7,7 @@ from .models import APIKey, EmailToken, User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
+    """User administration: roles (groups), type, verification and lock state."""
     ordering = ["email"]
     list_display = ("email", "full_name", "user_type", "is_active", "email_verified_at", "last_login")
     list_filter = ("user_type", "is_active", "groups")
@@ -22,10 +24,12 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(APIKey)
 class APIKeyAdmin(admin.ModelAdmin):
+    """API keys: only the prefix is visible; keys are revoked here, never edited."""
     list_display = ("name", "prefix", "user", "created_at", "expires_at", "last_used_at", "revoked_at")
     readonly_fields = ("prefix", "key_hash", "last_used_at")
 
 
 @admin.register(EmailToken)
 class EmailTokenAdmin(admin.ModelAdmin):
+    """Email verification tokens (read-only troubleshooting view)."""
     list_display = ("user", "purpose", "created_at", "expires_at", "used_at")

@@ -8,6 +8,7 @@ from apps.core import audit
 
 
 def personal_data_export(user) -> dict:
+    """Everything held about ``user`` as a JSON-able dict (data-subject access, ToR I.ii)."""
     data = {
         "account": {
             "email": user.email, "full_name": user.full_name, "phone": user.phone, "organisation": user.organisation,
@@ -24,8 +25,11 @@ def personal_data_export(user) -> dict:
 
 
 def anonymise_user(user, reason="retention"):
-    """Irreversibly remove personal identifiers while keeping licence history (which
-    WRA must retain) linked to an anonymised account."""
+    """Irreversibly anonymise a client account while keeping licence records intact (ToR I.iii).
+
+    The email becomes a hash, personal fields are blanked and the account is
+    deactivated; an audit entry records the reason.
+    """
     pk = user.pk
     user.full_name = f"Removed user {pk}"
     user.email = f"removed-{pk}@anonymised.invalid"

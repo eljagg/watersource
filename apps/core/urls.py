@@ -1,3 +1,4 @@
+"""Core routes: home, health check, notifications, privacy notice."""
 from django.urls import path
 
 from . import views

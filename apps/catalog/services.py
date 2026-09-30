@@ -1,5 +1,4 @@
-"""
-One definition → form, CSV template, JSON Schema, validation.
+"""One definition → form, CSV template, JSON Schema, validation.
 
 validate_row() is the single validation path for the web form, CSV import and
 API (ToR G.2.iii). It returns (cleaned, errors, flags):
@@ -59,6 +58,7 @@ _JSON_TYPES = {
 
 
 def build_json_schema(version: CategoryVersion) -> dict:
+    """JSON Schema (draft 2020-12) describing one row of ``version`` — used by the API and docs."""
     props, required = {}, []
     for f in version.fields.all():
         schema = dict(_JSON_TYPES[f.field_type])
@@ -93,6 +93,7 @@ def build_json_schema(version: CategoryVersion) -> dict:
 # CSV template
 # ---------------------------------------------------------------------------
 def csv_template(version: CategoryVersion) -> str:
+    """CSV template text with a header row and one example row."""
     buf = io.StringIO()
     w = csv.writer(buf)
     fields = list(version.fields.all())
@@ -169,6 +170,7 @@ def _coerce(f, raw):
 
 
 def validate_row(version: CategoryVersion, row: dict, *, batch_seen: set | None = None) -> tuple[dict, dict, list]:
+    """Validate one row: returns ``(cleaned, errors, warnings)`` per field and rule severities."""
     fields = list(version.fields.all())
     cleaned, errors, flags = {}, {}, []
     known = {f.name for f in fields}
@@ -245,9 +247,11 @@ def _apply_rule(rule, c: dict, batch_seen) -> str | None:
 
 
 def licence_limit_check(c: dict, p: dict, m: str = "") -> str | None:
-    """Compare submitted volume with the licence's daily grant over the period
-    (ToR G.2.v). Soft by default: the row is flagged, the reviewer sees it, and the
-    promotion step raises the over-abstraction alert."""
+    """Compare submitted volume with the licence's daily grant over the period (ToR G.2.v).
+
+    Soft by default: the row is flagged, the reviewer sees it, and the promotion
+    step raises the over-abstraction alert.
+    """
     licence = c.get(p.get("licence", "licence"))
     volume = c.get(p.get("volume", "abstraction_volume_m3"))
     start, end = c.get(p.get("start", "period_start")), c.get(p.get("end", "period_end"))
@@ -268,6 +272,7 @@ def licence_limit_check(c: dict, p: dict, m: str = "") -> str | None:
 # Dynamic Django form
 # ---------------------------------------------------------------------------
 def form_class_for(version: CategoryVersion):
+    """Build a Django form class for manual entry of one row of ``version``."""
     attrs = {}
     for f in version.fields.all():
         common = dict(label=f.label + (f" ({f.unit})" if f.unit else ""), required=f.required, help_text=f.help_text)
@@ -301,6 +306,7 @@ def form_class_for(version: CategoryVersion):
 
 
 def parse_csv(fileobj, version: CategoryVersion) -> list[dict]:
+    """Parse an uploaded CSV against ``version``; returns rows as dicts with header mapping applied."""
     text = fileobj.read()
     if isinstance(text, bytes):
         text = text.decode("utf-8-sig")

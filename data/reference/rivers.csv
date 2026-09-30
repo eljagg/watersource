@@ -1,0 +1,17 @@
+# Rivers with WRA gauging stations (item 11). Extend from WRA's station register.
+code,name
+RCB,Rio Cobre
+RMN,Rio Minho
+BLK,Black River
+GRT,Great River
+MBR,Martha Brae River
+HOP,Hope River
+YAL,Yallahs River
+PGR,Plantain Garden River
+WAG,Wag Water River
+RGR,Rio Grande
+CAB,Cabarita River
+MLK,Milk River
+MTG,Montego River
+RBN,Rio Bueno
+WHT,White River

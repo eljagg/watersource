@@ -1,5 +1,4 @@
-"""
-Configurable multi-level approval workflow (ToR H.viii, F.viii, G.1.iv–v).
+"""Configurable multi-level approval workflow (ToR H.viii, F.viii, G.1.iv–v).
 
 A WorkflowDefinition is an ordered list of stages, each bound to an approver
 group. The engine (engine.py) moves a WorkflowInstance between stages and
@@ -18,6 +17,7 @@ from apps.core.models import TimeStampedModel
 
 
 class WorkflowDefinition(TimeStampedModel):
+    """A configurable multi-stage approval workflow (ToR H.viii)."""
     code = models.SlugField(max_length=64, unique=True)
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
@@ -32,14 +32,17 @@ class WorkflowDefinition(TimeStampedModel):
 
     @property
     def ordered_stages(self):
+        """Stages in order."""
         return list(self.stages.order_by("order"))
 
     @property
     def first_stage(self):
+        """The first stage, or ``None`` if unconfigured."""
         return self.stages.order_by("order").first()
 
 
 class WorkflowStage(models.Model):
+    """One stage: who may act and where it can be returned to."""
     definition = models.ForeignKey(WorkflowDefinition, on_delete=models.CASCADE, related_name="stages")
     order = models.PositiveSmallIntegerField()
     code = models.SlugField(max_length=64)
@@ -64,14 +67,17 @@ class WorkflowStage(models.Model):
 
     @property
     def next_stage(self):
+        """The following stage, or ``None`` on the last."""
         return self.definition.stages.filter(order__gt=self.order).order_by("order").first()
 
     @property
     def is_final(self):
+        """True on the last stage."""
         return self.next_stage is None
 
 
 class InstanceState(models.TextChoices):
+    """Open, info requested, approved, rejected, withdrawn."""
     IN_PROGRESS = "in_progress", "In progress"
     INFO_REQUESTED = "info_requested", "Information requested from submitter"
     APPROVED = "approved", "Approved"
@@ -80,6 +86,7 @@ class InstanceState(models.TextChoices):
 
 
 class WorkflowInstance(TimeStampedModel):
+    """A subject (application or submission) moving through a definition."""
     definition = models.ForeignKey(WorkflowDefinition, on_delete=models.PROTECT, related_name="instances")
     current_stage = models.ForeignKey(WorkflowStage, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     state = models.CharField(max_length=16, choices=InstanceState.choices, default=InstanceState.IN_PROGRESS, db_index=True)
@@ -104,10 +111,12 @@ class WorkflowInstance(TimeStampedModel):
 
     @property
     def is_open(self):
+        """True while a decision is still pending."""
         return self.state in (InstanceState.IN_PROGRESS, InstanceState.INFO_REQUESTED)
 
 
 class ActionType(models.TextChoices):
+    """Recorded action kinds."""
     SUBMIT = "submit", "Submitted"
     APPROVE = "approve", "Approved (advanced to next stage)"
     FINAL_APPROVE = "final_approve", "Final approval"
@@ -139,9 +148,11 @@ class WorkflowAction(models.Model):
         return f"{self.at:%Y-%m-%d %H:%M} {self.action} by {self.actor_id}"
 
     def save(self, *args, **kwargs):
+        """Insert only (append-only history)."""
         if not self._state.adding:
             raise RuntimeError("WorkflowAction rows are immutable")
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
+        """History cannot be deleted."""
         raise RuntimeError("WorkflowAction rows cannot be deleted")

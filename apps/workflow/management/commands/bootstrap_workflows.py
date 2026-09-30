@@ -1,5 +1,7 @@
-"""Seed the starting-point workflows described in the design plan. Idempotent.
-WRA finalises stage names/roles in the initiation workshops (ToR H.viii)."""
+"""``manage.py bootstrap_workflows`` — seed the starting-point workflows described in the design plan.
+
+Idempotent. WRA finalises stage names/roles in the initiation workshops (ToR H.viii).
+"""
 from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 
@@ -33,9 +35,11 @@ SEED = {
 
 
 class Command(BaseCommand):
+    """Create the default workflow definitions if absent."""
     help = "Create default workflow definitions (idempotent)."
 
     def handle(self, *args, **options):
+        """Create definitions, stages, approver groups and return targets."""
         for code, spec in SEED.items():
             wd, created = WorkflowDefinition.objects.get_or_create(code=code, defaults={"name": spec["name"]})
             by_code = {}

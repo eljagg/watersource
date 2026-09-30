@@ -1,5 +1,4 @@
-"""
-Data Submission application (ToR §G.2).
+"""Data Submission application (ToR §G.2).
 
 Submission = the envelope (who, which category version, which channel, file).
 SubmissionRecord = one validated row, kept as JSONB until final approval, then
@@ -18,12 +17,14 @@ from apps.core.models import AuditedModel, Classification, PublishableModel, Pub
 
 
 class Channel(models.TextChoices):
+    """How a submission arrived: form, CSV or API."""
     FORM = "form", "Web form"
     CSV = "csv", "CSV upload"
     API = "api", "API"
 
 
 class SubmissionStatus(models.TextChoices):
+    """Submission life-cycle (mirrors the workflow instance)."""
     DRAFT = "draft", "Draft"
     VALIDATING = "validating", "Validating"
     FAILED_VALIDATION = "failed", "Failed validation"
@@ -35,6 +36,7 @@ class SubmissionStatus(models.TextChoices):
 
 
 class Submission(AuditedModel):
+    """A batch of rows submitted against one category version (ToR G.2) — the workflow subject."""
     category_version = models.ForeignKey("catalog.CategoryVersion", on_delete=models.PROTECT, related_name="submissions")
     submitter = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="submissions")
     party = models.ForeignKey("ref.Party", null=True, blank=True, on_delete=models.SET_NULL, related_name="submissions")
@@ -61,40 +63,48 @@ class Submission(AuditedModel):
         return f"Submission #{self.pk} {self.category_version}"
 
     def get_absolute_url(self):
+        """Submission detail page."""
         return reverse("submissions:detail", args=[self.pk])
 
     @property
     def category(self):
+        """The category of the submitted version."""
         return self.category_version.category
 
     @property
     def workflow(self):
+        """The workflow instance, if started."""
         from apps.workflow.engine import instance_for
 
         return instance_for(self)
 
     @property
     def summary(self):
+        """One-line description for queues and notifications."""
         who = self.submitter.full_name if self.submitter_id else "system"
         return f"{self.category.name} · {self.row_count} row(s) · {who}"
 
     # -- workflow hooks --------------------------------------------------------
     def on_workflow_approved(self, instance, actor, **meta):
+        """Final-approval hook: promote accepted rows into the target table."""
         from .promotion import promote
 
         classification = meta.get("classification") or self.category.default_classification
         promote(self, actor, classification)
 
     def on_workflow_rejected(self, instance, actor, comment):
+        """Rejection hook."""
         self.status = SubmissionStatus.REJECTED
         self.save(update_fields=["status", "updated_at"])
 
     def on_workflow_info_requested(self, instance, actor, comment):
+        """Info-requested hook."""
         self.status = SubmissionStatus.INFO_REQUESTED
         self.save(update_fields=["status", "updated_at"])
 
 
 class RecordStatus(models.TextChoices):
+    """Per-row outcome: accepted, flagged, rejected, promoted."""
     ACCEPTED = "accepted", "Accepted"
     FLAGGED = "flagged", "Flagged for review"
     REJECTED = "rejected", "Rejected by validation"
@@ -102,6 +112,7 @@ class RecordStatus(models.TextChoices):
 
 
 class SubmissionRecord(models.Model):
+    """One submitted row with its payload and validation messages."""
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="records")
     row_no = models.PositiveIntegerField()
     payload = models.JSONField(default=dict)
@@ -126,8 +137,10 @@ class SubmissionRecord(models.Model):
 
 
 class GenericRecord(PublishableModel):
-    """Target for categories WRA defines that have no typed table yet: the
-    validated payload is stored as-is with its site link and classification."""
+    """Target for categories WRA defines that have no typed table yet.
+
+    The validated payload is stored as-is with its site link and classification.
+    """
 
     category_version = models.ForeignKey("catalog.CategoryVersion", on_delete=models.PROTECT, related_name="generic_records")
     payload = models.JSONField(default=dict)

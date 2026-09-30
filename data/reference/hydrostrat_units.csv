@@ -1,0 +1,7 @@
+# Hydrostratigraphic units (item 2). kind = aquifer | aquiclude | aquitard. Confirm names with WRA hydrogeology.
+code,name,kind
+LST,White Limestone aquifer,aquifer
+ALV,Coastal alluvium aquifer,aquifer
+YLS,Yellow Limestone Group,aquitard
+CRB,Cretaceous basement (aquiclude),aquiclude
+WGW,Wagwater Group volcanics,aquiclude

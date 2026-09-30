@@ -10,6 +10,7 @@ from .models import WorkflowInstance, WorkflowStage
 
 
 def staff_required(view):
+    """Decorator: require a WRA staff user (403 otherwise)."""
     from functools import wraps
 
     @wraps(view)
@@ -23,6 +24,7 @@ def staff_required(view):
 
 @staff_required
 def queue(request):
+    """Items awaiting the user's stage groups."""
     items = engine.queue_for(request.user).select_related("definition", "current_stage", "submitter").order_by("stage_entered_at")
     definition = request.GET.get("definition")
     if definition:
@@ -32,6 +34,7 @@ def queue(request):
 
 @staff_required
 def detail(request, pk):
+    """Workflow detail with history and the action panel."""
     instance = get_object_or_404(WorkflowInstance.objects.select_related("definition", "current_stage"), pk=pk)
     return render(request, "staff/workflow_detail.html", {"instance": instance, "subject": instance.subject,
                   "return_targets": instance.current_stage.can_return_to.all() if instance.current_stage else []})
@@ -40,6 +43,7 @@ def detail(request, pk):
 @staff_required
 @require_POST
 def act(request, pk):
+    """Handle an action from the panel (approve/reject/return/info/comment)."""
     instance = get_object_or_404(WorkflowInstance, pk=pk)
     action = request.POST.get("action")
     comment = request.POST.get("comment", "")

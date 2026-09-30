@@ -1,3 +1,4 @@
+"""API v1 router and OpenAPI/Swagger routes."""
 from rest_framework.routers import DefaultRouter
 
 from . import views

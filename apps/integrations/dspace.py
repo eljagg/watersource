@@ -12,10 +12,12 @@ from django.conf import settings
 
 
 class DSpaceError(Exception):
+    """Raised when DSpace rejects a request."""
     pass
 
 
 class DSpaceClient:
+    """DSpace 7 REST client for archiving application documents (ToR G.1.iii)."""
     def __init__(self, base_url=None, user=None, password=None, collection_id=None, timeout=30):
         cfg = settings.DSPACE
         self.base = (base_url or cfg["URL"]).rstrip("/")
@@ -27,14 +29,17 @@ class DSpaceClient:
 
     @property
     def enabled(self) -> bool:
+        """True when ``DSPACE_URL`` and credentials are configured."""
         return bool(self.base and self.user)
 
     def login(self):
+        """Obtain a bearer token and CSRF token."""
         r = self.session.post(f"{self.base}/rest/login", data={"email": self.user, "password": self.password}, timeout=self.timeout)
         if r.status_code != 200:
             raise DSpaceError(f"login failed: {r.status_code}")
 
     def create_item(self, title: str, metadata: list[dict]) -> dict:
+        """Create an item in the configured collection; returns its id."""
         body = {"name": title, "metadata": [{"key": "dc.title", "value": title}] + metadata}
         r = self.session.post(f"{self.base}/rest/collections/{self.collection_id}/items", json=body,
                               headers={"Accept": "application/json"}, timeout=self.timeout)
@@ -43,6 +48,7 @@ class DSpaceClient:
         return r.json()
 
     def add_bitstream(self, item_id: str, filename: str, content: bytes, description: str = "") -> dict:
+        """Upload a file to an item's ORIGINAL bundle."""
         r = self.session.post(f"{self.base}/rest/items/{item_id}/bitstreams", params={"name": filename, "description": description},
                               data=content, headers={"Accept": "application/json"}, timeout=self.timeout)
         if r.status_code not in (200, 201):
@@ -50,6 +56,7 @@ class DSpaceClient:
         return r.json()
 
     def logout(self):
+        """Invalidate the session."""
         try:
             self.session.post(f"{self.base}/rest/logout", timeout=self.timeout)
         except requests.RequestException:

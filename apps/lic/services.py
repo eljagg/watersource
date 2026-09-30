@@ -1,3 +1,4 @@
+"""Licence application services: applicant party, submission to workflow, document attachment (ToR G.1)."""
 from django.db import transaction
 from django.utils import timezone
 
@@ -10,6 +11,7 @@ from .models import ApplicationDocument, ApplicationStatus, LicenceApplication, 
 
 
 def party_for_user(user, name, address, email, phone) -> Party:
+    """Return the user's ``Party``, creating or updating it from the form values."""
     if user.party_id:
         p = user.party
         changed = False
@@ -28,6 +30,7 @@ def party_for_user(user, name, address, email, phone) -> Party:
 
 @transaction.atomic
 def submit_application(app: LicenceApplication, user) -> LicenceApplication:
+    """Move a draft into review and start the licence workflow (requires at least one document)."""
     if app.status not in (ApplicationStatus.DRAFT,):
         raise ValueError("Only drafts can be submitted.")
     if not app.documents.exists():
@@ -41,6 +44,7 @@ def submit_application(app: LicenceApplication, user) -> LicenceApplication:
 
 
 def attach_document(app: LicenceApplication, form, user) -> ApplicationDocument:
+    """Validate, scan, store and archive an uploaded document; raises ``ValueError`` if infected."""
     f = form.cleaned_data["file"]
     doc = form.save(commit=False)
     doc.application = app

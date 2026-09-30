@@ -1,24 +1,35 @@
-"""
-Observations and submitted data (ToR §C items 3, 6, 10, 13).
+"""Observations and submitted data (ToR §C items 3, 6, 10, 13; design doc 14 §3).
 
 These are the typed target tables the Data Submission application promotes
-approved rows into (apps.submissions.promotion). Time-series tables carry
-composite indexes on (site, timestamp); yearly partitioning with pg_partman is
-applied by the DBA runbook once a table passes ~20 M rows (docs/database.md).
+approved rows into (apps.submissions.promotion) and that WRA staff enter
+directly. Every observation carries the quality columns from
+``core.QualityMixin`` (grade, qualifiers) on top of the approval state and
+classification every published record has, so the same row can be "working",
+"in review" or "approved" whether it came from a client, a technician or a
+migration load.
+
+Time-series tables carry composite indexes on (site, timestamp); yearly
+partitioning with pg_partman is applied by the DBA runbook once a table passes
+~20 M rows (docs/database.md).
 """
+from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
-from apps.core.models import PublishableModel, PublishedQuerySet
+from apps.core.models import PublishableModel, PublishedQuerySet, QualityMixin
 from apps.ref.models import Spring, StreamflowStation, Well
 
 
 class WellState(models.TextChoices):
+    """Whether the well was pumping when the level was read (affects the reading)."""
+
     PUMPING = "pumping", "Pumping"
     NON_PUMPING = "non_pumping", "Non-pumping"
 
 
-class WellWaterLevel(PublishableModel):
-    """Item 3 — well water level over time."""
+class WellWaterLevel(QualityMixin, PublishableModel):
+    """Item 3 — well water level over time (metres below measuring point)."""
 
     well = models.ForeignKey(Well, on_delete=models.PROTECT, related_name="water_levels")
     measured_at = models.DateTimeField(db_index=True)
@@ -35,8 +46,8 @@ class WellWaterLevel(PublishableModel):
         constraints = [models.UniqueConstraint(fields=["well", "measured_at"], name="uq_wwl_well_time")]
 
 
-class StationReading(PublishableModel):
-    """Item 13 — streamflow station water levels over time."""
+class StationReading(QualityMixin, PublishableModel):
+    """Item 13 — streamflow station stage (and derived discharge) over time."""
 
     station = models.ForeignKey(StreamflowStation, on_delete=models.PROTECT, related_name="readings")
     read_at = models.DateTimeField(db_index=True)
@@ -54,14 +65,18 @@ class StationReading(PublishableModel):
 
 
 class AbstractionSource(models.TextChoices):
+    """Surface or groundwater abstraction (item 6)."""
+
     SURFACE = "surface", "Surface water"
     GROUND = "ground", "Underground water"
 
 
-class AbstractionRecord(PublishableModel):
+class AbstractionRecord(QualityMixin, PublishableModel):
     """Item 6 — water abstraction over time, compared to the licence's daily grant.
-    over_limit is computed at promotion (apps.submissions.promotion) and raises the
-    over-abstraction alert (ToR H.2.v, item 6.vii)."""
+
+    ``over_limit`` is computed at promotion (apps.submissions.promotion) and raises
+    the over-abstraction alert (ToR H.2.v, item 6.vii).
+    """
 
     licence = models.ForeignKey("lic.Licence", null=True, blank=True, on_delete=models.PROTECT, related_name="abstractions")
     well = models.ForeignKey(Well, null=True, blank=True, on_delete=models.PROTECT, related_name="abstractions")
@@ -86,19 +101,25 @@ class AbstractionRecord(PublishableModel):
 
     @property
     def days(self) -> float:
+        """Length of the reporting period in days (never less than one)."""
         return max((self.period_end - self.period_start).total_seconds() / 86400.0, 1.0)
 
 
 class SampleSource(models.TextChoices):
+    """Where a water-quality sample was taken (item 10 'Source')."""
+
     WELL = "well", "Well"
     SPRING = "spring", "Spring"
     STREAM = "stream", "Stream"
 
 
-class WaterQualitySample(PublishableModel):
-    """Item 10 — water quality. Parameters are typed columns because the list is
-    fixed by the ToR; extra parameters WRA defines later go to `extra` (JSONB)
-    until promoted to a column in a release."""
+class WaterQualitySample(QualityMixin, PublishableModel):
+    """Item 10 — water quality.
+
+    Parameters are typed columns because the list is fixed by the ToR; extra
+    parameters WRA defines later go to ``extra`` (JSONB) until promoted to a
+    column in a release.
+    """
 
     source_type = models.CharField(max_length=8, choices=SampleSource.choices)
     well = models.ForeignKey(Well, null=True, blank=True, on_delete=models.PROTECT, related_name="water_quality")
@@ -152,22 +173,34 @@ class WaterQualitySample(PublishableModel):
 
     @property
     def site(self):
+        """The well, spring or station the sample was taken from."""
         return self.well or self.spring or self.station
 
 
-class RecordHistory(models.Model):
-    """Correction history for approved records (ToR H.xvii–xxi): original values,
-    corrected values, reason, corrector, approver and timestamps. Written by the
-    promotion service inside the approval transaction. Append-only."""
+class HistoryMethod(models.TextChoices):
+    """Why an approved value changed (design doc 14 §3.2 — provenance of edits)."""
 
-    from django.contrib.contenttypes.fields import GenericForeignKey
-    from django.contrib.contenttypes.models import ContentType
+    CORRECTION = "correction", "Correction of an error"
+    GAP_FILL = "gap_fill", "Gap fill (estimated value inserted)"
+    ESTIMATE = "estimate", "Re-estimate of an existing value"
+    SHIFT = "shift", "Datum / reference-point shift"
+    REGRADE = "regrade", "Grade or qualifier change only"
+
+
+class RecordHistory(models.Model):
+    """Correction history for approved records (ToR H.xvii–xxi).
+
+    Stores original values, corrected values, method, reason, corrector, approver
+    and timestamps. Written by the promotion service (and by the hydrologist
+    tools) inside the approval transaction. Append-only.
+    """
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.CharField(max_length=64, db_index=True)
     target = GenericForeignKey("content_type", "object_id")
     old_values = models.JSONField(default=dict)
     new_values = models.JSONField(default=dict)
+    method = models.CharField(max_length=12, choices=HistoryMethod.choices, default=HistoryMethod.CORRECTION)
     reason = models.TextField()
     corrected_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="corrections_made")
     corrected_at = models.DateTimeField()
@@ -183,4 +216,52 @@ class RecordHistory(models.Model):
         return f"{self.content_type_id}:{self.object_id} corrected {self.corrected_at:%Y-%m-%d}"
 
     def delete(self, *args, **kwargs):
+        """Refuse deletion: the table is append-only (second line after the DB grants)."""
         raise RuntimeError("RecordHistory is append-only")
+
+
+class SeriesKind(models.TextChoices):
+    """Which observation series an approval period covers."""
+
+    WELL_LEVEL = "well_level", "Well water level"
+    STATION_STAGE = "station_stage", "Station stage / discharge"
+    ABSTRACTION = "abstraction", "Abstraction"
+    WATER_QUALITY = "water_quality", "Water quality"
+
+
+class ApprovalPeriod(models.Model):
+    """A block of time over which a site's series was approved as a whole (design doc 14 §3.2).
+
+    Hydrologists approve data in periods (typically a month or a water year), not
+    row by row. Recording the period lets the dashboards and exports show where
+    the approved record ends, and lets a later re-opening be traced. The rows
+    inside the period are flipped to ``approved`` by ``services.approve_period``
+    in the same transaction.
+    """
+
+    series = models.CharField(max_length=16, choices=SeriesKind.choices, db_index=True)
+    well = models.ForeignKey(Well, null=True, blank=True, on_delete=models.CASCADE, related_name="approval_periods")
+    station = models.ForeignKey(StreamflowStation, null=True, blank=True, on_delete=models.CASCADE, related_name="approval_periods")
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="approval_periods")
+    approved_at = models.DateTimeField(auto_now_add=True)
+    rows_approved = models.PositiveIntegerField(default=0)
+    reopened_at = models.DateTimeField(null=True, blank=True)
+    reopened_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    remarks = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["-starts_at"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(ends_at__gt=models.F("starts_at")), name="ck_approval_period_order"),
+            models.CheckConstraint(condition=models.Q(well__isnull=False) | models.Q(station__isnull=False), name="ck_approval_period_site"),
+        ]
+
+    def __str__(self):
+        return f"{self.get_series_display()} {self.site} {self.starts_at:%Y-%m-%d}–{self.ends_at:%Y-%m-%d}"
+
+    @property
+    def site(self):
+        """The well or station the period belongs to."""
+        return self.well or self.station

@@ -1,6 +1,8 @@
-"""audit.log(...) is the one call every service uses to record an action.
+"""``audit.log(...)`` is the one call every service uses to record an action.
+
 It writes the AuditLog row inside the caller's transaction and emits a
-structured log line for the central log."""
+structured log line for the central log (ToR H.xvi).
+"""
 import logging
 
 from django.contrib.contenttypes.models import ContentType
@@ -21,6 +23,7 @@ def _client_ip(request):
 
 
 def log(action: str, target=None, summary: str = "", actor=None, **meta) -> AuditLog:
+    """Write an ``AuditLog`` row for ``action`` on ``target`` and emit a structured log line."""
     request = get_current_request()
     actor = actor or get_current_user()
     if actor is not None and not getattr(actor, "is_authenticated", False):

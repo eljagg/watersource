@@ -1,3 +1,4 @@
+"""Celery tasks for external systems: Aquarius/HGA sync, ArcGIS and Finance exports, DSpace archiving (ToR §E, Add. 1 §9)."""
 import logging
 
 from celery import shared_task
@@ -32,6 +33,7 @@ def push_document_to_dspace(self, document_id: int):
 
 @shared_task
 def sync_aquarius():
+    """Pull corrected station readings from Aquarius for every station with an identifier."""
     from apps.ref.models import StreamflowStation
 
     from .aquarius import AquariusClient
@@ -62,6 +64,7 @@ def sync_aquarius():
 
 @shared_task
 def sync_hga():
+    """Pull changed wells from Hydro GeoAnalyst into staging."""
     run = IntegrationRun.objects.create(system=IntegrationSystem.HGA)
     from django.conf import settings
 
@@ -83,6 +86,7 @@ def sync_hga():
 
 @shared_task
 def export_arcgis():
+    """Write approved public sites as GeoJSON/GeoPackage to ``EXPORT_DIR`` for ArcGIS."""
     from .exports import export_public_geojson
 
     run = IntegrationRun.objects.create(system=IntegrationSystem.ARCGIS)
@@ -94,6 +98,7 @@ def export_arcgis():
 
 @shared_task
 def export_finance(period_start=None, period_end=None):
+    """Write the abstraction-vs-licence CSV for Finance for the period."""
     from datetime import date
 
     from .exports import export_finance_csv

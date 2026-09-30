@@ -1,6 +1,8 @@
-"""Seed the two initial data categories the ToR names: water abstraction (item 6)
-and water quality (item 10). WRA refines field lists in the workshops; a new
-version is published from the admin without code changes."""
+"""``manage.py bootstrap_categories`` — seed the two initial data categories the ToR names.
+
+Water abstraction (item 6) and water quality (item 10). WRA refines field lists in
+the workshops; a new version is published from the admin without code changes.
+"""
 from django.core.management.base import BaseCommand
 
 from apps.catalog.models import (
@@ -70,6 +72,7 @@ WQ_RULES = [
 
 
 class Command(BaseCommand):
+    """Create the initial categories if absent."""
     help = "Create the initial data categories (idempotent)."
 
     def _seed(self, code, name, target, link, wf, fields, rules):
@@ -88,6 +91,7 @@ class Command(BaseCommand):
         self.stdout.write(f"created {code} v1 ({len(fields)} fields)")
 
     def handle(self, *args, **options):
+        """Seed both categories against the default submission workflow."""
         wf = WorkflowDefinition.objects.get(code="data_submission_default")
         self._seed("water_abstraction", "Water abstraction (ToR item 6)", TargetModel.ABSTRACTION, LinkKind.LICENCE, wf, ABSTRACTION_FIELDS, ABSTRACTION_RULES)
         self._seed("water_quality", "Water quality (ToR item 10)", TargetModel.WATER_QUALITY, LinkKind.WELL, wf, WQ_FIELDS, WQ_RULES)

@@ -1,3 +1,4 @@
+"""DRF serializers for the read-only data API and the submission endpoint (ToR F.7, H.xii)."""
 from rest_framework import serializers
 
 from apps.catalog.models import CategoryVersion, DataCategory
@@ -8,12 +9,14 @@ from apps.submissions.models import Submission, SubmissionRecord
 
 
 class ParishSerializer(serializers.ModelSerializer):
+    """Parish code and name."""
     class Meta:
         model = Parish
         fields = ["code", "name"]
 
 
 class WellSerializer(serializers.ModelSerializer):
+    """Public well fields (no owner/personal data)."""
     parish = serializers.SlugRelatedField(read_only=True, slug_field="name")
     basin = serializers.SlugRelatedField(read_only=True, slug_field="name")
     wmu = serializers.SlugRelatedField(read_only=True, slug_field="name")
@@ -25,6 +28,7 @@ class WellSerializer(serializers.ModelSerializer):
 
 
 class StationSerializer(serializers.ModelSerializer):
+    """Streamflow station fields."""
     parish = serializers.SlugRelatedField(read_only=True, slug_field="name")
     river = serializers.SlugRelatedField(read_only=True, slug_field="name")
 
@@ -34,24 +38,27 @@ class StationSerializer(serializers.ModelSerializer):
 
 
 class WellWaterLevelSerializer(serializers.ModelSerializer):
+    """Well water level with grade and qualifiers."""
     well = serializers.SlugRelatedField(read_only=True, slug_field="name")
 
     class Meta:
         model = WellWaterLevel
-        fields = ["id", "well", "measured_at", "water_level_m", "well_state", "classification"]
+        fields = ["id", "well", "measured_at", "water_level_m", "well_state", "grade", "qualifiers", "classification"]
 
 
 class AbstractionSerializer(serializers.ModelSerializer):
+    """Abstraction record."""
     licence = serializers.SlugRelatedField(read_only=True, slug_field="number")
     well = serializers.SlugRelatedField(read_only=True, slug_field="name")
 
     class Meta:
         model = AbstractionRecord
         fields = ["id", "licence", "well", "source_type", "period_start", "period_end", "abstraction_volume_m3",
-                  "daily_volume_granted_m3", "over_limit", "over_limit_pct", "classification"]
+                  "daily_volume_granted_m3", "over_limit", "over_limit_pct", "classification", "grade", "qualifiers"]
 
 
 class WaterQualitySerializer(serializers.ModelSerializer):
+    """Water-quality sample parameters."""
     well = serializers.SlugRelatedField(read_only=True, slug_field="name")
     station = serializers.SlugRelatedField(read_only=True, slug_field="name")
     spring = serializers.SlugRelatedField(read_only=True, slug_field="name")
@@ -62,6 +69,7 @@ class WaterQualitySerializer(serializers.ModelSerializer):
 
 
 class LicenceSerializer(serializers.ModelSerializer):
+    """Licence summary (staff only)."""
     licensee = serializers.SlugRelatedField(read_only=True, slug_field="name")
     parish = serializers.SlugRelatedField(read_only=True, slug_field="name")
 
@@ -71,6 +79,7 @@ class LicenceSerializer(serializers.ModelSerializer):
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
+    """Licence application summary (staff only)."""
     parish = serializers.SlugRelatedField(read_only=True, slug_field="name")
 
     class Meta:
@@ -79,12 +88,14 @@ class ApplicationSerializer(serializers.ModelSerializer):
 
 
 class CategoryVersionSerializer(serializers.ModelSerializer):
+    """Published category version with its fields and rules."""
     class Meta:
         model = CategoryVersion
         fields = ["version", "status", "published_at", "json_schema"]
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    """Data category with its current version."""
     current_version = CategoryVersionSerializer(read_only=True)
 
     class Meta:
@@ -93,12 +104,14 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class SubmissionRecordSerializer(serializers.ModelSerializer):
+    """One row of a submission with validation outcome."""
     class Meta:
         model = SubmissionRecord
         fields = ["row_no", "status", "errors", "flags"]
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    """Submission header and records."""
     category = serializers.CharField(source="category_version.category.code", read_only=True)
     version = serializers.IntegerField(source="category_version.version", read_only=True)
     records = SubmissionRecordSerializer(many=True, read_only=True)
@@ -109,6 +122,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
 
 
 class SubmissionCreateSerializer(serializers.Serializer):
+    """Payload for ``POST /api/v1/submissions/``: category code and rows."""
     category = serializers.SlugField()
     rows = serializers.ListField(child=serializers.DictField(), min_length=1, max_length=50000)
     note = serializers.CharField(required=False, allow_blank=True, default="")

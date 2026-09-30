@@ -1,5 +1,6 @@
-"""
-The workflow engine. Every public function:
+"""The workflow engine (ToR H.viii).
+
+Every public function:
 
 * runs inside one database transaction with the subject row locked,
 * checks the actor's authority against the stage's approver group,
@@ -33,11 +34,13 @@ class WorkflowError(Exception):
 
 
 class NotAuthorised(WorkflowError):
+    """The actor is not in the current stage's approver group."""
     pass
 
 
 @dataclass
 class Transition:
+    """Result of an action: the updated instance and the recorded action."""
     instance: WorkflowInstance
     action: WorkflowAction
 
@@ -98,6 +101,7 @@ def _notify_submitter(instance: WorkflowInstance, title: str, body: str = ""):
 # ---------------------------------------------------------------------------
 @transaction.atomic
 def start(definition: WorkflowDefinition | str, subject, submitter, summary: str = "") -> WorkflowInstance:
+    """Open a workflow instance for ``subject`` at the first stage and notify the stage group."""
     if isinstance(definition, str):
         definition = WorkflowDefinition.objects.get(code=definition, is_active=True)
     first = definition.first_stage
@@ -118,6 +122,7 @@ def start(definition: WorkflowDefinition | str, subject, submitter, summary: str
 
 @transaction.atomic
 def approve(instance: WorkflowInstance, actor, comment: str = "", **meta) -> Transition:
+    """Advance to the next stage, or close as approved and call the subject's ``on_workflow_approved`` hook."""
     instance = _lock(instance)
     _require_open(instance)
     if instance.state == InstanceState.INFO_REQUESTED:
@@ -147,6 +152,7 @@ def approve(instance: WorkflowInstance, actor, comment: str = "", **meta) -> Tra
 
 @transaction.atomic
 def reject(instance: WorkflowInstance, actor, comment: str) -> Transition:
+    """Close the instance as rejected and call ``on_workflow_rejected``."""
     instance = _lock(instance)
     _require_open(instance)
     _require_stage_actor(instance, actor)
@@ -188,6 +194,7 @@ def return_to(instance: WorkflowInstance, actor, target: WorkflowStage, comment:
 
 @transaction.atomic
 def request_info(instance: WorkflowInstance, actor, comment: str) -> Transition:
+    """Park the instance until the submitter resubmits; calls ``on_workflow_info_requested``."""
     instance = _lock(instance)
     _require_open(instance)
     _require_stage_actor(instance, actor)
@@ -207,6 +214,7 @@ def request_info(instance: WorkflowInstance, actor, comment: str) -> Transition:
 
 @transaction.atomic
 def resubmit(instance: WorkflowInstance, actor, comment: str = "") -> Transition:
+    """Submitter answers an information request; the instance returns to its current stage."""
     instance = _lock(instance)
     if instance.state != InstanceState.INFO_REQUESTED:
         raise WorkflowError("Nothing to resubmit.")
@@ -222,6 +230,7 @@ def resubmit(instance: WorkflowInstance, actor, comment: str = "") -> Transition
 
 @transaction.atomic
 def withdraw(instance: WorkflowInstance, actor, comment: str = "") -> Transition:
+    """Submitter withdraws an open item."""
     instance = _lock(instance)
     _require_open(instance)
     if not instance.definition.allow_submitter_withdraw:
@@ -237,6 +246,7 @@ def withdraw(instance: WorkflowInstance, actor, comment: str = "") -> Transition
 
 @transaction.atomic
 def comment(instance: WorkflowInstance, actor, text: str) -> WorkflowAction:
+    """Add a comment without changing state."""
     instance = _lock(instance)
     if not text.strip():
         raise WorkflowError("Empty comment.")
@@ -251,5 +261,6 @@ def queue_for(user):
 
 
 def instance_for(subject) -> WorkflowInstance | None:
+    """The workflow instance for ``subject``, or ``None``."""
     ct = ContentType.objects.get_for_model(subject)
     return WorkflowInstance.objects.filter(content_type=ct, object_id=str(subject.pk)).select_related("current_stage", "definition").first()

@@ -1,5 +1,4 @@
-"""
-Configurable data category / template framework (ToR G.2.i–iii).
+"""Configurable data category / template framework (ToR G.2.i–iii).
 
 A DataCategory has immutable published CategoryVersions. Each version is a
 list of CategoryFields plus CategoryRules. From one definition the system
@@ -15,6 +14,7 @@ from apps.core.models import Classification, TimeStampedModel
 
 
 class TargetModel(models.TextChoices):
+    """Typed table a category promotes approved rows into."""
     ABSTRACTION = "obs.AbstractionRecord", "Water abstraction record"
     WATER_QUALITY = "obs.WaterQualitySample", "Water quality sample"
     WELL_WATER_LEVEL = "obs.WellWaterLevel", "Well water level"
@@ -23,6 +23,7 @@ class TargetModel(models.TextChoices):
 
 
 class LinkKind(models.TextChoices):
+    """What a submission row must reference (licence, well, station…)."""
     NONE = "none", "No site link"
     WELL = "well", "Well"
     STATION = "station", "Streamflow station"
@@ -31,6 +32,7 @@ class LinkKind(models.TextChoices):
 
 
 class DataCategory(TimeStampedModel):
+    """A kind of data WRA accepts (ToR G.2.i); versions carry the field list."""
     code = models.SlugField(max_length=64, unique=True)
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
@@ -52,16 +54,19 @@ class DataCategory(TimeStampedModel):
 
     @property
     def current_version(self):
+        """The published version clients submit against, or ``None``."""
         return self.versions.filter(status=VersionStatus.PUBLISHED).order_by("-version").first()
 
 
 class VersionStatus(models.TextChoices):
+    """Draft → published → retired."""
     DRAFT = "draft", "Draft"
     PUBLISHED = "published", "Published"
     RETIRED = "retired", "Retired"
 
 
 class CategoryVersion(TimeStampedModel):
+    """Immutable-once-published field list and rules for a category."""
     category = models.ForeignKey(DataCategory, on_delete=models.CASCADE, related_name="versions")
     version = models.PositiveIntegerField()
     status = models.CharField(max_length=16, choices=VersionStatus.choices, default=VersionStatus.DRAFT)
@@ -79,9 +84,11 @@ class CategoryVersion(TimeStampedModel):
 
     @property
     def is_editable(self):
+        """True while still a draft."""
         return self.status == VersionStatus.DRAFT
 
     def publish(self, user=None):
+        """Publish this version and retire the previously published one."""
         from .services import build_json_schema
 
         if self.status != VersionStatus.DRAFT:
@@ -96,6 +103,7 @@ class CategoryVersion(TimeStampedModel):
         self.save()
 
     def clone_as_draft(self):
+        """Copy fields and rules into a new draft version."""
         new = CategoryVersion.objects.create(category=self.category, version=self.category.versions.count() + 1)
         for f in self.fields.all():
             f.pk = None
@@ -109,6 +117,7 @@ class CategoryVersion(TimeStampedModel):
 
 
 class FieldType(models.TextChoices):
+    """Data types a category field may have."""
     INTEGER = "integer", "Whole number"
     DECIMAL = "decimal", "Decimal number"
     TEXT = "text", "Text"
@@ -123,6 +132,7 @@ class FieldType(models.TextChoices):
 
 
 class CategoryField(models.Model):
+    """One column of a category: type, unit, limits and target column."""
     version = models.ForeignKey(CategoryVersion, on_delete=models.CASCADE, related_name="fields")
     order = models.PositiveSmallIntegerField(default=0)
     name = models.SlugField(max_length=64, help_text="Column name in CSV/API, e.g. abstraction_volume_m3")
@@ -148,6 +158,7 @@ class CategoryField(models.Model):
 
 
 class RuleType(models.TextChoices):
+    """Cross-field rule kinds (date order, uniqueness, licence limit…)."""
     DATE_ORDER = "date_order", "Date A must not be after date B"
     RANGE_PAIR = "range_pair", "Field A must be ≤ field B"
     SUM_OF_PARTS = "sum_of_parts", "Fields must sum to another field (± tolerance)"
@@ -157,11 +168,13 @@ class RuleType(models.TextChoices):
 
 
 class Severity(models.TextChoices):
+    """Hard rules reject the row; soft rules flag it."""
     HARD = "hard", "Hard (blocks acceptance)"
     SOFT = "soft", "Soft (flag for reviewer)"
 
 
 class CategoryRule(models.Model):
+    """A cross-field rule applied to every row."""
     version = models.ForeignKey(CategoryVersion, on_delete=models.CASCADE, related_name="rules")
     rule_type = models.CharField(max_length=24, choices=RuleType.choices)
     params = models.JSONField(default=dict, help_text='e.g. {"a": "period_start", "b": "period_end"}')

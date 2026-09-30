@@ -3,6 +3,7 @@ from django.db import models
 
 
 class IntegrationSystem(models.TextChoices):
+    """External systems we sync with or export to."""
     AQUARIUS = "aquarius", "Aquarius Time-Series"
     HGA = "hga", "Hydro GeoAnalyst"
     DSPACE = "dspace", "DSpace"
@@ -11,6 +12,7 @@ class IntegrationSystem(models.TextChoices):
 
 
 class IntegrationRun(models.Model):
+    """One run of a sync/export job with counts and outcome."""
     system = models.CharField(max_length=16, choices=IntegrationSystem.choices, db_index=True)
     started_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -28,6 +30,7 @@ class IntegrationRun(models.Model):
         return f"{self.system} {self.started_at:%Y-%m-%d %H:%M} {self.status}"
 
     def finish(self, status="ok", **detail):
+        """Close the run with a status and optional error message."""
         from django.utils import timezone
 
         self.status = status

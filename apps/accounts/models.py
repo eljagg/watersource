@@ -1,5 +1,4 @@
-"""
-Application-managed identity (ToR H.i–v): no SSO, no Active Directory.
+"""Application-managed identity (ToR H.i–v): no SSO, no Active Directory.
 
 Roles are Django groups with fixed names (see roles.py):
   client · updater · reviewer · approver · administrator
@@ -18,6 +17,7 @@ from . import roles
 
 
 class UserType(models.TextChoices):
+    """Staff (WRA employees) or external client."""
     STAFF = "staff", "WRA staff"
     CLIENT = "client", "External client"
 
@@ -44,6 +44,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    """Application-managed account (email login). Roles are groups; see ``roles.py``."""
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=150)
     phone = models.CharField(max_length=32, blank=True)
@@ -75,31 +76,37 @@ class User(AbstractBaseUser, PermissionsMixin):
     # -- roles -------------------------------------------------------------
     @property
     def is_staff_user(self) -> bool:
+        """True for WRA staff accounts (not the same as Django admin access)."""
         return self.user_type == UserType.STAFF
 
     @property
     def is_client(self) -> bool:
+        """True for external client accounts."""
         return self.user_type == UserType.CLIENT
 
     @property
     def role_names(self) -> set[str]:
+        """Cached set of the user's group names."""
         if not hasattr(self, "_role_names"):
             self._role_names = set(self.groups.values_list("name", flat=True))
         return self._role_names
 
     def has_role(self, *names) -> bool:
+        """True if the user holds any of the named roles (superusers hold all)."""
         if self.is_superuser:
             return True
         return bool(self.role_names & set(names))
 
     @property
     def mfa_required(self) -> bool:
+        """True when the user's roles require TOTP (``MFA_REQUIRED_GROUPS``)."""
         from django.conf import settings
 
         return self.is_staff_user and (self.is_superuser or self.has_role(*settings.MFA_REQUIRED_GROUPS))
 
     @property
     def password_expired(self) -> bool:
+        """True for staff whose password is older than ``STAFF_PASSWORD_MAX_AGE_DAYS``."""
         from django.conf import settings
 
         if not self.is_staff_user:
@@ -108,12 +115,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         return age > timedelta(days=settings.STAFF_PASSWORD_MAX_AGE_DAYS)
 
     def set_password(self, raw_password):
+        """Set the password and reset the rotation clock and must-change flag."""
         super().set_password(raw_password)
         self.password_changed_at = timezone.now()
         self.must_change_password = False
 
 
 class PasswordHistory(models.Model):
+    """Previous password hashes, checked by ``PasswordHistoryValidator`` (ToR H.iii)."""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_history")
     password = models.CharField(max_length=255)
     created_at = models.DateTimeField(default=timezone.now)
@@ -143,16 +152,20 @@ class EmailToken(models.Model):
 
     @classmethod
     def issue(cls, user, purpose=PURPOSE_VERIFY, ttl_hours=24):
+        """Create a token for ``user`` valid for ``ttl_hours``."""
         return cls.objects.create(user=user, purpose=purpose, expires_at=timezone.now() + timedelta(hours=ttl_hours))
 
     @property
     def is_valid(self):
+        """True while unused and not expired."""
         return self.used_at is None and self.expires_at > timezone.now()
 
 
 class APIKey(models.Model):
     """Hashed, revocable key for system-to-system submission (ToR F.7).
-    Only the prefix is stored in clear; the full key is shown once at creation."""
+
+    Only the prefix is stored in clear; the full key is shown once at creation.
+    """
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="api_keys")
     name = models.CharField(max_length=100)
@@ -172,16 +185,19 @@ class APIKey(models.Model):
 
     @property
     def is_active(self):
+        """True unless revoked or past its expiry."""
         return self.revoked_at is None and (self.expires_at is None or self.expires_at > timezone.now())
 
     @staticmethod
     def hash_key(raw: str) -> str:
+        """SHA-256 hex digest of a raw key."""
         import hashlib
 
         return hashlib.sha256(raw.encode()).hexdigest()
 
     @classmethod
     def generate(cls, user, name, scopes=None, expires_at=None):
+        """Create a key for ``user``; returns ``(APIKey, raw_key)`` — the raw key is never stored."""
         raw = "wsk_" + secrets.token_urlsafe(32)
         obj = cls.objects.create(
             user=user, name=name, prefix=raw[:12], key_hash=cls.hash_key(raw), scopes=scopes or [], expires_at=expires_at

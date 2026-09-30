@@ -1,0 +1,19 @@
+# Watershed management units — PARTIAL DRAFT. WRA maintains 26 WMUs; this file lists the ones
+# whose name and basin are known from published WRA material. Replace with WRA's official list
+# (and boundary shapefiles) at the data-migration workshop. basin = code from basins.csv.
+code,name,basin
+W01,Plantain Garden River,B01
+W02,Morant River,B01
+W03,Yallahs River,B01
+W04,Hope River,B02
+W05,Rio Cobre,B03
+W06,Rio Minho,B04
+W07,Milk River,B04
+W08,Black River,B05
+W09,Cabarita River,B06
+W10,Great River,B07
+W11,Montego River,B07
+W12,Martha Brae River,B08
+W13,Rio Bueno,B09
+W14,Wag Water River,B10
+W15,Rio Grande,B10

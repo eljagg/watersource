@@ -1,5 +1,4 @@
-"""
-Licence Application Processing (ToR §C item 14, §G.1).
+"""Licence Application Processing (ToR §C item 14, §G.1).
 
 LicenceApplication is the workflow subject; on final approval the hook issues a
 Licence with expiry, and the nightly task raises approaching-expiry / expired
@@ -16,12 +15,14 @@ from apps.core.models import AuditedModel, Classification, TimeStampedModel
 
 
 class WaterSource(models.TextChoices):
+    """Source the licence draws from."""
     RIVER = "river", "River"
     SPRING = "spring", "Spring"
     WELL = "well", "Well"
 
 
 class ApplicationStatus(models.TextChoices):
+    """Application life-cycle (ToR G.1.iv)."""
     DRAFT = "draft", "Draft"
     SUBMITTED = "submitted", "Submitted"
     UNDER_REVIEW = "under_review", "Under review"
@@ -32,6 +33,7 @@ class ApplicationStatus(models.TextChoices):
 
 
 class ApplicationKind(models.TextChoices):
+    """New, renewal or variation."""
     NEW = "new", "New licence"
     RENEWAL = "renewal", "Renewal"
     VARIATION = "variation", "Variation of an existing licence"
@@ -52,6 +54,7 @@ class Sequence(models.Model):
 
     @classmethod
     def next(cls, key: str, prefix: str) -> str:
+        """Next value for ``key`` this year, formatted ``PREFIX-YYYY-NNNNNN``."""
         year = timezone.now().year
         with transaction.atomic():
             row, _ = cls.objects.select_for_update().get_or_create(key=key, year=year)
@@ -61,6 +64,7 @@ class Sequence(models.Model):
 
 
 class LicenceApplication(AuditedModel):
+    """A water abstraction licence application (item 14) — the workflow subject."""
     reference = models.CharField(max_length=32, unique=True, editable=False)
     kind = models.CharField(max_length=12, choices=ApplicationKind.choices, default=ApplicationKind.NEW)
     applicant_user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="licence_applications")
@@ -92,21 +96,25 @@ class LicenceApplication(AuditedModel):
         return self.reference
 
     def save(self, *args, **kwargs):
+        """Assign the reference number on first save."""
         if not self.reference:
             self.reference = Sequence.next("application", settings.WATERSOURCE["APPLICATION_REF_PREFIX"])
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
+        """Applicant-facing detail page."""
         return reverse("lic:application_detail", args=[self.reference])
 
     @property
     def workflow(self):
+        """The workflow instance for this application, if started."""
         from apps.workflow.engine import instance_for
 
         return instance_for(self)
 
     # -- workflow hooks --------------------------------------------------------
     def on_workflow_approved(self, instance, actor, **meta):
+        """Final-approval hook: mark granted and issue the licence."""
         granted = meta.get("daily_volume_granted_m3") or self.daily_volume_granted_m3 or self.daily_volume_requested_m3
         years = int(meta.get("term_years") or 1)
         self.daily_volume_granted_m3 = granted
@@ -121,17 +129,20 @@ class LicenceApplication(AuditedModel):
         return lic
 
     def on_workflow_rejected(self, instance, actor, comment):
+        """Rejection hook: mark refused with the decision remarks."""
         self.status = ApplicationStatus.REFUSED
         self.decided_at = timezone.now()
         self.decision_remarks = comment
         self.save(update_fields=["status", "decided_at", "decision_remarks", "updated_at"])
 
     def on_workflow_info_requested(self, instance, actor, comment):
+        """Info-requested hook: park the application until the applicant resubmits."""
         self.status = ApplicationStatus.INFO_REQUESTED
         self.save(update_fields=["status", "updated_at"])
 
 
 class DocumentKind(models.TextChoices):
+    """Kinds of supporting document."""
     ID = "id", "Proof of identification"
     DRILLING_PERMIT = "drilling_permit", "Well drilling permit"
     SITE_PLAN = "site_plan", "Site plan"
@@ -139,6 +150,7 @@ class DocumentKind(models.TextChoices):
 
 
 class ScanStatus(models.TextChoices):
+    """Malware scan outcome for an upload."""
     PENDING = "pending", "Pending scan"
     CLEAN = "clean", "Clean"
     INFECTED = "infected", "Infected — quarantined"
@@ -146,6 +158,7 @@ class ScanStatus(models.TextChoices):
 
 
 class ApplicationDocument(AuditedModel):
+    """A supporting document uploaded with an application (archived to DSpace)."""
     application = models.ForeignKey(LicenceApplication, on_delete=models.CASCADE, related_name="documents")
     kind = models.CharField(max_length=16, choices=DocumentKind.choices, default=DocumentKind.OTHER)
     file = models.FileField(upload_to="applications/%Y/%m/")
@@ -165,6 +178,7 @@ class ApplicationDocument(AuditedModel):
 
 
 class LicenceStatus(models.TextChoices):
+    """Licence life-cycle."""
     ACTIVE = "active", "Active"
     EXPIRED = "expired", "Expired"
     RENEWED = "renewed", "Renewed (superseded)"
@@ -173,6 +187,7 @@ class LicenceStatus(models.TextChoices):
 
 
 class Licence(AuditedModel):
+    """An issued abstraction licence (item 14.xii–xviii)."""
     number = models.CharField(max_length=32, unique=True, editable=False)
     application = models.OneToOneField(LicenceApplication, on_delete=models.PROTECT, related_name="licence")
     licensee = models.ForeignKey("ref.Party", on_delete=models.PROTECT, related_name="licences")
@@ -197,14 +212,17 @@ class Licence(AuditedModel):
         return self.number
 
     def get_absolute_url(self):
+        """Licence detail page."""
         return reverse("lic:licence_detail", args=[self.number])
 
     @property
     def days_to_expiry(self) -> int:
+        """Days until expiry (negative once expired)."""
         return (self.expires_on - date.today()).days
 
     @classmethod
     def issue(cls, application: LicenceApplication, granted, years: int, actor):
+        """Issue a licence for a granted application and flag its well as licensed."""
         from dateutil.relativedelta import relativedelta
 
         today = date.today()

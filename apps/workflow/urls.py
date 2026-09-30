@@ -1,3 +1,4 @@
+"""Staff review queue routes."""
 from django.urls import path
 
 from . import views

@@ -1,3 +1,4 @@
+"""Client and staff views for data submissions (ToR G.2)."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
@@ -20,12 +21,14 @@ def _visible(user):
 
 @login_required
 def index(request):
+    """List of categories the user can submit to and their recent submissions."""
     categories = DataCategory.objects.filter(is_active=True)
     return render(request, "submissions/index.html", {"categories": categories, "submissions": _visible(request.user)[:50]})
 
 
 @login_required
 def new_form(request, code):
+    """Manual entry of one row."""
     category = get_object_or_404(DataCategory, code=code, is_active=True)
     version = category.current_version
     if version is None:
@@ -41,6 +44,7 @@ def new_form(request, code):
 
 @login_required
 def new_csv(request, code):
+    """CSV upload for a category."""
     category = get_object_or_404(DataCategory, code=code, is_active=True, allow_csv=True)
     version = category.current_version
     if request.method == "POST" and request.FILES.get("file"):
@@ -57,6 +61,7 @@ def new_csv(request, code):
 
 @login_required
 def template(request, code):
+    """Download the CSV template."""
     category = get_object_or_404(DataCategory, code=code)
     version = category.current_version
     resp = HttpResponse(csv_template(version), content_type="text/csv")
@@ -66,5 +71,6 @@ def template(request, code):
 
 @login_required
 def detail(request, pk):
+    """Submission page with rows, messages and workflow panel."""
     sub = get_object_or_404(_visible(request.user), pk=pk)
     return render(request, "submissions/detail.html", {"sub": sub, "records": sub.records.all()[:500], "workflow": sub.workflow})

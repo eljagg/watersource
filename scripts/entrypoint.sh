@@ -12,7 +12,7 @@ case "${1:-web}" in
       --access-logfile - --error-logfile - --forwarded-allow-ips="*" ;;
   worker) exec celery -A config worker --loglevel=INFO --concurrency "${CELERY_CONCURRENCY:-4}" -Q celery ;;
   beat)   exec celery -A config beat --loglevel=INFO ;;
-  migrate) python manage.py migrate --noinput && python manage.py bootstrap_roles && python manage.py bootstrap_workflows && python manage.py bootstrap_categories ;;
+  migrate) python manage.py migrate --noinput && python manage.py bootstrap_roles && python manage.py bootstrap_workflows && python manage.py bootstrap_categories && python manage.py load_reference_data && { [ "${DEMO_DATA:-0}" = "1" ] && python manage.py seed_demo_data --force; true; } && python manage.py refresh_bi_views ;;
   shell)  exec python manage.py shell ;;
   *)      exec "$@" ;;
 esac

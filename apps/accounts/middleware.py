@@ -1,5 +1,8 @@
-"""Session idle timeout, forced password change/rotation, and MFA enforcement
-for privileged staff (ToR §9 'session timeout controls', H.iii, H.v)."""
+"""Session idle timeout, forced password change/rotation, and MFA enforcement for privileged staff.
+
+ToR §9 'session timeout controls', H.iii, H.v. Paths under ``EXEMPT_PREFIXES`` are
+never redirected so the user can always reach login, MFA and health endpoints.
+"""
 from datetime import timedelta
 
 from django.conf import settings
@@ -17,10 +20,12 @@ def _exempt(path):
 
 
 class SessionPolicyMiddleware:
+    """Expire sessions idle longer than ``SESSION_IDLE_TIMEOUT`` and stamp last activity."""
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
+        """Log out idle sessions, otherwise record activity and continue."""
         user = getattr(request, "user", None)
         if user is not None and user.is_authenticated:
             now = timezone.now()
@@ -36,10 +41,12 @@ class SessionPolicyMiddleware:
 
 
 class PasswordPolicyMiddleware:
+    """Send staff with expired or must-change passwords to the change-password page."""
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
+        """Redirect to password change when the policy requires it."""
         user = getattr(request, "user", None)
         if user is not None and user.is_authenticated and not _exempt(request.path):
             if user.must_change_password or user.password_expired:
@@ -49,10 +56,12 @@ class PasswordPolicyMiddleware:
 
 
 class MFAEnforcementMiddleware:
+    """Require a verified TOTP device for roles in ``MFA_REQUIRED_GROUPS`` (ToR H.ii)."""
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
+        """Redirect to MFA setup/verify until the session is OTP-verified."""
         user = getattr(request, "user", None)
         if user is not None and user.is_authenticated and not _exempt(request.path):
             if user.mfa_required and not user.is_verified():

@@ -1,9 +1,10 @@
-"""
-Promotion: on final approval, write accepted/flagged rows into the typed target
-table with approval_state=APPROVED and the chosen classification, in the same
+"""Promotion of approved submissions into the typed observation tables.
+
+On final approval, accepted/flagged rows are written into the target table with
+``approval_state=APPROVED`` and the chosen classification, in the same
 transaction as the workflow's final action. Corrections update the existing row
-and write obs.RecordHistory. Over-abstraction alerts are raised here
-(ToR G.2.v, item 6.vii) so they fire only for approved data.
+and write ``obs.RecordHistory``. Over-abstraction alerts are raised here (ToR
+G.2.v, item 6.vii) so they fire only for approved data.
 """
 from __future__ import annotations
 
@@ -92,6 +93,7 @@ def _abstraction_limit(values: dict):
 
 @transaction.atomic
 def promote(submission, actor, classification: str):
+    """Write the submission's accepted rows into its target table and mark it approved; returns the row count."""
     version = submission.category_version
     target_label = version.category.target_model
     Model = apps.get_model(*target_label.split("."))

@@ -63,6 +63,7 @@ def _store_rows(submission: Submission, version: CategoryVersion, rows: list[dic
 @transaction.atomic
 def create_submission(version: CategoryVersion, rows: list[dict], user, *, channel=Channel.FORM, note="", fileobj=None,
                       idempotency_key="", is_correction=False, correction_reason="", targets=None) -> Submission:
+    """Validate ``rows`` against ``version``, store them and start the review workflow."""
     if version.status != "published":
         raise ValueError("This category version is not published.")
     if idempotency_key:
@@ -102,6 +103,7 @@ def create_submission(version: CategoryVersion, rows: list[dict], user, *, chann
 
 
 def create_from_csv(version: CategoryVersion, fileobj, user, note="") -> Submission:
+    """Parse a CSV upload and create a submission from it."""
     rows = parse_csv(fileobj, version)
     if not rows:
         raise ValueError("The CSV file has no data rows.")

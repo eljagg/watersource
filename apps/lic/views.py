@@ -1,3 +1,4 @@
+"""Applicant and staff views for licence applications and licences (ToR G.1)."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -21,6 +22,7 @@ def _visible_applications(user):
 
 @login_required
 def application_list(request):
+    """Applications visible to the user, with search and filters."""
     qs = _visible_applications(request.user)
     q = request.GET.get("q", "").strip()
     if q:
@@ -33,6 +35,7 @@ def application_list(request):
 
 @login_required
 def application_create(request):
+    """Start a new draft application."""
     form = ApplicationForm(request.POST or None, user=request.user)
     if request.method == "POST" and form.is_valid():
         app = form.save(commit=False)
@@ -47,6 +50,7 @@ def application_create(request):
 
 @login_required
 def application_detail(request, reference):
+    """Application page with documents, workflow panel and actions."""
     app = get_object_or_404(_visible_applications(request.user), reference=reference)
     doc_form = DocumentForm()
     return render(request, "lic/application_detail.html", {"app": app, "doc_form": doc_form, "workflow": app.workflow,
@@ -56,6 +60,7 @@ def application_detail(request, reference):
 @login_required
 @require_POST
 def application_upload(request, reference):
+    """Attach a supporting document to a draft."""
     app = get_object_or_404(_visible_applications(request.user), reference=reference)
     form = DocumentForm(request.POST, request.FILES)
     if form.is_valid():
@@ -72,6 +77,7 @@ def application_upload(request, reference):
 @login_required
 @require_POST
 def application_submit(request, reference):
+    """Submit a draft for review."""
     app = get_object_or_404(LicenceApplication, reference=reference, applicant_user=request.user)
     try:
         services.submit_application(app, request.user)
@@ -83,6 +89,7 @@ def application_submit(request, reference):
 
 @login_required
 def document_download(request, pk):
+    """Download a document (owner or staff only; audited)."""
     doc = get_object_or_404(ApplicationDocument.objects.select_related("application"), pk=pk)
     if not (request.user.is_staff_user or request.user.is_superuser or doc.application.applicant_user_id == request.user.pk):
         raise Http404
@@ -92,6 +99,7 @@ def document_download(request, pk):
 
 @login_required
 def licence_list(request):
+    """Licences visible to the user."""
     qs = Licence.objects.select_related("licensee", "parish")
     if not (request.user.is_staff_user or request.user.is_superuser):
         qs = qs.filter(licensee__accounts=request.user)
@@ -100,6 +108,7 @@ def licence_list(request):
 
 @login_required
 def licence_detail(request, number):
+    """Licence page with conditions and abstraction summary."""
     lic = get_object_or_404(Licence.objects.select_related("licensee", "parish", "application"), number=number)
     if not (request.user.is_staff_user or request.user.is_superuser or lic.licensee.accounts.filter(pk=request.user.pk).exists()):
         raise Http404

@@ -1,0 +1,27 @@
+# Changelog
+
+All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
+
+## [0.2.0] — Sprint 1 (30 Sep 2026)
+
+### Added
+- Technical roles `hydrologist`, `hydrogeologist` (approve observations, MFA) and `technician` (field entry).
+- Grade, qualifiers and graded-by/at on every observation table; qualifier lookup (`ref.Qualifier`).
+- Approval periods (`obs.ApprovalPeriod`) with `obs.services.approve_period`; `obs.services.regrade` with history.
+- `RecordHistory.method` (correction, gap fill, estimate, shift, regrade).
+- Well status events (drilled → abandoned) that keep the well's current flags in step; depth checks on lithology and casing; screen flag on casing; extra pump-test fields with derived specific capacity.
+- Site master record: instruments, installations, reference-point history, site visits — as admin inlines on wells and stations.
+- `manage.py load_reference_data` with `data/reference/*.csv` (parishes, basins, WMUs, hydrostratigraphic units, rivers, qualifiers); runs on every deploy.
+- `manage.py seed_demo_data` — twelve months of synthetic demo data and six demo users; `DEMO_DATA=1` on Railway.
+- Licensing dashboard views in the `bi` schema, `apps.reports.services` (fetch/refresh), `manage.py refresh_bi_views`; beat refresh every 5 minutes.
+- API: `grade` and `qualifiers` on well levels and abstraction.
+- Browser journey script `scripts/browser_journeys.py` (Playwright).
+- Docs: ADR-0001, `docs/hydrology.md`, this changelog.
+
+### Changed
+- ruff pydocstyle (`D`, Google convention) enforced in CI; every module, class and public function documented.
+- `PublishedQuerySet.visible_to` uses `roles.UNAPPROVED_DATA_ROLES` (hydrologists see working data).
+- MFA now also required for hydrologist and hydrogeologist.
+
+## [0.1.0] — starter (25 Sep 2026)
+- Accounts, workflow engine, category framework, licence application and data submission applications, REST API, Tailwind v4 UI with light/dark theme, Railway staging pipeline.
