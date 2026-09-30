@@ -23,3 +23,12 @@ Media on the RAID-5 volume (`/srv/watersource/media`), exports on `/srv/watersou
 Assumed think time 30 s → ~100 req/s steady, 300 req/s peak. Measured on a 16-vCPU VM in Stage 7 load tests (Locust
 profile in `loadtest/`). Hardware note: the ToR's "anticipated minimum" quad-core CPU is not enough for this target;
 the design plan recommends a 16-core CPU on the supplied server (see the Technical Design, §10).
+
+
+## Schema step and start-up (added 30 Sep 2026)
+
+`scripts/entrypoint.sh migrate` is the schema step: migrate → bootstrap roles/workflows/categories → load reference data → (`DEMO_DATA=1`) seed demo data → refresh bi views. Every part is idempotent.
+
+* Railway: runs as the pre-deploy command **and** again when the `web` container starts (`MIGRATE_ON_START` defaults to 1). The double run costs a few seconds and guarantees the database the web container connects to is migrated.
+* WRA production (docker-compose): set `MIGRATE_ON_START=0` on the web service and run `docker compose run --rm web /app/scripts/entrypoint.sh migrate` as an explicit step in the release runbook.
+* `/healthz` returns `{"db": "ok", "schema": "ok", "cache": "ok"}`; `schema` becomes `pending: N migrations` with HTTP 503 if the database is behind the code.

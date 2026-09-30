@@ -16,12 +16,23 @@ def home(request):
 
 
 def healthz(request):
-    """Liveness/readiness probe for nginx, Railway and Uptime Kuma."""
-    status = {"db": "ok", "cache": "ok"}
+    """Liveness/readiness probe for nginx, Railway and Uptime Kuma.
+
+    Reports the database connection, whether every migration has been applied
+    (``schema``) and the cache. A container serving an unmigrated database
+    answers 503 so the platform never routes traffic to it.
+    """
+    status = {"db": "ok", "schema": "ok", "cache": "ok"}
     code = 200
     try:
         with connection.cursor() as cur:
             cur.execute("SELECT 1")
+        from django.db.migrations.executor import MigrationExecutor
+
+        pending = MigrationExecutor(connection).migration_plan(MigrationExecutor(connection).loader.graph.leaf_nodes())
+        if pending:
+            status["schema"] = f"pending: {len(pending)} migrations"
+            code = 503
     except Exception as exc:  # pragma: no cover
         status["db"] = f"error: {exc.__class__.__name__}"
         code = 503

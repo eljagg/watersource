@@ -2,6 +2,11 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.2.1] — 30 Sep 2026
+
+### Fixed
+- Web container now runs the schema step (migrate, bootstraps, reference data, optional demo data, bi refresh) at start-up unless `MIGRATE_ON_START=0`, so it can never serve an unmigrated database; `/healthz` reports `schema` and answers 503 while migrations are pending.
+
 ## [0.2.0] — Sprint 1 (30 Sep 2026)
 
 ### Added
