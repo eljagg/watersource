@@ -1,3 +1,21 @@
-{% extends "base.html" %}{% block content %}<div class="card mx-auto max-w-2xl p-6 sm:p-8"><h1 class="page-title mb-3">Licence application</h1>
-<p class="text-body mb-4 text-sm">Your name, address, email and phone are collected to process this application under the Water Resources Act and are retained as stated in the privacy notice.</p>
-<form method="post">{% csrf_token %}{% include "accounts/_form.html" %}<button class="btn-primary">Save draft</button></form></div>{% endblock %}
+{% extends "base.html" %}{% block title %}Licence application — {{ SITE_NAME }}{% endblock %}{% block content %}
+<div class="mx-auto max-w-5xl">
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div><p class="eyebrow">Licence application</p><h1 class="page-title">Apply for a water abstraction licence</h1><p class="text-body mt-1 text-sm">Save a draft, upload your supporting documents, then submit. Fields marked <span class="req">*</span> are required.</p></div>
+    <a class="btn-secondary btn-sm" href="{% url 'lic:application_list' %}">Cancel</a>
+  </div>
+  <form method="post" class="card divide-y divide-slate-200 dark:divide-slate-800">{% csrf_token %}
+    {% for e in form.non_field_errors %}<div class="alert-danger m-5">{{ e }}</div>{% endfor %}
+    {% with f=form %}
+    {% include "partials/form_section.html" with title="Application" intro="New licence, renewal of an existing licence, or variation of its terms." fields=f.kind|add_fields:f.renewal_of %}
+    {% include "partials/form_section.html" with title="Applicant" intro="Collected to process this application under the Water Resources Act and retained as stated in the privacy notice." fields=f.applicant_name|add_fields:f.applicant_email|add_fields:f.applicant_phone|add_fields:f.applicant_address %}
+    {% include "partials/form_section.html" with title="Water source" intro="Where the water will be taken from. Groundwater applications must name the registered well." fields=f.parish|add_fields:f.water_source|add_fields:f.source_name|add_fields:f.well %}
+    {% include "partials/form_section.html" with title="Volume and purpose" fields=f.daily_volume_requested_m3|add_fields:f.purpose %}
+    {% endwith %}
+    <div class="form-actions">
+      <a class="btn-secondary" href="{% url 'lic:application_list' %}">Cancel</a>
+      <button class="btn-primary">Save draft</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

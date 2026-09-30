@@ -65,6 +65,7 @@ and the demo users from `seed_demo_data`).
 2. Add three services from this repo: `web` (default), `worker` (start command `/app/scripts/entrypoint.sh worker`) and
    `beat` (`/app/scripts/entrypoint.sh beat`). `railway.json` sets the Dockerfile build, `/healthz` health check and
    the pre-deploy migration for `web` (migrate → bootstrap roles/workflows/categories → load reference data → refresh bi views).
+   Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` (and optionally `ADMIN_NAME`) once to create the first superuser; remove them after the first login.
    Set `DEMO_DATA=1` on the `web` service to (re)build the DEMO dataset on the next deploy; remove it afterwards.
 3. Variables on each service: `DJANGO_SETTINGS_MODULE=config.settings.prod`, `SECRET_KEY`, `ALLOWED_HOSTS`,
    `CSRF_TRUSTED_ORIGINS`, `SITE_URL`, `DATABASE_URL=${{PostGIS.DATABASE_URL}}` (use the private-network URL),

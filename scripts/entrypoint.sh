@@ -2,7 +2,7 @@
 # Container entrypoint. Usage: entrypoint.sh web|worker|beat|migrate|shell
 #
 #   web      run the schema step (unless MIGRATE_ON_START=0), then gunicorn
-#   migrate  schema step only: migrate → bootstrap roles/workflows/categories →
+#   migrate  schema step only: migrate → bootstrap roles/admin/workflows/categories →
 #            load reference data → (DEMO_DATA=1: seed demo data) → refresh bi views
 #
 # Railway runs `migrate` as the pre-deploy command AND `web` runs it again at
@@ -21,6 +21,7 @@ schema_step() {
   echo "[entrypoint] schema step: migrate + bootstrap + reference data (DEMO_DATA=${DEMO_DATA:-0})"
   python manage.py migrate --noinput
   python manage.py bootstrap_roles
+  python manage.py bootstrap_admin
   python manage.py bootstrap_workflows
   python manage.py bootstrap_categories
   python manage.py load_reference_data

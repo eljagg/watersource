@@ -8,7 +8,7 @@ class FieldInline(admin.TabularInline):
     """Fields of a category version."""
     model = CategoryField
     extra = 0
-    fields = ("order", "name", "label", "field_type", "unit", "required", "min_value", "max_value", "soft_min", "soft_max", "choices", "target_field")
+    fields = ("order", "section", "name", "label", "field_type", "unit", "required", "min_value", "max_value", "soft_min", "soft_max", "choices", "target_field")
 
 
 class RuleInline(admin.TabularInline):

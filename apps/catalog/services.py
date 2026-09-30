@@ -290,6 +290,11 @@ def form_class_for(version: CategoryVersion):
             fld = forms.ChoiceField(choices=[(c, c) for c in f.choices], **common)
         else:
             fld = forms.CharField(**common)
+            if f.field_type in (FieldType.WELL, FieldType.STATION, FieldType.SPRING, FieldType.LICENCE):
+                fld.widget.attrs["placeholder"] = {"well": "Well name as registered", "station": "Station name", "spring": "Spring name", "licence": "Licence number"}[f.field_type]
+        # used by templates/partials/form_grid.html to group and size the field
+        fld.section = f.section or "Details"
+        fld.wide = f.field_type == FieldType.TEXT and f.name in ("remarks", "comments", "notes")
         attrs[f.name] = fld
 
     def clean(self):

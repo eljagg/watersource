@@ -10,6 +10,7 @@ What it creates:
 * six users, one per role, password from ``DEMO_PASSWORD`` (default
   ``WaterSource-Demo-2026!``) — ``demo.client``, ``demo.reviewer``,
   ``demo.approver``, ``demo.hydrologist``, ``demo.technician``, ``demo.admin``
+  (``demo.admin`` is also a Django superuser so ``/admin/`` works on a demo site)
 * 12 wells, 4 streamflow stations, 2 springs, with lithology, casing, pump
   tests, status events, instruments, reference points and visits
 * 40 licence applications over the last 12 months in every status, 25
@@ -183,6 +184,9 @@ class Command(BaseCommand):
         for email, name, utype, role in DEMO_USERS:
             u = User.objects.create_user(email=email, password=password, full_name=name, user_type=utype, email_verified_at=timezone.now(), phone="876-555-0100", organisation="WRA (demo)" if utype == UserType.STAFF else "Demo Farms Ltd")
             u.groups.add(Group.objects.get(name=role))
+            if role == roles.ADMINISTRATOR:  # demo.admin can open /admin/ (Django admin needs is_staff; superuser for full model access)
+                u.is_staff = u.is_superuser = True
+                u.save(update_fields=["is_staff", "is_superuser"])
             self.users[role] = u
         self.users[roles.CLIENT].party = Party.objects.create(kind=PartyKind.APPLICANT, name=f"{PREFIX} Farms Ltd", email="demo.client@example.com", phone="876-555-0100", address="Old Harbour, St. Catherine", is_organisation=True)
         self.users[roles.CLIENT].save(update_fields=["party"])

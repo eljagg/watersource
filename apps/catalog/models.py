@@ -137,6 +137,7 @@ class CategoryField(models.Model):
     order = models.PositiveSmallIntegerField(default=0)
     name = models.SlugField(max_length=64, help_text="Column name in CSV/API, e.g. abstraction_volume_m3")
     label = models.CharField(max_length=150)
+    section = models.CharField(max_length=80, blank=True, help_text="Heading the field is grouped under on the entry form, e.g. 'Major ions'. Blank = 'Details'.")
     field_type = models.CharField(max_length=16, choices=FieldType.choices)
     unit = models.CharField(max_length=32, blank=True)
     required = models.BooleanField(default=True)

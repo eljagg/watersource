@@ -124,6 +124,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.site",
             ],
+            "builtins": ["apps.core.templatetags.forms_extra"],
         },
     }
 ]

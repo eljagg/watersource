@@ -1,2 +1,21 @@
-{% extends "base.html" %}{% block content %}<div class="card mx-auto max-w-2xl p-6 sm:p-8"><h1 class="page-title mb-1">{{ category.name }}</h1><p class="text-muted mb-4 text-xs">Template version {{ version.version }}</p>
-<form method="post">{% csrf_token %}{% include "accounts/_form.html" %}<label class="mb-4 block space-y-1 text-sm">Note for the reviewer (optional)<textarea name="note" rows="2"></textarea></label><button class="btn-primary">Submit for review</button></form></div>{% endblock %}
+{% extends "base.html" %}{% block title %}{{ category.name }} — {{ SITE_NAME }}{% endblock %}{% block content %}
+<div class="mx-auto max-w-5xl">
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div><p class="eyebrow">Data submission</p><h1 class="page-title">{{ category.name }}</h1><p class="text-muted mt-1 text-xs">Template version {{ version.version }} · fields marked <span class="req">*</span> are required</p></div>
+    <a class="btn-secondary btn-sm" href="{% url 'submissions:index' %}">Cancel</a>
+  </div>
+  <form method="post" class="card divide-y divide-slate-200 dark:divide-slate-800">{% csrf_token %}
+    {% for e in form.non_field_errors %}<div class="alert-danger m-5">{{ e }}</div>{% endfor %}
+    {% regroup form.visible_fields by field.section as sections %}
+    {% for s in sections %}{% include "partials/form_section.html" with title=s.grouper fields=s.list %}{% endfor %}
+    <section class="form-section">
+      <div class="form-section-head"><h2 class="form-section-title">Note for the reviewer</h2><p class="text-muted text-xs">Optional — anything the reviewer should know about this reading.</p></div>
+      <div class="form-section-body"><textarea name="note" rows="2" placeholder="e.g. Sample taken after heavy rainfall"></textarea></div>
+    </section>
+    <div class="form-actions">
+      <a class="btn-secondary" href="{% url 'submissions:index' %}">Cancel</a>
+      <button class="btn-primary">Submit for review</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

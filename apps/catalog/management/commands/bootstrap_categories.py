@@ -71,6 +71,32 @@ WQ_RULES = [
 ]
 
 
+#: Form section per field name (design: forms are grouped, not one long column). Also applied by migration 0003.
+SECTIONS = {
+    "water_abstraction": {
+        "Licence and source": ["licence", "well", "source_type"],
+        "Reporting period": ["period_start", "period_end"],
+        "Volumes": ["abstraction_rate_m3_d", "abstraction_volume_m3", "meter_reading"],
+        "Remarks": ["remarks"],
+    },
+    "water_quality": {
+        "Sample": ["source_type", "well", "spring", "station", "sample_ref", "sample_depth_m"],
+        "Dates and people": ["sampled_at", "analysed_at", "sampled_by", "analysed_by"],
+        "Field measurements": ["specific_conductivity_us_cm", "temperature_c", "ph", "turbidity_ntu", "colour", "odour"],
+        "Major ions": ["calcium_mg_l", "magnesium_mg_l", "potassium_mg_l", "sodium_mg_l", "carbonate_mg_l", "bicarbonate_mg_l", "sulphate_mg_l", "chloride_mg_l", "nitrate_mg_l"],
+        "Derived and totals": ["hardness_mg_l", "alkalinity_mg_l", "total_dissolved_solids_mg_l", "percent_sodium", "sodium_adsorption_ratio"],
+    },
+}
+
+
+def section_for(code: str, field_name: str) -> str:
+    """Section heading for a seeded field, or '' when the field is not in SECTIONS."""
+    for heading, names in SECTIONS.get(code, {}).items():
+        if field_name in names:
+            return heading
+    return ""
+
+
 class Command(BaseCommand):
     """Create the initial categories if absent."""
     help = "Create the initial data categories (idempotent)."
@@ -84,7 +110,7 @@ class Command(BaseCommand):
             return
         v = CategoryVersion.objects.create(category=cat, version=1)
         for order, (fname, label, ftype, unit, req, extra) in enumerate(fields, start=1):
-            CategoryField.objects.create(version=v, order=order, name=fname, label=label, field_type=ftype, unit=unit, required=req, **extra)
+            CategoryField.objects.create(version=v, order=order, name=fname, label=label, field_type=ftype, unit=unit, required=req, section=section_for(code, fname), **extra)
         for rtype, params, sev, msg in rules:
             CategoryRule.objects.create(version=v, rule_type=rtype, params=params, severity=sev, message=msg)
         v.publish()

@@ -2,6 +2,12 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.2.2] — 30 Sep 2026
+
+### Changed
+- Entry forms are now wide, sectioned, multi-column layouts (`templates/partials/form_section.html`, `form_grid.html`): licence application in four sections; category forms grouped by the new `CategoryField.section` (seeded categories grouped by migration 0003). Cancel on every form; sticky action bar; required-field markers.
+- `manage.py bootstrap_admin` creates the first superuser from `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`ADMIN_NAME` optional) during the schema step; `demo.admin` is a superuser on demo sites.
+
 ## [0.2.1] — 30 Sep 2026
 
 ### Fixed

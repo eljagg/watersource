@@ -97,5 +97,20 @@
 
   .nav-link { @apply rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white; }
   .page-title { @apply text-2xl font-semibold tracking-tight; }
+
+  /* Sectioned forms (templates/partials/form_section.html, form_grid.html) */
+  .form-section { @apply grid gap-4 p-5 sm:p-6 lg:grid-cols-[14rem_1fr] lg:gap-8; }
+  .form-section-head { @apply space-y-1; }
+  .form-section-title { @apply text-base font-semibold; }
+  .form-section-body { @apply min-w-0; }
+  .form-grid { @apply grid gap-x-5 gap-y-4 sm:grid-cols-2 xl:grid-cols-3; }
+  .form-field { @apply min-w-0 space-y-1; }
+  .form-field-wide { @apply sm:col-span-2 xl:col-span-3; }
+  .form-field label { @apply block; }
+  .form-field-error input, .form-field-error select, .form-field-error textarea { @apply border-rose-400 focus:border-rose-500 focus:ring-rose-500/30 dark:border-rose-500; }
+  .form-help { @apply text-xs text-slate-500 dark:text-slate-400; }
+  .form-error { @apply text-xs font-medium text-rose-700 dark:text-rose-400; }
+  .req { @apply ml-0.5 text-rose-600 dark:text-rose-400; }
+  .form-actions { @apply sticky bottom-0 flex flex-wrap items-center justify-end gap-2 rounded-b-(--radius-card) border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-900/90; }
   .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400; }
 }

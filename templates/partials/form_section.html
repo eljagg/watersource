@@ -1,0 +1,5 @@
+{% comment %}One titled section of a form. Context: `title`, `fields`, optional `intro`.{% endcomment %}
+<section class="form-section">
+  <div class="form-section-head"><h2 class="form-section-title">{{ title }}</h2>{% if intro %}<p class="text-muted text-xs">{{ intro }}</p>{% endif %}</div>
+  <div class="form-section-body">{% include "partials/form_grid.html" with fields=fields %}</div>
+</section>

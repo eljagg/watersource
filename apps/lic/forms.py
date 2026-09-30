@@ -22,6 +22,8 @@ class ApplicationForm(forms.ModelForm):
             self.fields["applicant_email"].initial = user.email
             self.fields["applicant_phone"].initial = user.phone
         self.fields["well"].required = False
+        self.fields["daily_volume_requested_m3"].label = "Daily volume requested (m³/day)"
+        self.fields["kind"].label = "Type of application"
         self.fields["renewal_of"].required = False
         if user is not None and user.is_client:
             self.fields["renewal_of"].queryset = self.fields["renewal_of"].queryset.filter(licensee__accounts=user)

@@ -125,3 +125,19 @@ def test_bi_refresh_and_licensing_dashboard(db):
         bi.fetch("bi.nope")
     with pytest.raises(ValueError):
         bi.fetch("bi.licence_expiry", order_by="drop_table")
+
+
+def test_forms_render_in_sections(client_user, db):
+    """Entry forms are grouped into titled sections (design feedback 30 Sep) and offer Cancel."""
+    from django.test import Client
+
+    c = Client()
+    c.force_login(client_user)
+    r = c.get("/submissions/water_quality/new/")
+    assert r.status_code == 200
+    body = r.content.decode()
+    for heading in ("Sample", "Field measurements", "Major ions", "Derived and totals"):
+        assert f'<h2 class="form-section-title">{heading}</h2>' in body
+    assert body.count("Cancel") >= 2 and 'class="form-grid"' in body
+    r = c.get("/licensing/applications/new/")
+    assert r.status_code == 200 and "Water source" in r.content.decode() and "Cancel" in r.content.decode()

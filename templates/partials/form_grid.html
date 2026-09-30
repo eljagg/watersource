@@ -1,0 +1,14 @@
+{% comment %}
+Responsive field grid. Context: `fields` (list of bound fields). A field whose form field has `wide=True`,
+or any textarea, spans the full row. Labels sit above inputs; help and errors below.
+{% endcomment %}
+<div class="form-grid">
+{% for field in fields %}
+  <div class="form-field{% if field.field.wide or field.field.widget.input_type == 'textarea' or field.field.widget.template_name == 'django/forms/widgets/textarea.html' %} form-field-wide{% endif %}{% if field.errors %} form-field-error{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
+    {{ field }}
+    {% if field.help_text %}<p class="form-help">{{ field.help_text|safe }}</p>{% endif %}
+    {% for e in field.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+  </div>
+{% endfor %}
+</div>
