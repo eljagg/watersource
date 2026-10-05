@@ -117,7 +117,11 @@ class Command(BaseCommand):
         self.today = date.today()
         self.tz = timezone.get_current_timezone()
         if options["if_missing"] and Well.objects.filter(name__startswith=PREFIX).exists():
-            self.stdout.write("DEMO data already present — skipped (set DEMO_DATA=reseed to rebuild it).")
+            # data stays as it is, but the demo accounts are always brought up to date (new roles, units, users added in later releases)
+            with transaction.atomic():
+                self._users()
+                self._prune_orphans()
+            self.stdout.write("DEMO data already present — kept; demo accounts refreshed (set DEMO_DATA=reseed to rebuild the data).")
             return
         if not options["force"] and Well.objects.exclude(name__startswith=PREFIX).exists():
             raise CommandError("Database holds non-demo wells; refusing without --force.")
@@ -168,6 +172,7 @@ class Command(BaseCommand):
         from apps.submissions.models import Submission
 
         Submission.objects.filter(submitter__email__startswith="demo.").delete()
+        self._prune_orphans()
         apps_qs = LicenceApplication.objects.filter(source_name__startswith=PREFIX)
         AbstractionRecord.objects.filter(licence__application__in=apps_qs).delete()
         Licence.objects.filter(application__in=apps_qs).delete()
@@ -183,6 +188,15 @@ class Command(BaseCommand):
         Party.objects.filter(name__startswith=PREFIX).exclude(email="demo.client@example.com").delete()
         # demo.* users are kept (and refreshed in _users) so their authenticator enrolments survive a re-seed;
         # deleting them cascaded to the TOTP devices and forced everyone to scan a new QR code after each deploy.
+
+    def _prune_orphans(self):
+        """Remove workflow instances whose subject no longer exists (left behind by earlier re-seeds)."""
+        from apps.workflow.models import WorkflowInstance
+
+        gone = [wi.pk for wi in WorkflowInstance.objects.all() if wi.subject is None]
+        if gone:
+            WorkflowInstance.objects.filter(pk__in=gone).delete()
+            self.stdout.write(f"removed {len(gone)} orphaned workflow item(s)")
 
     def _lookups(self):
         """Make sure the reference lookups the demo refers to exist (load_reference_data normally does this)."""

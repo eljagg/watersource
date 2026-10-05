@@ -2,6 +2,11 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.5.1] — 5 Oct 2026
+
+### Fixed
+- With `DEMO_DATA=1` the demo **accounts** are now brought up to date on every deploy even though the demo data is kept — so `demo.hydrologist` and `demo.finance` exist on an environment seeded before those roles were added. Orphaned review-queue items whose submission was removed by an earlier re-seed are cleaned up at the same time (they showed as a history-only page with no data card).
+
 ## [0.5.0] — 5 Oct 2026 — Sprint 2b, part 2
 
 ### Added

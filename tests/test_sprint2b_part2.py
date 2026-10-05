@@ -184,3 +184,26 @@ def test_finance_export_csv_and_api(client, finance_user, reviewer, application,
     assert client.get("/api/v1/exports/finance/licences/?download=csv")["Content-Type"].startswith("text/csv")
     client.force_login(reviewer)
     assert client.get("/api/v1/exports/finance/licences/").status_code == 403
+
+
+# --- v0.5.1: demo accounts refreshed even when the data is kept; orphaned workflow items removed ------------
+
+
+@pytest.mark.django_db
+def test_if_missing_still_creates_new_demo_accounts_and_prunes_orphans():
+    from django.contrib.auth import get_user_model
+    from django.contrib.contenttypes.models import ContentType
+
+    from apps.submissions.models import Submission
+    from apps.workflow.models import WorkflowDefinition, WorkflowInstance
+
+    call_command("load_reference_data", verbosity=0)
+    call_command("seed_demo_data", force=True, verbosity=0)
+    U = get_user_model()
+    U.objects.filter(email="demo.finance@wra-demo.local").delete()  # as on a staging DB seeded before the role existed
+    ct = ContentType.objects.get_for_model(Submission)
+    orphan = WorkflowInstance.objects.create(definition=WorkflowDefinition.objects.get(code="data_submission_default"), content_type=ct, object_id="999999999", summary="orphan")
+    call_command("seed_demo_data", force=True, if_missing=True, verbosity=0)
+    assert U.objects.filter(email="demo.finance@wra-demo.local").exists()
+    assert U.objects.filter(email="demo.hydrologist@wra-demo.local", groups__name="hydrologist").exists()
+    assert not WorkflowInstance.objects.filter(pk=orphan.pk).exists()
