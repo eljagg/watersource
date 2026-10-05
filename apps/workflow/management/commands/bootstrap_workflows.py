@@ -5,6 +5,8 @@ Idempotent. WRA finalises stage names/roles in the initiation workshops (ToR H.v
 from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 
+from apps.accounts.models import Unit
+from apps.accounts.ownership import STAGE_DEFAULTS
 from apps.workflow.models import WorkflowDefinition, WorkflowStage
 
 SEED = {
@@ -66,6 +68,10 @@ class Command(BaseCommand):
                     st.name, st.approver_group = name, grp
                     st.instructions = "Record the technical assessment (WMU balance, impact, recommended volume and conditions) before approving."
                     st.save(update_fields=["name", "approver_group", "instructions"])
+                if code == "licence_application" and st.owning_unit_id is None and scode in STAGE_DEFAULTS:  # v0.6.0: ownership by unit; WRA may change it in the admin
+                    st.owning_unit = Unit.objects.filter(code=STAGE_DEFAULTS[scode]).first()
+                    if st.owning_unit is not None:
+                        st.save(update_fields=["owning_unit"])
                 by_code[scode] = st
             for scode, _, _, returns in spec["stages"]:
                 by_code[scode].can_return_to.set([by_code[r] for r in returns])

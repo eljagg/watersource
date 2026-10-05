@@ -138,8 +138,24 @@ class Command(BaseCommand):
         self.stdout.write(f"created {code} v1 ({len(fields)} fields)")
 
     def handle(self, *args, **options):
-        """Seed both categories against the default submission workflow."""
+        """Seed the categories against the default submission workflow, then give every category an owning unit if it has none."""
         wf = WorkflowDefinition.objects.get(code="data_submission_default")
+        self._seed_all(wf)
+        self._owners()
+
+    def _owners(self):
+        """v0.6.0: ownership by unit (stakeholder model). Only fills blanks, so WRA's own choices in the admin console stand."""
+        from apps.accounts.models import Unit
+        from apps.accounts.ownership import CATEGORY_DEFAULTS, CATEGORY_FALLBACK
+
+        for cat in DataCategory.objects.filter(owning_unit__isnull=True):
+            unit = Unit.objects.filter(code=CATEGORY_DEFAULTS.get(cat.target_model, CATEGORY_FALLBACK)).first()
+            if unit is not None:
+                cat.owning_unit = unit
+                cat.save(update_fields=["owning_unit"])
+                self.stdout.write(f"owner   {cat.code} → {unit.name}")
+
+    def _seed_all(self, wf):
         self._seed("water_abstraction", "Water abstraction (ToR item 6)", TargetModel.ABSTRACTION, LinkKind.LICENCE, wf, ABSTRACTION_FIELDS, ABSTRACTION_RULES)
         self._seed("water_quality", "Water quality (ToR item 10)", TargetModel.WATER_QUALITY, LinkKind.WELL, wf, WQ_FIELDS, WQ_RULES)
         self._seed("model_output", "Model output (simulated values — design doc 15)", TargetModel.MODEL_OUTPUT, LinkKind.NONE, wf, MODEL_OUTPUT_FIELDS, MODEL_OUTPUT_RULES)

@@ -45,6 +45,24 @@ class UnitAdmin(admin.ModelAdmin):
     list_display = ("name", "code", "division", "is_operating", "has_super_user", "super_user_names", "is_active")
     list_filter = ("division", "is_operating", "has_super_user")
     search_fields = ("name", "code", "responsibilities")
+    readonly_fields = ("owns",)
+
+    @admin.display(description="Owns (approves in workflow)")
+    def owns(self, obj):
+        """Everything this unit owns: reference families (code), submission categories and workflow stages (editable on those pages)."""
+        from apps.accounts.ownership import families_owned_by
+
+        parts = []
+        fam = families_owned_by(obj.code)
+        if fam:
+            parts.append("Data: " + ", ".join(fam))
+        cats = list(obj.categories.values_list("name", flat=True))
+        if cats:
+            parts.append("Submission categories: " + ", ".join(cats))
+        stages = [f"{s.definition.name} › {s.name}" for s in obj.workflow_stages.select_related("definition")]
+        if stages:
+            parts.append("Workflow stages: " + "; ".join(stages))
+        return " · ".join(parts) or "—"
 
     @admin.display(description="Super User(s)")
     def super_user_names(self, obj):

@@ -2,6 +2,21 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.6.0] — 5 Oct 2026
+
+Package 1 of the WRA stakeholder model (design doc 17): ownership by unit.
+
+### Added
+- **Ownership by unit.** Workflow stages and submission categories carry the WRA unit that owns them (`WorkflowStage.owning_unit`, `DataCategory.owning_unit`; editable in the admin console). Reference and observation families are mapped to their owning unit in `apps/accounts/ownership.py` (Resource Monitoring: wells, stations, springs, levels, readings, quality; Permits & Licences: applications, licences, conditions, abstraction returns; Planning & Investigation: basins, WMUs, aquifers, model runs).
+- **Enforcement.** Only members of the owning unit may act on an item at a stage that has an owner; other units read. The review queue shows only items the user's unit may act on, and its empty state says so. Superusers are exempt. Staff with no unit cannot approve owned items — assign a unit in the admin console.
+- Seeded defaults (filled only when blank, so WRA's own choices stand): licence stages Intake, Licensing officer and Director → Permits & Licences Unit; Technical assessment → Resource Monitoring Unit; categories: water abstraction → PLU, water quality → RMU, model output → PIU.
+- WRA unit admin page shows everything the unit owns (data families, categories, stages).
+- **Home** tab in the navigation (first tab; active on the landing page only).
+- Demo account `demo.monitoring@wra-demo.local` (Resource Monitoring; reviewer + approver) so RMU-owned submissions have a reviewer in the demo set. Password as the other demo accounts.
+
+### Changed
+- `demo.reviewer` / `demo.approver` (Permits & Licences) no longer see water-quality submissions in their queue — those belong to Resource Monitoring. Use `demo.monitoring` for them.
+
 ## [0.5.3] — 5 Oct 2026
 
 ### Fixed

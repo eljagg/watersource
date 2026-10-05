@@ -15,10 +15,16 @@ def django_db_setup(django_db_setup, django_db_blocker):
         call_command("bootstrap_categories", verbosity=0)
 
 
-def _user(email, role=None, user_type=UserType.STAFF, **kw):
+def _user(email, role=None, user_type=UserType.STAFF, unit=None, **kw):
+    """Create a user; ``unit`` is a WRA unit code (v0.6.0: staff act only on data their unit owns, so staff fixtures need one)."""
+    from apps.accounts.models import Unit
+
     u = User.objects.create_user(email=email, password="Str0ng-Passw0rd!x", full_name=email.split("@")[0].title(), user_type=user_type, **kw)
     if role:
         u.groups.add(Group.objects.get(name=role))
+    if unit:
+        u.unit = Unit.objects.get(code=unit)
+        u.save(update_fields=["unit"])
     return u
 
 
@@ -31,12 +37,12 @@ def client_user(db):
 
 @pytest.fixture
 def reviewer(db):
-    return _user("reviewer@wra.gov.jm", roles.REVIEWER)
+    return _user("reviewer@wra.gov.jm", roles.REVIEWER, unit="PLU")  # Permits & Licences: owns applications and abstraction returns
 
 
 @pytest.fixture
 def approver(db):
-    return _user("approver@wra.gov.jm", roles.APPROVER)
+    return _user("approver@wra.gov.jm", roles.APPROVER, unit="PLU")
 
 
 @pytest.fixture

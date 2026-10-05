@@ -8,7 +8,7 @@ class StageInline(admin.TabularInline):
     """Stages of a definition in order."""
     model = WorkflowStage
     extra = 0
-    fields = ("order", "code", "name", "approver_group", "can_return_to_submitter", "can_reject", "sla_days")
+    fields = ("order", "code", "name", "approver_group", "owning_unit", "can_return_to_submitter", "can_reject", "sla_days")
 
 
 @admin.register(WorkflowDefinition)
@@ -21,7 +21,7 @@ class WorkflowDefinitionAdmin(admin.ModelAdmin):
 @admin.register(WorkflowStage)
 class WorkflowStageAdmin(admin.ModelAdmin):
     """Stages with their approver group and return targets."""
-    list_display = ("definition", "order", "name", "approver_group", "can_reject", "can_return_to_submitter")
+    list_display = ("definition", "order", "name", "approver_group", "owning_unit", "can_reject", "can_return_to_submitter")
     list_filter = ("definition",)
     filter_horizontal = ("can_return_to",)
 

@@ -55,7 +55,7 @@ class VersionInline(admin.TabularInline):
 @admin.register(DataCategory)
 class DataCategoryAdmin(admin.ModelAdmin):
     """Data categories."""
-    list_display = ("code", "name", "target_model", "link_kind", "workflow", "default_classification", "is_active")
-    list_filter = ("is_active", "target_model")
+    list_display = ("code", "name", "owning_unit", "target_model", "link_kind", "workflow", "default_classification", "is_active")
+    list_filter = ("is_active", "target_model", "owning_unit")
     filter_horizontal = ("submitter_groups",)
     inlines = [VersionInline]

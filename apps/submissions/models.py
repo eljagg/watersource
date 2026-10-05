@@ -79,6 +79,11 @@ class Submission(AuditedModel):
         return instance_for(self)
 
     @property
+    def owning_unit(self):
+        """The WRA unit that owns this submission's category (``DataCategory.owning_unit``)."""
+        return self.category.owning_unit
+
+    @property
     def summary(self):
         """One-line description for queues and notifications."""
         who = self.submitter.full_name if self.submitter_id else "system"

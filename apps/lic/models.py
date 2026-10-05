@@ -114,6 +114,14 @@ class LicenceApplication(AuditedModel):
 
         return instance_for(self)
 
+    @property
+    def owning_unit(self):
+        """The WRA unit that owns licence applications (Permits & Licences Unit; ``accounts.ownership.FAMILIES``)."""
+        from apps.accounts.models import Unit
+        from apps.accounts.ownership import unit_code_for_model
+
+        return Unit.objects.filter(code=unit_code_for_model("lic.LicenceApplication")).first()
+
     # -- workflow hooks --------------------------------------------------------
     def workflow_can_advance(self, instance, actor):
         """Block the technical-assessment stage until the assessment is recorded (design doc 14 §4)."""

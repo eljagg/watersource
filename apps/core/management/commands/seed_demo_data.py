@@ -73,6 +73,8 @@ DEMO_USERS = [  # email, name, type, role, WRA unit code (stakeholder model), Su
     ("demo.approver@wra-demo.local", "Demo Approver", UserType.STAFF, roles.APPROVER, "PLU", False),
     ("demo.hydrologist@wra-demo.local", "Demo Hydrologist", UserType.STAFF, roles.HYDROLOGIST, "RMU", True),
     ("demo.technician@wra-demo.local", "Demo Technician", UserType.STAFF, roles.TECHNICIAN, "RMU", False),
+    # v0.6.0 ownership by unit: data submissions are owned by Resource Monitoring, so RMU needs its own reviewer/approver
+    ("demo.monitoring@wra-demo.local", "Demo Monitoring Officer", UserType.STAFF, (roles.REVIEWER, roles.APPROVER), "RMU", False),
     ("demo.admin@wra-demo.local", "Demo Administrator", UserType.STAFF, roles.ADMINISTRATOR, "CGU", True),
     ("demo.finance@wra-demo.local", "Demo Finance Officer", UserType.STAFF, roles.FINANCE, "FAD", True),
 ]
@@ -289,15 +291,18 @@ class Command(BaseCommand):
                 u.set_password(password)
                 u.full_name, u.user_type, u.is_active, u.must_change_password = name, utype, True, False
                 u.save()
-            u.groups.set([Group.objects.get(name=role)])
+            role_names = role if isinstance(role, tuple) else (role,)
+            u.groups.set([Group.objects.get(name=r) for r in role_names])
             u.unit = Unit.objects.filter(code=unit_code).first() if unit_code else None
             u.is_super_user = super_user
             u.organisation = f"WRA — {u.unit.name}" if u.unit else u.organisation
             u.save(update_fields=["unit", "is_super_user", "organisation"])
-            if role == roles.ADMINISTRATOR:  # demo.admin can open /admin/ (Django admin needs is_staff; superuser for full model access)
+            if roles.ADMINISTRATOR in role_names:  # demo.admin can open /admin/ (Django admin needs is_staff; superuser for full model access)
                 u.is_staff = u.is_superuser = True
                 u.save(update_fields=["is_staff", "is_superuser"])
-            self.users[role] = u
+            for r in role_names:
+                self.users.setdefault(r, u)
+            self.users[email.split("@")[0]] = u  # e.g. self.users["demo.monitoring"]
         party, _ = Party.objects.get_or_create(email="demo.client@example.com", defaults=dict(
             kind=PartyKind.APPLICANT, name=f"{PREFIX} Farms Ltd", phone="876-555-0100", address="Old Harbour, St. Catherine", is_organisation=True))
         self.users[roles.CLIENT].party = party

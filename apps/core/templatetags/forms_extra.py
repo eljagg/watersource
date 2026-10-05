@@ -34,7 +34,7 @@ def active_tab(context, *prefixes):
     """Return ``is-active`` when the current path starts with any of ``prefixes`` (navigation tabs)."""
     request = context.get("request")
     path = getattr(request, "path", "") or ""
-    return "is-active" if any(path.startswith(p) for p in prefixes) else ""
+    return "is-active" if any(path == p if p == "/" else path.startswith(p) for p in prefixes) else ""
 
 
 @register.filter

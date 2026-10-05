@@ -85,6 +85,14 @@ def test_correction_reenters_workflow_and_writes_history(well, client_user, revi
     assert sub.is_correction and sub.workflow.definition.code == "correction"
     sample.refresh_from_db()
     assert sample.ph == Decimal("7.10")  # unchanged until approved
+    # water quality is owned by Resource Monitoring (v0.6.0): the PLU fixtures may not approve it until moved
+    from apps.accounts.models import Unit
+
+    with pytest.raises(engine.NotAuthorised, match="Resource Monitoring Unit"):
+        engine.approve(sub.workflow, reviewer)
+    for u in (reviewer, approver):
+        u.unit = Unit.objects.get(code="RMU")
+        u.save(update_fields=["unit"])
     engine.approve(sub.workflow, reviewer)
     engine.approve(sub.workflow, approver, classification="public")
     sample.refresh_from_db()
@@ -120,7 +128,7 @@ def test_licence_application_end_to_end(client, client_user, reviewer, approver,
     from apps.lic.models import TechnicalAssessment
     from tests.conftest import _user as _mk
 
-    hydro = _mk("hydro-e2e@wra.gov.jm", _roles.HYDROLOGIST)
+    hydro = _mk("hydro-e2e@wra.gov.jm", _roles.HYDROLOGIST, unit="RMU")
     TechnicalAssessment.objects.create(application=app, assessed_by=hydro, findings="ok")
     engine.approve(inst, hydro)
     engine.approve(inst, approver)  # licensing officer

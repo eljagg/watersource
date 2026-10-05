@@ -64,6 +64,11 @@ def _require_stage_actor(instance: WorkflowInstance, actor):
         return
     if not actor.groups.filter(pk=stage.approver_group_id).exists():
         raise NotAuthorised(f"Only members of '{stage.approver_group.name}' may act at stage '{stage.name}'.")
+    from apps.accounts.ownership import unit_may_act
+
+    allowed, reason = unit_may_act(actor, instance)
+    if not allowed:
+        raise NotAuthorised(reason)
 
 
 def _record(instance, action, actor, comment="", from_stage=None, to_stage=None, **meta) -> WorkflowAction:
@@ -259,10 +264,14 @@ def comment(instance: WorkflowInstance, actor, text: str) -> WorkflowAction:
 
 
 def queue_for(user):
-    """Open items at stages whose approver group the user belongs to."""
+    """Open items at stages whose approver group the user belongs to, and whose owning unit (if any) is the user's."""
     if user.is_superuser:
         return WorkflowInstance.objects.filter(state=InstanceState.IN_PROGRESS)
-    return WorkflowInstance.objects.filter(state=InstanceState.IN_PROGRESS, current_stage__approver_group__in=user.groups.all())
+    qs = WorkflowInstance.objects.filter(state=InstanceState.IN_PROGRESS, current_stage__approver_group__in=user.groups.all())
+    from apps.accounts.ownership import unit_may_act
+
+    mine = [i.pk for i in qs.select_related("current_stage", "current_stage__owning_unit") if unit_may_act(user, i)[0]]
+    return qs.filter(pk__in=mine)
 
 
 def instance_for(subject) -> WorkflowInstance | None:

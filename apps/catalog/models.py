@@ -40,6 +40,8 @@ class DataCategory(TimeStampedModel):
     target_model = models.CharField(max_length=64, choices=TargetModel.choices, default=TargetModel.GENERIC)
     link_kind = models.CharField(max_length=16, choices=LinkKind.choices, default=LinkKind.NONE)
     workflow = models.ForeignKey("workflow.WorkflowDefinition", on_delete=models.PROTECT, related_name="categories")
+    owning_unit = models.ForeignKey("accounts.Unit", null=True, blank=True, on_delete=models.PROTECT, related_name="categories",
+                                    help_text="The WRA unit that owns this data and approves it in the workflow (stakeholder model).")
     default_classification = models.CharField(max_length=16, choices=Classification.choices, default=Classification.STAFF_ONLY)
     submitter_groups = models.ManyToManyField("auth.Group", blank=True, help_text="Who may submit (empty = any verified client or staff).")
     allow_csv = models.BooleanField(default=True)

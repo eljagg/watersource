@@ -35,7 +35,7 @@ def _verified_login(client, user):
 
 @pytest.fixture
 def hydrologist(db):
-    return _user("hydro@wra.gov.jm", roles.HYDROLOGIST)
+    return _user("hydro@wra.gov.jm", roles.HYDROLOGIST, unit="RMU")  # technical assessment stage is owned by Resource Monitoring
 
 
 @pytest.fixture
@@ -94,7 +94,7 @@ def test_assessment_required_before_stage_advances(client, reviewer, hydrologist
     # now the stage advances, and the final approval issues the licence with the assessment's volume and conditions
     engine.approve(wf, hydrologist, "assessed")
     wf.refresh_from_db()
-    officer = _user("officer@wra.gov.jm", roles.APPROVER)
+    officer = _user("officer@wra.gov.jm", roles.APPROVER, unit="PLU")
     engine.approve(wf, officer, "ok")
     wf.refresh_from_db()
     engine.approve(wf, officer, "granted")
@@ -257,3 +257,53 @@ def test_panel_actions_report_outcome_and_return_to_queue(client, reviewer, hydr
     assert "Rejected" in r.content.decode()
     wf.refresh_from_db()
     assert wf.state == "rejected" and "Closed:" in client.get(f"/workflow/{wf.pk}/").content.decode()
+
+
+# --- v0.6.0: ownership by unit (stakeholder model, package 1) + Home tab ---------------------------
+
+
+@pytest.mark.django_db
+def test_ownership_by_unit_enforced_and_queue_filtered(client, reviewer, application):
+    from apps.accounts.models import Unit
+
+    call_command("bootstrap_roles", verbosity=0)
+    call_command("bootstrap_workflows", verbosity=0)
+    plu, rmu = Unit.objects.get(code="PLU"), Unit.objects.get(code="RMU")
+    st = WorkflowDefinition.objects.get(code="licence_application").stages.get(code="intake")
+    assert st.owning_unit == plu  # seeded default; WRA may change it in the admin
+    wf = application.workflow
+    # a reviewer in the wrong unit is refused and does not see the item in the queue
+    reviewer.unit = rmu
+    reviewer.save()
+    with pytest.raises(engine.NotAuthorised, match="Permits & Licences Unit"):
+        engine.approve(wf, reviewer, "ok")
+    assert wf not in engine.queue_for(reviewer)
+    # the owning unit's reviewer may act
+    reviewer.unit = plu
+    reviewer.save()
+    assert wf in engine.queue_for(reviewer)
+    engine.approve(wf, reviewer, "ok")
+    wf.refresh_from_db()
+    assert wf.current_stage.code == "hydrogeology" and wf.current_stage.owning_unit == rmu
+    # the unit admin page lists what the unit owns
+    from django.contrib.auth import get_user_model
+
+    su = get_user_model().objects.create_superuser(email="su@wra.gov.jm", password="Str0ng-Passw0rd!!", full_name="SU")
+    _verified_login(client, su)
+    html = client.get(f"/admin/accounts/unit/{plu.pk}/change/").content.decode()
+    assert "Licence applications" in html and "Intake review" in html
+
+
+@pytest.mark.django_db
+def test_submission_categories_get_owning_unit_and_home_tab(client):
+    from apps.catalog.models import DataCategory
+
+    call_command("bootstrap_roles", verbosity=0)
+    call_command("bootstrap_workflows", verbosity=0)
+    call_command("bootstrap_categories", verbosity=0)
+    owners = dict(DataCategory.objects.values_list("code", "owning_unit__code"))
+    assert owners["water_abstraction"] == "PLU" and owners["water_quality"] == "RMU" and owners["model_output"] == "PIU"
+    html = client.get("/").content.decode()
+    assert 'class="nav-link is-active">Home</a>' in html
+    html = client.get("/accounts/login/").content.decode()
+    assert 'class="nav-link ">Home</a>' in html

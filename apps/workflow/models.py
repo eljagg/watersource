@@ -48,6 +48,8 @@ class WorkflowStage(models.Model):
     code = models.SlugField(max_length=64)
     name = models.CharField(max_length=150)
     approver_group = models.ForeignKey(Group, on_delete=models.PROTECT, related_name="workflow_stages")
+    owning_unit = models.ForeignKey("accounts.Unit", null=True, blank=True, on_delete=models.PROTECT, related_name="workflow_stages",
+                                    help_text="Only members of this WRA unit may act at this stage (stakeholder model). Leave empty to use the item's own owner.")
     can_return_to = models.ManyToManyField("self", symmetrical=False, blank=True, related_name="returnable_from",
                                            help_text="Earlier stages this stage may return an item to.")
     can_return_to_submitter = models.BooleanField(default=True, help_text="Allow 'request information' back to the submitter.")
