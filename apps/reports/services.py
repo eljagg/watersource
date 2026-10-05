@@ -67,10 +67,49 @@ def refresh(view: str) -> None:
 
 
 def refresh_all() -> list[str]:
-    """Refresh every view in :data:`BI_VIEWS`, in order."""
+    """Refresh every view in :data:`BI_VIEWS`, in order, and stamp the time in the cache."""
+    from django.core.cache import cache
+    from django.utils import timezone
+
     for view in BI_VIEWS:
         refresh(view)
+    cache.set("bi:refreshed_at", timezone.now().isoformat(), None)
     return list(BI_VIEWS)
+
+
+def last_refreshed_at():
+    """When the views were last refreshed (from cache; ``None`` if unknown)."""
+    from django.core.cache import cache
+    from django.utils.dateparse import parse_datetime
+
+    raw = cache.get("bi:refreshed_at")
+    return parse_datetime(raw) if raw else None
+
+
+def refresh_if_stale(max_age_minutes: int) -> bool:
+    """Refresh the views when they are older than ``max_age_minutes``; returns True if a refresh ran.
+
+    This is what keeps dashboards near-real-time on a deployment without a
+    Celery worker (Railway staging): opening a dashboard or the wall triggers
+    the refresh, guarded by a 60-second cache lock so concurrent viewers do not
+    stampede the database. With Celery beat present the scheduled task does
+    the same check every minute and viewers rarely pay for it.
+    """
+    from datetime import timedelta
+
+    from django.core.cache import cache
+    from django.utils import timezone
+
+    last = last_refreshed_at()
+    if last and timezone.now() - last < timedelta(minutes=max_age_minutes):
+        return False
+    if not cache.add("bi:refresh_lock", "1", 60):
+        return False
+    try:
+        refresh_all()
+    finally:
+        cache.delete("bi:refresh_lock")
+    return True
 
 
 def fetch(view: str, order_by: str | None = None, limit: int | None = None) -> list[dict]:

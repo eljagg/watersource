@@ -107,3 +107,26 @@ def test_staff_navigation_reaches_every_tool(db):
     assert 'href="/dashboards/"' in wall
     anon = Client().get("/").content.decode()
     assert "Staff tools" not in anon
+
+
+def test_display_settings_drive_wall_and_refresh(db):
+    """Rotation/refresh timing and order come from the admin-editable DisplaySettings; stale data refreshes on demand."""
+    from django.core.cache import cache
+
+    from apps.reports.models import DisplaySettings
+
+    ds = DisplaySettings.get()
+    ds.rotate_seconds, ds.page_refresh_seconds, ds.wall_order, ds.wall_theme = 25, 40, ["executive", "licensing"], "light"
+    ds.save()
+    assert DisplaySettings.objects.count() == 1 and DisplaySettings.get().order == ["executive", "licensing"]
+    staff = _user("ds@wra.gov.jm", roles.REVIEWER)
+    c = Client()
+    c.force_login(staff)
+    body = c.get("/wall/").content.decode()
+    assert "rotate: 25" in body and "refresh: 40" in body and 'data-dot="1"' in body and 'data-dot="2"' not in body and "Exit wall" in body
+    assert 'class="h-full"' in body  # light theme → no dark class
+    cache.delete("bi:refreshed_at")
+    assert bi.refresh_if_stale(5) is True
+    assert bi.refresh_if_stale(5) is False  # fresh now
+    r = c.get("/dashboards/licensing/data/")
+    assert r.json()["refreshed_at"]

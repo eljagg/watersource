@@ -1,4 +1,4 @@
-{% load static %}<!DOCTYPE html>
+{% load static %}{% load forms_extra %}<!DOCTYPE html>
 <html lang="en" class="h-full{% if theme != 'light' %} dark{% endif %}">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
@@ -16,8 +16,14 @@
   html.dark .wall-mark { color: #020617; }
   .wall-title { font-size: calc(30px * var(--ds-scale)); font-weight: 600; letter-spacing: -.01em; line-height: 1.1; color: var(--ds-ink); }
   .wall-sub { font-size: calc(15px * var(--ds-scale)); color: var(--ds-muted); margin-top: 4px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
-  .wall-dots { display: flex; gap: 8px; margin-left: calc(28px * var(--ds-scale)); }
-  .wall-dots i { width: 12px; height: 12px; border-radius: 999px; background: var(--ds-axis); } .wall-dots i.on { background: var(--ds-s1); }
+  .wall-dots { display: flex; gap: 10px; margin-left: calc(28px * var(--ds-scale)); }
+  .wall-dot { width: 14px; height: 14px; border-radius: 999px; background: var(--ds-axis); border: 0; padding: 0; cursor: pointer; } .wall-dot.on { background: var(--ds-s1); transform: scale(1.15); }
+  .wall-controls { display: flex; gap: 8px; margin-left: calc(24px * var(--ds-scale)); }
+  .wall-btn { display: inline-flex; align-items: center; justify-content: center; min-width: calc(40px * var(--ds-scale)); height: calc(40px * var(--ds-scale)); padding: 0 calc(14px * var(--ds-scale)); border-radius: 12px; border: 1px solid var(--ds-ring); background: var(--ds-surface); color: var(--ds-ink); font: inherit; font-size: calc(18px * var(--ds-scale)); cursor: pointer; text-decoration: none; }
+  .wall-btn:hover { border-color: var(--ds-s1); }
+  .wall-btn-exit { font-size: calc(15px * var(--ds-scale)); font-weight: 600; background: var(--ds-s1); color: #fff; border-color: transparent; }
+  html.dark .wall-btn-exit { color: #020617; }
+  .wall-btn[data-pause].paused { background: var(--ds-warn); color: #1a1200; }
   .wall-clock { margin-left: auto; text-align: right; }
   .wall-clock .t { font-size: calc(34px * var(--ds-scale)); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; color: var(--ds-ink); }
   .wall-clock .d { font-size: calc(15px * var(--ds-scale)); color: var(--ds-muted); margin-top: 6px; }
@@ -35,7 +41,6 @@
   .wall .ds-status > div, .wall .ds-list li { font-size: calc(17px * var(--ds-scale)); }
   .wall .ds-status b { font-size: calc(28px * var(--ds-scale)); }
   .wall-foot { display: flex; justify-content: space-between; font-size: calc(14px * var(--ds-scale)); color: var(--ds-muted); }
-  .wall-exit { color: var(--ds-muted); text-decoration: none; opacity: .55; } .wall-exit:hover { opacity: 1; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -43,17 +48,24 @@
   <header class="wall-head">
     <div class="wall-mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></div>
     <div><div class="wall-title" data-wall-title>Loading…</div><div class="wall-sub">Water Resources Authority · WaterSource Jamaica</div></div>
-    <div class="wall-dots">{% for s in order %}<i data-dot></i>{% endfor %}</div>
-    <div class="wall-clock"><div class="t" data-clock>&nbsp;</div><div class="d" data-date>&nbsp;</div></div>
+    <div class="wall-dots" role="tablist" aria-label="Dashboards">{% for s in order %}<button type="button" class="wall-dot" data-dot="{{ forloop.counter0 }}" title="{{ titles|get_item:s }}" aria-label="{{ titles|get_item:s }}"></button>{% endfor %}</div>
+    <div class="wall-controls">
+      <button type="button" class="wall-btn" data-prev title="Previous dashboard (←)">‹</button>
+      <button type="button" class="wall-btn" data-pause title="Pause rotation (space)">⏸</button>
+      <button type="button" class="wall-btn" data-next title="Next dashboard (→)">›</button>
+      <a class="wall-btn wall-btn-exit" href="{{ exit_url }}" title="Leave the wall display (Esc)">Exit wall</a>
+    </div>
+    <div class="wall-clock"{% if not show_clock %} hidden{% endif %}><div class="t" data-clock>&nbsp;</div><div class="d" data-date>&nbsp;</div></div>
   </header>
   <div data-dashboard-root></div>
-  <footer class="wall-foot"><span data-wall-note></span><span><span data-refreshed></span> · <span data-counter></span> · <a class="wall-exit" href="{% url 'reports:index' %}">← Dashboards</a></span></footer>
+  <footer class="wall-foot"><span data-wall-note></span><span><span data-refreshed></span> · <span data-counter></span> · next: <span data-next-title></span></span></footer>
 </div>
 <script src="{% static 'js/echarts.min.js' %}" nonce="{{ request.csp_nonce }}"></script>
 <script src="{% static 'js/dashboards.js' %}" nonce="{{ request.csp_nonce }}"></script>
 <script nonce="{{ request.csp_nonce }}">
 WSDash.wall(document.querySelector('[data-dashboard-root]'), {
-  order: {{ order|safe }}, start: "{{ start|escapejs }}", rotate: {{ rotate_seconds }}, refresh: {{ refresh_seconds }},
+  order: {{ order|safe }}, start: "{{ start|escapejs }}", rotate: {{ rotate_seconds }}, refresh: {{ refresh_seconds }}, exit: "{{ exit_url|escapejs }}",
+  titles: { {% for s in order %}"{{ s }}": "{{ titles|get_item:s|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %} },
   urls: { {% for s in order %}"{{ s }}": "{% url 'reports:dashboard_data' s %}"{% if not forloop.last %}, {% endif %}{% endfor %} }
 });
 </script>

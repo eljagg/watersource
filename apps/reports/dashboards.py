@@ -52,6 +52,7 @@ class Kpi:
     delta_label: str = ""
     good_when: str = "up"  # "up" | "down" | "flat" — which direction of change is good
     fmt: str = "int"  # int | pct | days | volume
+    link: str = ""  # desk mode: click-through to the page that lists the underlying records (never used on the wall)
 
 
 @dataclass(frozen=True)
@@ -72,10 +73,10 @@ LICENSING = Dashboard(
     question="How is the licensing service performing this month and what needs a decision now?",
     source_note="Source: WaterSource bi.licensing views · applicant names never shown on this display",
     kpis=[
-        Kpi("open", "Open applications", "bi.licensing_kpis", "applications_open"),
+        Kpi("open", "Open applications", "bi.licensing_kpis", "applications_open", link="/licensing/applications/?status=under_review"),
         Kpi("turnaround", "Median turnaround", "bi.licensing_kpis", "median_days_to_decision_12m", unit="days", good_when="down", fmt="days"),
         Kpi("granted", "Granted, last 12 months", "bi.licensing_kpis", "granted_last_12m", delta="refused_last_12m", delta_label="refused"),
-        Kpi("expiring", "Licences expiring in 90 days", "bi.licensing_kpis", "expiring_within_90_days", good_when="down"),
+        Kpi("expiring", "Licences expiring in 90 days", "bi.licensing_kpis", "expiring_within_90_days", good_when="down", link="/licensing/licences/"),
     ],
     panels=[
         Panel("stages", "Applications by stage", "Where the open applications sit today", "hbar", "bi.application_stage_counts", span=5,
@@ -100,7 +101,7 @@ MONITORING = Dashboard(
         Kpi("stations", "Stations reporting (7 days)", "bi.monitoring_kpis", "stations_reporting_7d", delta="stations_active", delta_label="active stations", good_when="up"),
         Kpi("below", "Wells below normal level", "bi.monitoring_kpis", "wells_below_normal", delta="wells_classed", delta_label="wells classed", good_when="down"),
         Kpi("share", "Abstraction vs granted", "bi.monitoring_kpis", "abstraction_share_pct", unit="%", delta="licences_over_limit", delta_label="licensees over limit", good_when="down", fmt="pct"),
-        Kpi("awaiting", "Readings awaiting approval", "bi.monitoring_kpis", "rows_awaiting_approval", good_when="down"),
+        Kpi("awaiting", "Readings awaiting approval", "bi.monitoring_kpis", "rows_awaiting_approval", good_when="down", link="/admin/obs/wellwaterlevel/?approval_state__exact=pending"),
     ],
     panels=[
         Panel("gw_index", "Groundwater level index by basin, 24 months", "Monthly median depth to water, indexed to the basin's 10-year mean (100) · higher = deeper", "line", "bi.groundwater_index_by_basin", span=7,
@@ -125,7 +126,7 @@ SUBMISSIONS = Dashboard(
         Kpi("subs", "Submissions this month", "bi.submissions_kpis", "submissions_this_month", delta="rows_this_month", delta_label="rows"),
         Kpi("accept", "Acceptance rate, 90 days", "bi.submissions_kpis", "acceptance_rate_pct", unit="%", fmt="pct"),
         Kpi("flagged", "Rows flagged, 90 days", "bi.submissions_kpis", "rows_flagged_90d", good_when="down"),
-        Kpi("review", "Items in review", "bi.submissions_kpis", "items_in_review", delta="median_review_days_90d", delta_label="median days to close", good_when="down"),
+        Kpi("review", "Items in review", "bi.submissions_kpis", "items_in_review", delta="median_review_days_90d", delta_label="median days to close", good_when="down", link="/workflow/queue/"),
     ],
     panels=[
         Panel("channels", "Submissions by month and channel", "Form, CSV upload and API, last 12 months", "stacked", "bi.submissions_monthly", span=7,

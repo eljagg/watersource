@@ -163,7 +163,8 @@
     const v = r[k.value];
     let delta = '';
     if (k.delta && r[k.delta] != null) delta = `<div class="ds-delta ds-delta-flat">${fmt.int(r[k.delta])} ${k.delta_label || ''}</div>`;
-    el.innerHTML = `<h3>${k.title}</h3><div class="ds-v">${f(v)}${k.unit ? `<small>${k.unit}</small>` : ''}</div>${delta}`;
+    const link = (k.link && el.dataset.links === '1') ? `<a class="ds-tile-link" href="${k.link}">Open list →</a>` : '';
+    el.innerHTML = `<h3>${k.title}</h3><div class="ds-v">${f(v)}${k.unit ? `<small>${k.unit}</small>` : ''}</div>${delta}${link}`;
   }
 
   // ---------------------------------------------------------------- page driver
@@ -193,25 +194,37 @@
   }
 
   window.WSDash = {
-    async desk(root, url) {
-      try { renderDashboard(root, await load(url)); } catch (e) { root.querySelectorAll('[data-panel]').forEach((el) => (el.innerHTML = `<p class="ds-empty">Could not load data (${e.message}).</p>`)); }
+    async desk(root, url, refreshSeconds) {
+      const run = async () => { try { renderDashboard(root, await load(url)); } catch (e) { root.querySelectorAll('[data-panel]').forEach((el) => (el.innerHTML = `<p class="ds-empty">Could not load data (${e.message}).</p>`)); } };
+      await run();
+      if (refreshSeconds) setInterval(run, refreshSeconds * 1000);  // live: re-fetch on the admin-set interval
     },
     wall(root, cfg) {
-      let i = Math.max(0, cfg.order.indexOf(cfg.start)); let payload = null; let timer = null;
-      const titleEl = document.querySelector('[data-wall-title]'); const noteEl = document.querySelector('[data-wall-note]'); const dots = document.querySelectorAll('[data-dot]'); const counter = document.querySelector('[data-counter]');
+      let i = Math.max(0, cfg.order.indexOf(cfg.start)); let timer = null; let paused = false;
+      const titleEl = document.querySelector('[data-wall-title]'); const noteEl = document.querySelector('[data-wall-note]'); const dots = document.querySelectorAll('[data-dot]');
+      const counter = document.querySelector('[data-counter]'); const nextEl = document.querySelector('[data-next-title]'); const pauseBtn = document.querySelector('[data-pause]');
       async function show(idx) {
-        i = idx % cfg.order.length; const slug = cfg.order[i];
-        try { payload = await load(cfg.urls[slug] + '?wall=1'); } catch (e) { return; }
-        titleEl.textContent = payload.title; noteEl.textContent = payload.source_note; counter.textContent = `Rotates every ${cfg.rotate} s · ${i + 1} / ${cfg.order.length}`;
+        i = (idx + cfg.order.length) % cfg.order.length; const slug = cfg.order[i];
+        let payload; try { payload = await load(cfg.urls[slug] + '?wall=1'); } catch (e) { return; }
+        titleEl.textContent = payload.title; noteEl.textContent = payload.source_note;
+        counter.textContent = paused ? 'Rotation paused' : `Rotates every ${cfg.rotate} s · ${i + 1} / ${cfg.order.length}`;
+        if (nextEl) nextEl.textContent = cfg.titles[cfg.order[(i + 1) % cfg.order.length]] || '';
         dots.forEach((d, j) => d.classList.toggle('on', j === i));
         buildGrid(root, payload); renderDashboard(root, payload);
       }
-      show(i);
-      timer = setInterval(() => show(i + 1), cfg.rotate * 1000);
-      document.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') { clearInterval(timer); show(i + 1); timer = setInterval(() => show(i + 1), cfg.rotate * 1000); } if (e.key === 'ArrowLeft') { clearInterval(timer); show(i - 1 + cfg.order.length); timer = setInterval(() => show(i + 1), cfg.rotate * 1000); } });
-      setInterval(() => show(i), cfg.refresh * 1000);
+      function schedule() { clearInterval(timer); if (!paused) timer = setInterval(() => show(i + 1), cfg.rotate * 1000); }
+      function go(idx) { show(idx); schedule(); }
+      function togglePause() { paused = !paused; if (pauseBtn) { pauseBtn.classList.toggle('paused', paused); pauseBtn.textContent = paused ? '▶' : '⏸'; pauseBtn.title = paused ? 'Resume rotation (space)' : 'Pause rotation (space)'; } schedule(); show(i); }
+      show(i); schedule();
+      setInterval(() => show(i), cfg.refresh * 1000);  // re-fetch the current dashboard so new data appears without waiting for a rotation
+      dots.forEach((d) => d.addEventListener('click', () => go(Number(d.dataset.dot))));
+      const prev = document.querySelector('[data-prev]'), next = document.querySelector('[data-next]');
+      if (prev) prev.addEventListener('click', () => go(i - 1)); if (next) next.addEventListener('click', () => go(i + 1)); if (pauseBtn) pauseBtn.addEventListener('click', togglePause);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') go(i + 1); else if (e.key === 'ArrowLeft') go(i - 1); else if (e.key === ' ') { e.preventDefault(); togglePause(); } else if (e.key === 'Escape' && cfg.exit) location.href = cfg.exit;
+      });
       const clock = document.querySelector('[data-clock]'), dateEl = document.querySelector('[data-date]');
-      setInterval(() => { const n = new Date(); clock.textContent = n.toLocaleTimeString('en-JM', { hour: '2-digit', minute: '2-digit' }); dateEl.textContent = n.toLocaleDateString('en-JM', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }, 1000);
+      setInterval(() => { const n = new Date(); if (clock) clock.textContent = n.toLocaleTimeString('en-JM', { hour: '2-digit', minute: '2-digit' }); if (dateEl) dateEl.textContent = n.toLocaleDateString('en-JM', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }, 1000);
     },
   };
 

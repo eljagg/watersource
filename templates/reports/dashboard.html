@@ -1,11 +1,11 @@
 {% extends "base.html" %}{% load static %}{% block title %}{{ dash.title }} — {{ SITE_NAME }}{% endblock %}{% block content %}
 <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
   <div><p class="eyebrow">Dashboard</p><h1 class="page-title">{{ dash.title }}</h1><p class="text-body mt-1 text-sm">{{ dash.question }}</p></div>
-  <div class="flex items-center gap-3"><span class="text-muted text-xs" data-refreshed></span><a class="btn-secondary btn-sm" href="{% url 'reports:wall' %}?d={{ dash.slug }}" target="_blank" rel="noopener">Wall ↗</a></div>
+  <div class="flex items-center gap-3"><span class="text-muted text-xs" data-refreshed></span><span class="text-muted text-xs">· live, every {{ refresh_seconds }} s</span><a class="btn-secondary btn-sm" href="{% url 'reports:wall' %}?d={{ dash.slug }}" target="_blank" rel="noopener">Wall ↗</a></div>
 </div>
 <nav class="ds-tabs mb-4" aria-label="Dashboards">{% for d in dashboards %}<a class="ds-tab{% if d.slug == dash.slug %} ds-tab-on{% endif %}" href="{% url 'reports:dashboard' d.slug %}">{{ d.title }}</a>{% endfor %}</nav>
 <div data-dashboard-root>
-  <section class="ds-kpis">{% for k in dash.kpis %}<div class="ds-tile" data-kpi="{{ k.key }}"><h3>{{ k.title }}</h3><div class="ds-v">…</div></div>{% endfor %}</section>
+  <section class="ds-kpis">{% for k in dash.kpis %}<div class="ds-tile" data-kpi="{{ k.key }}" data-links="1"><h3>{{ k.title }}</h3><div class="ds-v">…</div></div>{% endfor %}</section>
   <section class="ds-grid">
     {% for p in dash.panels %}<div class="ds-card md:col-span-{% if p.span <= 4 %}4{% elif p.span <= 5 %}6{% elif p.span <= 7 %}6{% else %}12{% endif %} xl:col-span-{{ p.span }}"><h2>{{ p.title }}</h2><p>{{ p.subtitle }}</p><div class="ds-chart" data-panel="{{ p.key }}"></div></div>{% endfor %}
   </section>
@@ -13,5 +13,5 @@
 </div>
 <script src="{% static 'js/echarts.min.js' %}" nonce="{{ request.csp_nonce }}"></script>
 <script src="{% static 'js/dashboards.js' %}" nonce="{{ request.csp_nonce }}"></script>
-<script nonce="{{ request.csp_nonce }}">WSDash.desk(document.querySelector('[data-dashboard-root]'), "{% url 'reports:dashboard_data' dash.slug %}");</script>
+<script nonce="{{ request.csp_nonce }}">WSDash.desk(document.querySelector('[data-dashboard-root]'), "{% url 'reports:dashboard_data' dash.slug %}", {{ refresh_seconds }});</script>
 {% endblock %}

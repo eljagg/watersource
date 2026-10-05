@@ -2,6 +2,13 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.3.2] — 5 Oct 2026
+
+### Added
+- **Display settings** in the admin console (Business intelligence → Display settings): seconds per dashboard, page refresh seconds, data-refresh minutes, dashboards shown and their order, wall theme, clock. No redeploy to change timing.
+- Wall controls in the header: ‹ previous · ⏸ pause/resume · › next · **Exit wall**; dots are clickable; keyboard ← → space Esc; footer shows which dashboard is next.
+- Near-real-time data: the bi views refresh on demand when a dashboard or the wall is opened and the data is older than the admin-set interval (60-second lock), so staging stays current without a Celery worker; the beat task now checks every minute against the same setting. Desk dashboards re-fetch live on the page-refresh interval; KPI tiles link through to the underlying lists.
+
 ## [0.3.1] — 5 Oct 2026
 
 ### Changed

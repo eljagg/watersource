@@ -18,3 +18,12 @@ def add_fields(first, second):
     if second is not None:
         out.append(second)
     return out
+
+
+@register.filter
+def get_item(mapping, key):
+    """Dictionary lookup by variable key: ``{{ titles|get_item:slug }}``."""
+    try:
+        return mapping.get(key, "")
+    except AttributeError:
+        return ""

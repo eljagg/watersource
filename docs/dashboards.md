@@ -25,6 +25,14 @@ Chart idioms (doc 13 §4.4): `kpi`, `hbar` (ranked bars use the sequential ramp)
 
 Dashboards read only `bi` aggregates. None carries coordinates, applicant names, submitter names or licensee particulars; the "Needs attention" list shows reference, source and parish. Panels carry a `wall_safe` flag (all true today) so a future staff-only panel is excluded from `/wall/` by design.
 
+## Timing and freshness (admin console → Business intelligence → Display settings)
+
+* **Seconds per dashboard** (default 60) and **page refresh seconds** (default 60) — rotation and re-fetch on the wall; desk dashboards use the same page refresh.
+* **Data refresh minutes** (default 5) — the `bi` views are recalculated when older than this: by the beat task (`refresh_bi_views_if_stale`, every minute) where a Celery worker runs, and on demand when a dashboard or the wall is opened (guarded by a 60-second lock). So a reading approved at 10:03 is on the wall by 10:08 with the default, or within a minute if the setting is 1.
+* **Dashboards shown / order**, **theme**, **clock**.
+
+Wall controls: ‹ › step, ⏸ pauses rotation, clicking a dot jumps, **Exit wall** returns to Dashboards (or home for the kiosk role); keys ← → space Esc.
+
 ## Setting up the wall
 
 1. Create an account for the kiosk (e.g. `wall@wra.gov.jm`, user type *staff*), give it only the `wall_display` group. It can open `/wall/` and nothing else, and the session idle timeout does not sign it out while the page is polling.

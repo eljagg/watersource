@@ -15,7 +15,6 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, JsonResponse
@@ -26,6 +25,7 @@ from apps.accounts import roles
 
 from . import services
 from .dashboards import DASHBOARDS, WALL_ORDER
+from .models import DisplaySettings
 
 
 def _is_kiosk(user) -> bool:
@@ -84,7 +84,8 @@ def dashboard(request, slug):
         raise PermissionDenied
     if slug not in DASHBOARDS:
         raise Http404
-    return render(request, "reports/dashboard.html", {"dash": DASHBOARDS[slug], "dashboards": [DASHBOARDS[s] for s in WALL_ORDER]})
+    ctx = {"dash": DASHBOARDS[slug], "dashboards": [DASHBOARDS[s] for s in WALL_ORDER], "refresh_seconds": DisplaySettings.get().page_refresh_seconds}
+    return render(request, "reports/dashboard.html", ctx)
 
 
 @login_required
@@ -95,7 +96,12 @@ def dashboard_data(request, slug):
     wall = request.GET.get("wall") == "1"
     if not (_can_view_wall(request.user) if wall else _can_view_dashboards(request.user)):
         raise PermissionDenied
-    return JsonResponse(dashboard_payload(slug, wall=wall))
+    services.refresh_if_stale(DisplaySettings.get().data_refresh_minutes)  # near-real-time without a worker
+    payload = dashboard_payload(slug, wall=wall)
+    last = services.last_refreshed_at()
+    if last:
+        payload["refreshed_at"] = last.isoformat()
+    return JsonResponse(payload)
 
 
 @login_required
@@ -103,8 +109,10 @@ def wall(request):
     """Full-screen rotating display (design doc 13 §6)."""
     if not _can_view_wall(request.user):
         raise PermissionDenied
-    cfg = settings.WATERSOURCE
+    ds = DisplaySettings.get()
+    order = ds.order
     return render(request, "reports/wall.html", {
-        "order": WALL_ORDER, "rotate_seconds": cfg.get("WALL_ROTATE_SECONDS", 60), "refresh_seconds": cfg.get("WALL_REFRESH_SECONDS", 300),
-        "start": request.GET.get("d", WALL_ORDER[0]), "theme": request.GET.get("theme", "dark"),
+        "order": order, "rotate_seconds": ds.rotate_seconds, "refresh_seconds": ds.page_refresh_seconds, "show_clock": ds.show_clock,
+        "start": request.GET.get("d", order[0]), "theme": request.GET.get("theme", ds.wall_theme),
+        "exit_url": "/" if _is_kiosk(request.user) else "/dashboards/", "titles": {s: DASHBOARDS[s].title for s in order},
     })
