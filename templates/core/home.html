@@ -4,11 +4,11 @@
   <p class="eyebrow">Staff tools</p>
   <h1 class="page-title mt-1">Welcome back, {{ user.full_name }}</h1>
   <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-    <a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="{% url 'workflow:queue' %}"><h2 class="text-base">Review queue</h2><p class="text-body mt-1 text-sm">Applications and submissions waiting at your stage.</p></a>
-    <a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="{% url 'reports:index' %}"><h2 class="text-base">Dashboards</h2><p class="text-body mt-1 text-sm">Licensing, monitoring, submissions and executive views.</p></a>
-    <a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="{% url 'reports:wall' %}" target="_blank" rel="noopener"><h2 class="text-base">Wall display ↗</h2><p class="text-body mt-1 text-sm">Full-screen rotation for the operations room.</p></a>
-    {% if user.is_staff %}<a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="{% url 'admin:index' %}"><h2 class="text-base">Admin console</h2><p class="text-body mt-1 text-sm">Reference data, wells and stations, categories, workflows, users.</p></a>{% endif %}
-    <a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="/api/docs/"><h2 class="text-base">API docs</h2><p class="text-body mt-1 text-sm">OpenAPI reference for the REST API and submission endpoint.</p></a>
+    <a class="tile block p-5" href="{% url 'workflow:queue' %}"><h2 class="text-base">Review queue</h2><p class="text-body mt-1 text-sm">Applications and submissions waiting at your stage.</p></a>
+    <a class="tile block p-5" href="{% url 'reports:index' %}"><h2 class="text-base">Dashboards</h2><p class="text-body mt-1 text-sm">Licensing, monitoring, submissions and executive views.</p></a>
+    <a class="tile block p-5" href="{% url 'reports:wall' %}" target="_blank" rel="noopener"><h2 class="text-base">Wall display ↗</h2><p class="text-body mt-1 text-sm">Full-screen rotation for the operations room.</p></a>
+    {% if user.is_staff %}<a class="tile block p-5" href="{% url 'admin:index' %}"><h2 class="text-base">Admin console</h2><p class="text-body mt-1 text-sm">Reference data, wells and stations, categories, workflows, users.</p></a>{% endif %}
+    <a class="tile block p-5" href="/api/docs/"><h2 class="text-base">API docs</h2><p class="text-body mt-1 text-sm">OpenAPI reference for the REST API and submission endpoint.</p></a>
   </div>
 </section>
 {% endif %}
@@ -27,23 +27,23 @@
 </section>
 
 <section class="mt-8 grid gap-5 md:grid-cols-3">
-  <div class="card p-6">
-    <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h6"/></svg></span>
+  <div class="tile p-6">
+    <span class="grid h-10 w-10 place-items-center rounded-lg bg-white/15 text-white"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h6"/></svg></span>
     <h2 class="mt-4 text-lg">Licence applications</h2>
     <p class="text-body mt-2 text-sm">Complete the application online, upload supporting documents, and track its progress from screening to approval.</p>
-    <a class="link mt-4 inline-block text-sm" href="{% url 'lic:application_list' %}">View applications →</a>
+    <a class="tile-link mt-4 inline-block text-sm" href="{% url 'lic:application_list' %}">View applications →</a>
   </div>
-  <div class="card p-6">
-    <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg></span>
+  <div class="tile p-6">
+    <span class="grid h-10 w-10 place-items-center rounded-lg bg-white/15 text-white"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg></span>
     <h2 class="mt-4 text-lg">Data submissions</h2>
     <p class="text-body mt-2 text-sm">Licensed abstractors, laboratories and field staff submit readings by form, CSV template or the REST API. Every row is validated on arrival.</p>
-    <a class="link mt-4 inline-block text-sm" href="{% url 'submissions:index' %}">Go to submissions →</a>
+    <a class="tile-link mt-4 inline-block text-sm" href="{% url 'submissions:index' %}">Go to submissions →</a>
   </div>
-  <div class="card p-6">
-    <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>
+  <div class="tile p-6">
+    <span class="grid h-10 w-10 place-items-center rounded-lg bg-white/15 text-white"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>
     <h2 class="mt-4 text-lg">Secure by design</h2>
     <p class="text-body mt-2 text-sm">Role-based access, two-factor authentication for staff, full audit trail, and personal data handled under the Data Protection Act, 2020.</p>
-    <a class="link mt-4 inline-block text-sm" href="/privacy/">Read the privacy notice →</a>
+    <a class="tile-link mt-4 inline-block text-sm" href="/privacy/">Read the privacy notice →</a>
   </div>
 </section>
 {% endblock %}

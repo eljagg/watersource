@@ -242,6 +242,7 @@ def test_branding_upload_via_admin(client, superuser):
     assert r.status_code == 302 and r["Location"].endswith("/admin/core/sitebranding/1/change/")
     r = client.post(r["Location"], {
         "organisation_name": "Water Resources Authority", "product_name": "HydroHub", "tagline": "Jamaica", "footer_text": "",
+        "copyright_text": "© {year} WRA", "tile_color": "#1c5ac6", "accent_color": "#b22234",
         "logo_upload": SimpleUploadedFile("logo.png", _png(), content_type="image/png"),
     })
     assert r.status_code == 302, r.content.decode()[:500]
@@ -264,7 +265,7 @@ def test_branding_rejects_bad_files(client, superuser):
     client.force_login(superuser)
     url = "/admin/core/sitebranding/1/change/"
     client.get("/admin/core/sitebranding/")  # creates the row
-    base = {"organisation_name": "X", "product_name": "Y", "tagline": "", "footer_text": ""}
+    base = {"organisation_name": "X", "product_name": "Y", "tagline": "", "footer_text": "", "copyright_text": "", "tile_color": "#1c5ac6", "accent_color": "#b22234"}
     r = client.post(url, {**base, "logo_upload": SimpleUploadedFile("x.txt", b"hello", content_type="text/plain")})
     assert r.status_code == 200 and "Use a PNG, JPEG, WebP or SVG image" in r.content.decode()
     bad_svg = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'

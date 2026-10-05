@@ -7,6 +7,7 @@
 <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
 <meta name="csrf-token" content="{{ csrf_token }}">
 <link rel="stylesheet" href="{% static 'css/app.css' %}">
+<style nonce="{{ request.csp_nonce }}">:root{--ws-tile:{{ branding.tile_color }};--ws-accent:{{ branding.accent_color }};}</style>
 {# Tailwind v4 is compiled into app.css by `npm run build` (see README) — no CDN, CSP-clean. #}
 <script nonce="{{ request.csp_nonce }}">
 /* Apply the saved theme before first paint so there is no flash. Stored choice wins; otherwise follow the OS. */
@@ -90,7 +91,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
 <footer class="border-t border-slate-200 dark:border-slate-800">
   <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:text-slate-400">
-    <p>{{ branding.footer }}</p>
+    <p>{% if branding.footer_text %}{{ branding.footer_text }}{% if branding.copyright %} · {% endif %}{% endif %}{{ branding.copyright|default:branding.organisation_name }}</p>
     <p>Personal data is processed under the Data Protection Act, 2020 — see the <a href="/privacy/" class="link">privacy notice</a>.</p>
   </div>
 </footer>

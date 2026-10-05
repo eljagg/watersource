@@ -2,6 +2,12 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.4.3] — 5 Oct 2026
+
+### Changed
+- **Home-page tiles and navigation tabs** are now solid blue with a thin metallic red border (Omar, 5 Oct). Both colours are set in Admin console → Site settings and audit → Site branding → Colours (tile colour, border colour) and apply site-wide through CSS variables — no redeploy.
+- **Copyright line** in the footer: "© {year} {organisation}. All rights reserved." by default, with the year filled in automatically every 1 January; the wording is editable in Site branding (leave empty to hide).
+
 ## [0.4.2] — 5 Oct 2026
 
 ### Changed

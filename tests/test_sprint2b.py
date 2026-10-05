@@ -237,3 +237,22 @@ def test_seed_if_missing_skips_when_present():
     out = StringIO()
     call_command("seed_demo_data", force=True, if_missing=True, stdout=out)
     assert "already present" in out.getvalue()
+
+
+# --- branding colours and copyright -----------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_footer_copyright_uses_current_year_and_colours_are_emitted(client):
+    from django.utils import timezone as tz
+
+    from apps.core.branding import SiteBranding
+
+    html = client.get("/").content.decode()
+    assert f"© {tz.localdate().year} Water Resources Authority of Jamaica" in html
+    assert "--ws-tile:#1c5ac6" in html and "--ws-accent:#b22234" in html
+    b = SiteBranding.get()
+    b.tile_color, b.accent_color, b.copyright_text = "#123456", "#abcdef", "Copyright {year} WRA"
+    b.save()
+    html = client.get("/").content.decode()
+    assert "--ws-tile:#123456" in html and f"Copyright {tz.localdate().year} WRA" in html

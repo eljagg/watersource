@@ -8,7 +8,11 @@ context variable; the admin console header uses it too.
 from __future__ import annotations
 
 from django.core.cache import cache
+from django.core.validators import RegexValidator
 from django.db import models
+from django.utils import timezone
+
+HEX_COLOUR = RegexValidator(r"^#[0-9a-fA-F]{6}$", "Use a 6-digit hex colour like #1c5ac6.")
 
 CACHE_KEY = "branding:row"
 LOGO_TYPES = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/svg+xml": "svg"}
@@ -24,6 +28,12 @@ class SiteBranding(models.Model):
     tagline = models.CharField("Tagline", max_length=80, default="Jamaica · WRA", blank=True, help_text="Small line under the application name in the header.")
     footer_text = models.CharField("Footer line", max_length=200, blank=True, default="",
                                    help_text="Optional. Leave empty to show the organisation name.")
+    copyright_text = models.CharField("Copyright line", max_length=200, blank=True, default="© {year} {organisation}. All rights reserved.",
+                                      help_text="{year} is replaced with the current year automatically; {organisation} with the organisation name. Leave empty to hide.")
+    tile_color = models.CharField("Tile colour", max_length=7, default="#1c5ac6", validators=[HEX_COLOUR],
+                                  help_text="Background of the home-page tiles and navigation tabs (hex, e.g. #1c5ac6).")
+    accent_color = models.CharField("Border colour", max_length=7, default="#b22234", validators=[HEX_COLOUR],
+                                    help_text="Thin metallic border on tiles and tabs (hex, e.g. #b22234).")
     logo = models.BinaryField("Logo", blank=True, null=True, editable=False)
     logo_type = models.CharField(max_length=20, blank=True, default="", editable=False)
     logo_dark = models.BinaryField("Logo for dark backgrounds", blank=True, null=True, editable=False)
@@ -71,6 +81,13 @@ class SiteBranding(models.Model):
     def page_title(self) -> str:
         """Browser-tab title."""
         return f"{self.product_name} {self.tagline}".strip() if self.tagline else self.product_name
+
+    @property
+    def copyright(self) -> str:
+        """Copyright line with the current year and organisation filled in."""
+        if not self.copyright_text:
+            return ""
+        return self.copyright_text.replace("{year}", str(timezone.localdate().year)).replace("{organisation}", self.organisation_name)
 
     @property
     def footer(self) -> str:

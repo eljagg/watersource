@@ -57,7 +57,8 @@ class BrandingForm(forms.ModelForm):
 
     class Meta:
         model = SiteBranding
-        fields = ("organisation_name", "product_name", "tagline", "footer_text")
+        fields = ("organisation_name", "product_name", "tagline", "footer_text", "copyright_text", "tile_color", "accent_color")
+        widgets = {"tile_color": forms.TextInput(attrs={"type": "color"}), "accent_color": forms.TextInput(attrs={"type": "color"})}
 
     @staticmethod
     def _check(upload):
@@ -113,7 +114,9 @@ class SiteBrandingAdmin(admin.ModelAdmin):
 
     form = BrandingForm
     fieldsets = (
-        ("Names", {"fields": ("organisation_name", "product_name", "tagline", "footer_text")}),
+        ("Names", {"fields": ("organisation_name", "product_name", "tagline", "footer_text", "copyright_text")}),
+        ("Colours", {"fields": ("tile_color", "accent_color"),
+                     "description": "Home-page tiles and navigation tabs use the tile colour with a thin metallic border in the border colour."}),
         ("Logo", {"fields": ("current_logo", "logo_upload", "remove_logo", "logo_dark_upload", "remove_logo_dark"),
                   "description": "Changes appear on every page within a minute. The logo replaces the blue droplet in the header and on the wall display."}),
     )
