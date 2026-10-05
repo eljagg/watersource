@@ -207,3 +207,33 @@ def test_reseed_keeps_demo_users_and_mfa_devices():
     again = get_user_model().objects.get(email="demo.admin@wra-demo.local")
     assert again.pk == admin.pk and again.is_superuser
     assert TOTPDevice.objects.filter(user=again, confirmed=True).exists()
+
+
+# --- WRA units and Super Users (stakeholder model) ----------------------------------------------
+
+
+@pytest.mark.django_db
+def test_units_seeded_and_super_user_shown(client, reviewer):
+    from apps.accounts.models import Unit
+
+    call_command("bootstrap_roles", verbosity=0)
+    assert Unit.objects.filter(is_operating=True).count() == 3
+    assert Unit.objects.filter(has_super_user=True).count() == 6
+    plu = Unit.objects.get(code="PLU")
+    reviewer.unit, reviewer.is_super_user = plu, True
+    reviewer.save()
+    assert list(plu.super_users) == [reviewer]
+    client.force_login(reviewer)
+    html = client.get("/accounts/profile/").content.decode()
+    assert "Permits &amp; Licences Unit" in html and "Super User" in html
+
+
+@pytest.mark.django_db
+def test_seed_if_missing_skips_when_present():
+    from io import StringIO
+
+    call_command("load_reference_data", verbosity=0)
+    call_command("seed_demo_data", force=True, verbosity=0)
+    out = StringIO()
+    call_command("seed_demo_data", force=True, if_missing=True, stdout=out)
+    assert "already present" in out.getvalue()

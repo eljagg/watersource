@@ -43,14 +43,43 @@ class UserManager(BaseUserManager):
         return self._create(email, password, **extra)
 
 
+class Unit(models.Model):
+    """A WRA branch / unit (``units.WRA_UNITS``): data owner, module user, Super User holder (stakeholder model, Work Plan A12)."""
+
+    code = models.CharField(max_length=8, unique=True)
+    name = models.CharField(max_length=120)
+    division = models.CharField(max_length=120, blank=True)
+    is_operating = models.BooleanField("Operating branch (owns data, approves in workflow)", default=False)
+    primary_modules = models.JSONField(default=list, blank=True, help_text='e.g. ["submissions", "licensing", "dashboards", "admin", "exports", "public"]')
+    has_super_user = models.BooleanField("Has a Super User (Work Plan A12)", default=True)
+    responsibilities = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "WRA unit"
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def super_users(self):
+        """Accounts flagged as this unit's Super User(s)."""
+        return self.members.filter(is_super_user=True, is_active=True)
+
+
 class User(AbstractBaseUser, PermissionsMixin):
-    """Application-managed account (email login). Roles are groups; see ``roles.py``."""
+    """Application-managed account (email login). Roles are groups; see ``roles.py``. Staff belong to a WRA ``Unit``."""
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=150)
     phone = models.CharField(max_length=32, blank=True)
     organisation = models.CharField(max_length=150, blank=True)
     user_type = models.CharField(max_length=8, choices=UserType.choices, default=UserType.CLIENT)
     party = models.ForeignKey("ref.Party", null=True, blank=True, on_delete=models.SET_NULL, related_name="accounts")
+    unit = models.ForeignKey(Unit, null=True, blank=True, on_delete=models.SET_NULL, related_name="members", verbose_name="WRA unit",
+                             help_text="Branch the staff member belongs to (stakeholder model); blank for clients.")
+    is_super_user = models.BooleanField("Super User (Work Plan A12)", default=False,
+                                        help_text="One per unit: trained first, co-signs adoption measures at M17, first-line support after handover. Not a permission.")
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField("Django admin access", default=False)

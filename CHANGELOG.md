@@ -2,6 +2,14 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.4.2] — 5 Oct 2026
+
+### Changed
+- **Demo data is seeded once, not on every deploy.** `DEMO_DATA=1` now seeds only when the demo set is absent (`seed_demo_data --if-missing`); `DEMO_DATA=reseed` rebuilds it. Together with 0.4.1 this means deploys never touch accounts, enrolments or demo records again.
+
+### Added
+- **WRA units and Super Users** from the FCC stakeholder–system model (5 Oct): `accounts.Unit` seeded by `bootstrap_roles` with WRA's real branch names (Resource Monitoring, Permits & Licences, Planning & Investigation, Computer & GIS, Finance & Accounts, Information & Documentation, HR, Office Services, Managing Director's Office), division, operating flag, primary modules and Super User expectation; `User.unit` and `User.is_super_user` (informational, Work Plan A12) in the admin user list/filters and on the profile page. Demo staff are assigned to units; three are Super Users.
+
 ## [0.4.1] — 5 Oct 2026
 
 ### Fixed

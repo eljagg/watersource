@@ -25,7 +25,12 @@ schema_step() {
   python manage.py bootstrap_workflows
   python manage.py bootstrap_categories
   python manage.py load_reference_data
-  if [ "${DEMO_DATA:-0}" = "1" ]; then python manage.py seed_demo_data --force; fi
+  # DEMO_DATA=1: seed the demo set once (skipped while it exists, so deploys never churn demo data or accounts);
+  # DEMO_DATA=reseed: rebuild it from scratch; anything else: leave the database alone.
+  case "${DEMO_DATA:-0}" in
+    1)      python manage.py seed_demo_data --force --if-missing ;;
+    reseed) python manage.py seed_demo_data --force ;;
+  esac
   python manage.py refresh_bi_views
   echo "[entrypoint] schema step done"
 }

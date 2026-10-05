@@ -67,13 +67,13 @@ from apps.ref.models import (
 )
 
 PREFIX = "DEMO"
-DEMO_USERS = [
-    ("demo.client@example.com", "Demo Client", UserType.CLIENT, roles.CLIENT),
-    ("demo.reviewer@wra-demo.local", "Demo Reviewer", UserType.STAFF, roles.REVIEWER),
-    ("demo.approver@wra-demo.local", "Demo Approver", UserType.STAFF, roles.APPROVER),
-    ("demo.hydrologist@wra-demo.local", "Demo Hydrologist", UserType.STAFF, roles.HYDROLOGIST),
-    ("demo.technician@wra-demo.local", "Demo Technician", UserType.STAFF, roles.TECHNICIAN),
-    ("demo.admin@wra-demo.local", "Demo Administrator", UserType.STAFF, roles.ADMINISTRATOR),
+DEMO_USERS = [  # email, name, type, role, WRA unit code (stakeholder model), Super User
+    ("demo.client@example.com", "Demo Client", UserType.CLIENT, roles.CLIENT, None, False),
+    ("demo.reviewer@wra-demo.local", "Demo Reviewer", UserType.STAFF, roles.REVIEWER, "PLU", True),
+    ("demo.approver@wra-demo.local", "Demo Approver", UserType.STAFF, roles.APPROVER, "PLU", False),
+    ("demo.hydrologist@wra-demo.local", "Demo Hydrologist", UserType.STAFF, roles.HYDROLOGIST, "RMU", True),
+    ("demo.technician@wra-demo.local", "Demo Technician", UserType.STAFF, roles.TECHNICIAN, "RMU", False),
+    ("demo.admin@wra-demo.local", "Demo Administrator", UserType.STAFF, roles.ADMINISTRATOR, "CGU", True),
 ]
 WELLS = [  # name, parish code, basin code, wmu code, use, easting, northing
     ("Bog Walk 1", "STC", "B03", "W05", WellUse.PUBLIC_SUPPLY, 758200, 653100),
@@ -108,12 +108,16 @@ class Command(BaseCommand):
         """``--wipe`` only removes; ``--force`` allows running next to real data."""
         parser.add_argument("--wipe", action="store_true", help="Remove DEMO data and stop")
         parser.add_argument("--force", action="store_true", help="Run even if non-demo wells exist")
+        parser.add_argument("--if-missing", action="store_true", help="Do nothing when the demo set is already present (used by the entrypoint on every deploy)")
 
     def handle(self, *args, **options):
         """Wipe any previous demo set, then build a new one in one transaction."""
         self.rng = random.Random(2026)  # noqa: S311 # nosec B311
         self.today = date.today()
         self.tz = timezone.get_current_timezone()
+        if options["if_missing"] and Well.objects.filter(name__startswith=PREFIX).exists():
+            self.stdout.write("DEMO data already present — skipped (set DEMO_DATA=reseed to rebuild it).")
+            return
         if not options["force"] and Well.objects.exclude(name__startswith=PREFIX).exists():
             raise CommandError("Database holds non-demo wells; refusing without --force.")
         with transaction.atomic():
@@ -191,7 +195,9 @@ class Command(BaseCommand):
     def _users(self):
         password = os.environ.get("DEMO_PASSWORD", "WaterSource-Demo-2026!")
         self.users = {}
-        for email, name, utype, role in DEMO_USERS:
+        from apps.accounts.models import Unit
+
+        for email, name, utype, role, unit_code, super_user in DEMO_USERS:
             u = User.objects.filter(email=email).first()
             if u is None:
                 u = User.objects.create_user(email=email, password=password, full_name=name, user_type=utype, email_verified_at=timezone.now(), phone="876-555-0100",
@@ -201,6 +207,10 @@ class Command(BaseCommand):
                 u.full_name, u.user_type, u.is_active, u.must_change_password = name, utype, True, False
                 u.save()
             u.groups.set([Group.objects.get(name=role)])
+            u.unit = Unit.objects.filter(code=unit_code).first() if unit_code else None
+            u.is_super_user = super_user
+            u.organisation = f"WRA — {u.unit.name}" if u.unit else u.organisation
+            u.save(update_fields=["unit", "is_super_user", "organisation"])
             if role == roles.ADMINISTRATOR:  # demo.admin can open /admin/ (Django admin needs is_staff; superuser for full model access)
                 u.is_staff = u.is_superuser = True
                 u.save(update_fields=["is_staff", "is_superuser"])
