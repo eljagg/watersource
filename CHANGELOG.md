@@ -2,6 +2,20 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.4.0] — 5 Oct 2026 — Sprint 2b, part 1
+
+### Added
+- **Anomaly flags for reviewers** (`apps/submissions/anomalies.py`, docs/data-quality.md): every submission is checked against the site's approved record — out-of-character values (robust z > 3.5), big jumps, duplicates of approved rows, future dates, flat lines, abstraction volumes out of pattern for the licence. Findings are plain-English messages on the row; rows move to *Flagged for review*; the submission page shows a count. Nothing is rejected automatically.
+- **Model output category** (design doc 15 §3.1): `obs.ModelRun` (model, scenario, basin, calibration NSE/KGE, notes) and `obs.ModelOutput` (run × element × variable × time), the seeded *Model output* data category with CSV template, a `model_run` reference field type, and `manage.py import_model_output` with SWAT+ (`channel_sd_day.txt`) and Wflow (gauge CSV) adapters. Results are provisional until a reviewer approves them and never mix with observations.
+- **Source profiling for Milestone 3**: `manage.py profile_source` writes the Data Quality Assessment Report body (Markdown) and JSON from legacy CSV/XLSX extracts — types, completeness, placeholder blanks, date formats, spaces/case variants, outliers, duplicate rows, candidate keys, and match rates against WaterSource reference tables with the unmatched work queue.
+- **GIS desk** (docs/gis.md): `manage.py setup_gis_reader` creates the read-only `gis_reader` role (personal-data tables revoked; `--public-only` variant sees coarsened public views), `deploy/gis/pg_service.conf.example`, `deploy/gis/WaterSource.qgz` (all layers as `service=watersource`, no credentials), and `build_qgis_project.py` to regenerate it inside QGIS with relations and the time slider.
+- Demo data: a SWAT+-style model run with a year of daily simulated discharge; a pending water-quality submission that trips the anomaly checks; water-quality history extended to three years.
+
+### Fixed
+- Governance panel on the Executive dashboard now counts the audit actions the application really emits (`dpa.subject_access_export`; the nightly retention sweep now logs `retention.sweep`).
+- Dashboards index wording follows the admin-set data-refresh interval instead of a fixed "five minutes".
+- Submission detail no longer lists empty fields in the Data column.
+
 ## [0.3.4] — 5 Oct 2026
 
 ### Added

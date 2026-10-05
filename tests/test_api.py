@@ -54,7 +54,7 @@ def test_api_key_scope_and_revocation(client, client_user):
 @pytest.mark.django_db
 def test_schema_and_docs_render(client):
     assert client.get(reverse("api-schema")).status_code == 200
-    assert client.get("/api/v1/categories/").json()["count"] == 2
+    assert client.get("/api/v1/categories/").json()["count"] == 3  # abstraction, water quality, model output
 
 
 @pytest.mark.django_db

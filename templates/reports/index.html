@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block title %}Dashboards — {{ SITE_NAME }}{% endblock %}{% block content %}
 <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
-  <div><p class="eyebrow">Insights</p><h1 class="page-title">Dashboards</h1><p class="text-body mt-1 text-sm">Four views of the service and the resource, refreshed every five minutes from the approved record.</p></div>
+  <div><p class="eyebrow">Insights</p><h1 class="page-title">Dashboards</h1><p class="text-body mt-1 text-sm">Four views of the service and the resource, recalculated from the approved record at least every {{ refresh_minutes }} minute{{ refresh_minutes|pluralize }} (Admin console → Display settings).</p></div>
   <a class="btn-secondary btn-sm" href="{% url 'reports:wall' %}" target="_blank" rel="noopener">Open wall display ↗</a>
 </div>
 <div class="grid gap-4 md:grid-cols-2">

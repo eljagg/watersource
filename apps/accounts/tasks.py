@@ -11,10 +11,14 @@ def retention_sweep():
     """
     import os
 
+    from apps.core import audit
+
     from .services import anonymise_user, retention_candidates
 
     candidates = retention_candidates()
-    if os.environ.get("WATERSOURCE_RETENTION_ENFORCE") == "1":
+    enforce = os.environ.get("WATERSOURCE_RETENTION_ENFORCE") == "1"
+    if enforce:
         for u in candidates:
             anonymise_user(u)
+    audit.log("retention.sweep", None, summary=f"{len(candidates)} candidate(s), {'enforced' if enforce else 'report only'}")
     return {"candidates": len(candidates), "enforced": os.environ.get("WATERSOURCE_RETENTION_ENFORCE") == "1"}

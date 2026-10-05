@@ -24,7 +24,7 @@ from apps.obs.models import RecordHistory
 
 from .models import RecordStatus, SubmissionStatus
 
-_REF_TYPES = {FieldType.WELL, FieldType.STATION, FieldType.LICENCE, FieldType.SPRING}
+_REF_TYPES = {FieldType.WELL, FieldType.STATION, FieldType.LICENCE, FieldType.SPRING, FieldType.MODEL_RUN}
 
 
 def _resolve(field, value):

@@ -6,7 +6,7 @@ read-only here (append-only table).
 """
 from django.contrib import admin
 
-from .models import AbstractionRecord, ApprovalPeriod, RecordHistory, StationReading, WaterQualitySample, WellWaterLevel
+from .models import AbstractionRecord, ApprovalPeriod, ModelOutput, ModelRun, RecordHistory, StationReading, WaterQualitySample, WellWaterLevel
 
 _QA_FIELDS = ("grade", "qualifiers", "approval_state", "classification", "source")
 _QA_FILTER = ("approval_state", "grade", "classification", "source")
@@ -86,3 +86,35 @@ class HistoryAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         """Append-only table."""
         return False
+
+
+@admin.register(ModelRun)
+class ModelRunAdmin(admin.ModelAdmin):
+    """External model runs (design doc 15): create the run here, then upload its results as the 'Model output' category."""
+
+    list_display = ("code", "name", "model_name", "scenario", "basin", "period_start", "period_end", "calibration_nse", "calibration_kge", "is_active", "rows")
+    list_filter = ("model_name", "is_active", "basin")
+    search_fields = ("code", "name", "model_name", "scenario")
+    autocomplete_fields = ("calibration_station",)
+    fieldsets = (
+        ("Identity", {"fields": ("code", "name", "model_name", "scenario", "is_active")}),
+        ("Scope", {"fields": ("basin", "wmu", "period_start", "period_end", "time_step")}),
+        ("Calibration and provenance", {"fields": ("calibration_station", "calibration_nse", "calibration_kge", "config_hash", "run_by", "run_at", "notes")}),
+    )
+
+    @admin.display(description="Values stored")
+    def rows(self, obj):
+        """Number of simulated values loaded for the run."""
+        return obj.outputs.count()
+
+
+@admin.register(ModelOutput)
+class ModelOutputAdmin(admin.ModelAdmin):
+    """Simulated values, read mostly; loaded through the Model output category."""
+
+    list_display = ("run", "feature_type", "station", "well", "feature_ref", "variable", "observed_at", "value", "unit", "approval_state", "classification")
+    list_filter = ("run", "variable", "feature_type", "approval_state", "classification")
+    search_fields = ("feature_ref", "station__name", "well__name")
+    autocomplete_fields = ("station", "well")
+    date_hierarchy = "observed_at"
+    readonly_fields = _QA_READONLY

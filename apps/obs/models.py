@@ -265,3 +265,96 @@ class ApprovalPeriod(models.Model):
     def site(self):
         """The well or station the period belongs to."""
         return self.well or self.station
+
+
+# ---------------------------------------------------------------------------
+# Model output (design doc 15 §3.1) — results of SWAT+, Wflow, PRMS or any other model
+# ---------------------------------------------------------------------------
+class ModelRun(models.Model):
+    """One run of an external hydrological model: which model, which scenario, how well it was calibrated.
+
+    WaterSource is model-agnostic (design doc 15): it exports the observed record
+    the models consume and keeps their results here, as a provisional data
+    category distinct from observations, so simulated and measured series can be
+    compared on the same dashboards without ever being confused.
+    """
+
+    code = models.SlugField(max_length=64, unique=True, help_text="Short identifier used in CSV uploads, e.g. riocobre-swatplus-2026a.")
+    name = models.CharField(max_length=150)
+    model_name = models.CharField("Model and version", max_length=80, help_text="e.g. SWAT+ rev. 62, Wflow.jl 1.0.4, PRMS 6.0")
+    scenario = models.CharField(max_length=120, blank=True, help_text="Baseline, climate scenario, abstraction scenario…")
+    basin = models.ForeignKey("ref.Basin", null=True, blank=True, on_delete=models.SET_NULL, related_name="model_runs")
+    wmu = models.ForeignKey("ref.WMU", null=True, blank=True, on_delete=models.SET_NULL, related_name="model_runs")
+    period_start = models.DateField(null=True, blank=True)
+    period_end = models.DateField(null=True, blank=True)
+    time_step = models.CharField(max_length=16, default="daily", help_text="daily, hourly, monthly")
+    config_hash = models.CharField(max_length=64, blank=True, help_text="Hash of the model configuration (TOML / project folder) for reproducibility.")
+    calibration_nse = models.DecimalField("Nash–Sutcliffe efficiency", max_digits=6, decimal_places=3, null=True, blank=True)
+    calibration_kge = models.DecimalField("Kling–Gupta efficiency", max_digits=6, decimal_places=3, null=True, blank=True)
+    calibration_station = models.ForeignKey(StreamflowStation, null=True, blank=True, on_delete=models.SET_NULL, related_name="calibration_runs",
+                                            help_text="Gauge the metrics were computed against.")
+    run_by = models.CharField(max_length=150, blank=True)
+    run_at = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True, help_text="Karst treatment, forcing data used, known limitations.")
+    is_active = models.BooleanField(default=True, help_text="Inactive runs are kept but hidden from dashboards.")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "model run"
+
+    def __str__(self):
+        return f"{self.name} ({self.model_name})"
+
+
+class ModelVariable(models.TextChoices):
+    """What a simulated value represents."""
+
+    DISCHARGE = "discharge_m3_s", "Discharge (m³/s)"
+    WATER_LEVEL = "water_level_m", "Water level (m)"
+    RECHARGE = "recharge_mm", "Groundwater recharge (mm)"
+    ACTUAL_ET = "actual_et_mm", "Actual evapotranspiration (mm)"
+    SOIL_MOISTURE = "soil_moisture_mm", "Soil moisture (mm)"
+    PRECIPITATION = "precipitation_mm", "Precipitation (mm)"
+    BASEFLOW = "baseflow_m3_s", "Baseflow (m³/s)"
+    OTHER = "other", "Other (see unit)"
+
+
+class ModelFeature(models.TextChoices):
+    """The model element a value belongs to."""
+
+    STATION = "station", "Gauged station"
+    WELL = "well", "Well"
+    REACH = "reach", "Model reach / channel"
+    SUBBASIN = "subbasin", "Subbasin / HRU"
+
+
+class ModelOutput(QualityMixin, PublishableModel):
+    """One simulated value: run × feature × variable × time (design doc 15 §3.1).
+
+    Values are provisional by default (``approval_state`` is set by the review
+    workflow like any other submission) and carry the run's classification.
+    Rows linked to a station or well can be overlaid on that site's observed record.
+    """
+
+    run = models.ForeignKey(ModelRun, on_delete=models.CASCADE, related_name="outputs")
+    feature_type = models.CharField(max_length=10, choices=ModelFeature.choices, default=ModelFeature.STATION)
+    station = models.ForeignKey(StreamflowStation, null=True, blank=True, on_delete=models.PROTECT, related_name="model_outputs")
+    well = models.ForeignKey(Well, null=True, blank=True, on_delete=models.PROTECT, related_name="model_outputs")
+    feature_ref = models.CharField(max_length=64, blank=True, help_text="Model's own id for the reach, subbasin or HRU (e.g. SWAT+ channel 12).")
+    variable = models.CharField(max_length=24, choices=ModelVariable.choices, db_index=True)
+    observed_at = models.DateTimeField("Simulated for", db_index=True)
+    value = models.DecimalField(max_digits=14, decimal_places=4)
+    unit = models.CharField(max_length=16, blank=True)
+    remarks = models.CharField(max_length=255, blank=True)
+
+    objects = PublishedQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-observed_at"]
+        verbose_name = "model output value"
+        indexes = [models.Index(fields=["run", "variable", "observed_at"]), models.Index(fields=["station", "variable", "observed_at"])]
+        constraints = [models.UniqueConstraint(fields=["run", "feature_type", "station", "well", "feature_ref", "variable", "observed_at"], name="uq_model_output_point")]
+
+    def __str__(self):
+        return f"{self.run.code} {self.variable} {self.observed_at:%Y-%m-%d}"

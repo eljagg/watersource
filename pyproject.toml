@@ -18,6 +18,8 @@ convention = "google"
 "config/*" = ["D100"]
 "apps/*/management/*" = ["E501"]
 "apps/reports/dashboards.py" = ["E501"]  # declarative panel specs read better on one line
+"deploy/gis/*" = ["D103", "E501", "B007"]  # QGIS helper scripts, run outside the app
+"apps/core/profiling.py" = ["E501"]  # report table rows
 "apps/*/migrations/*" = ["D"]
 
 [tool.bandit]

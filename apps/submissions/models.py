@@ -84,6 +84,11 @@ class Submission(AuditedModel):
         who = self.submitter.full_name if self.submitter_id else "system"
         return f"{self.category.name} · {self.row_count} row(s) · {who}"
 
+    @property
+    def anomaly_count(self) -> int:
+        """Rows carrying at least one statistical anomaly finding (``anomalies.py``)."""
+        return sum(1 for r in self.records.all() if any(str(f).startswith("Anomaly:") for f in r.flags))
+
     # -- workflow hooks --------------------------------------------------------
     def on_workflow_approved(self, instance, actor, **meta):
         """Final-approval hook: promote accepted rows into the target table."""

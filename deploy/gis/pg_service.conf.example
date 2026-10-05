@@ -1,0 +1,19 @@
+# PostgreSQL service file for the WaterSource GIS desk (QGIS, ArcGIS Pro, ogr2ogr).
+#
+# Windows: save as  %APPDATA%\postgresql\.pg_service.conf
+# Linux/macOS: save as  ~/.pg_service.conf   (or point PGSERVICEFILE at it)
+#
+# The QGIS project WaterSource.qgz refers to every layer as "service=watersource",
+# so nobody needs to type a host or password into the project itself. Put the
+# password in .pgpass (Windows: %APPDATA%\postgresql\pgpass.conf) as
+#   <host>:5432:watersource:gis_reader:<password>
+# or leave it out and QGIS will prompt once per session.
+
+[watersource]
+host=app-vm.wra.local
+port=5432
+dbname=watersource
+user=gis_reader
+sslmode=require
+# sslrootcert=C:\WRA\certs\watersource-ca.crt   # with sslmode=verify-full once the internal CA is distributed
+application_name=qgis-desk

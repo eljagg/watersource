@@ -128,6 +128,8 @@ class Command(BaseCommand):
             self._observations()
             self._field_records()
             self._submissions()
+            self._model_output()
+            self._anomaly_submission()
         self.stdout.write(self.style.SUCCESS(
             f"DEMO data ready: {Well.objects.filter(name__startswith=PREFIX).count()} wells, "
             f"{Licence.objects.filter(source_name__startswith=PREFIX).count()} licences, "
@@ -144,6 +146,9 @@ class Command(BaseCommand):
         wells = Well.objects.filter(name__startswith=PREFIX)
         stations = StreamflowStation.objects.filter(name__startswith=PREFIX)
         springs = Spring.objects.filter(name__startswith=PREFIX)
+        from apps.obs.models import ModelRun
+
+        ModelRun.objects.filter(code__startswith="demo-").delete()
         ApprovalPeriod.objects.filter(well__in=wells).delete()
         ApprovalPeriod.objects.filter(station__in=stations).delete()
         WellWaterLevel.objects.filter(well__in=wells).delete()
@@ -365,13 +370,16 @@ class Command(BaseCommand):
                 ))
                 m, k = nxt, k + 1
         AbstractionRecord.objects.bulk_create(abstractions)
-        # water quality: quarterly
+        # water quality: quarterly over the three years (12 samples per site — enough history for the anomaly checks)
         sites = [(SampleSource.WELL, w) for w in self.wells] + [(SampleSource.SPRING, s) for s in self.springs] + [(SampleSource.STREAM, s) for s in self.stations]
         for kind, site in sites:
-            for q in range(4):
-                d = start + timedelta(days=45 + 91 * q)
-                cond = self.rng.randint(300, 1400) if kind != SampleSource.STREAM else self.rng.randint(150, 500)
-                hot = q == 3 and kind == SampleSource.WELL and site.pk % 4 == 0  # a few recent exceedances for the monitoring dashboard
+            base_cond = self.rng.randint(300, 1400) if kind != SampleSource.STREAM else self.rng.randint(150, 500)
+            for q in range(12):
+                d = level_start + timedelta(days=45 + 91 * q)
+                if d >= self.today:
+                    break
+                cond = max(50, int(base_cond * self.rng.uniform(0.85, 1.15)))
+                hot = q == 11 and kind == SampleSource.WELL and site.pk % 4 == 0  # a few recent exceedances for the monitoring dashboard
                 samples.append(WaterQualitySample(
                     source_type=kind, well=site if kind == SampleSource.WELL else None, spring=site if kind == SampleSource.SPRING else None,
                     station=site if kind == SampleSource.STREAM else None, laboratory=self.lab, sample_ref=f"{PREFIX}-{site.pk}-{q + 1}",
@@ -424,6 +432,46 @@ class Command(BaseCommand):
                     errors = {self.rng.choice(fails): ["Value out of range"]} if st == RecordStatus.REJECTED else {}
                     recs.append(SubmissionRecord(submission=sub, row_no=r + 1, payload={"demo": True}, errors=errors, status=st))
                 SubmissionRecord.objects.bulk_create(recs)
+
+    def _model_output(self):
+        """A demo SWAT+-style run with a year of daily simulated discharge at the first station (design doc 15 §3.1)."""
+        from apps.obs.models import ModelOutput, ModelRun
+
+        if not self.stations:
+            return
+        st = self.stations[0]
+        run = ModelRun.objects.create(
+            code="demo-riocobre-swatplus-2026a", name=f"{PREFIX} Rio Cobre baseline", model_name="SWAT+ rev. 62", scenario="Baseline 2016–2025",
+            basin=st.basin, period_start=self.today - timedelta(days=365), period_end=self.today, calibration_station=st,
+            calibration_nse=Decimal("0.68"), calibration_kge=Decimal("0.71"), run_by="Demo Hydrologist", run_at=self.today,
+            notes="Demo data. Karst baseflow absorbed by calibration; CHIRPS rainfall; published Rio Cobre parameter set as the starting point.",
+        )
+        rows = []
+        for d in range(365):
+            day = self.today - timedelta(days=365 - d)
+            seasonal = 1 + 0.6 * math.sin((day.timetuple().tm_yday - 120) / 365 * 2 * math.pi)
+            q = max(0.3, 2.4 * seasonal + self.rng.gauss(0, 0.4))
+            rows.append(ModelOutput(run=run, feature_type="station", station=st, feature_ref="channel 12", variable="discharge_m3_s",
+                                    observed_at=self._dt(day, 0), value=Decimal(f"{q:.3f}"), unit="m3/s",
+                                    approval_state=ApprovalState.APPROVED, classification=Classification.STAFF_ONLY, source=DataSource.STAFF))
+        ModelOutput.objects.bulk_create(rows)
+
+    def _anomaly_submission(self):
+        """One pending water-quality submission that trips the anomaly checks, so reviewers see the findings panel."""
+        from apps.catalog.models import DataCategory
+        from apps.submissions.services import create_submission
+
+        cat = DataCategory.objects.filter(code="water_quality").first()
+        if cat is None or cat.current_version is None or not self.wells:
+            return
+        w = self.wells[0]
+        day = self.today - timedelta(days=3)
+        rows = [
+            {"source_type": "well", "well": w.name, "sampled_at": f"{day:%Y-%m-%d}T08:00:00", "chloride_mg_l": "98", "ph": "7.3"},
+            {"source_type": "well", "well": w.name, "sampled_at": f"{day:%Y-%m-%d}T09:00:00", "chloride_mg_l": "1850", "ph": "7.2"},
+            {"source_type": "well", "well": w.name, "sampled_at": f"{self.today + timedelta(days=30):%Y-%m-%d}T08:00:00", "chloride_mg_l": "104", "ph": "7.4"},
+        ]
+        create_submission(cat.current_version, rows, self.users[roles.CLIENT], note="Demo: lab results with one implausible chloride and one future date")
 
     def _field_records(self):
         tech = self.users[roles.TECHNICIAN]

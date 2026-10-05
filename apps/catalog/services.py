@@ -24,6 +24,7 @@ _REF_MODELS = {
     FieldType.STATION: ("ref", "StreamflowStation", "name"),
     FieldType.LICENCE: ("lic", "Licence", "number"),
     FieldType.SPRING: ("ref", "Spring", "name"),
+    FieldType.MODEL_RUN: ("obs", "ModelRun", "code"),
 }
 
 
@@ -54,6 +55,7 @@ _JSON_TYPES = {
     FieldType.STATION: {"type": "string", "description": "Station name or alias"},
     FieldType.LICENCE: {"type": "string", "description": "Licence number"},
     FieldType.SPRING: {"type": "string", "description": "Spring name"},
+    FieldType.MODEL_RUN: {"type": "string", "description": "Model run code (admin console → Model runs)"},
 }
 
 
@@ -107,6 +109,7 @@ def _example_for(f) -> str:
         FieldType.INTEGER: "1", FieldType.DECIMAL: "0.0", FieldType.TEXT: "text", FieldType.DATE: "2026-01-31",
         FieldType.DATETIME: "2026-01-31T08:00:00", FieldType.BOOLEAN: "yes", FieldType.ENUM: (f.choices or [""])[0],
         FieldType.WELL: "Well name", FieldType.STATION: "Station name", FieldType.LICENCE: "WRA-L-2026-000001", FieldType.SPRING: "Spring name",
+        FieldType.MODEL_RUN: "riocobre-swatplus-2026a",
     }[f.field_type]
 
 
@@ -290,8 +293,9 @@ def form_class_for(version: CategoryVersion):
             fld = forms.ChoiceField(choices=[(c, c) for c in f.choices], **common)
         else:
             fld = forms.CharField(**common)
-            if f.field_type in (FieldType.WELL, FieldType.STATION, FieldType.SPRING, FieldType.LICENCE):
-                fld.widget.attrs["placeholder"] = {"well": "Well name as registered", "station": "Station name", "spring": "Spring name", "licence": "Licence number"}[f.field_type]
+            if f.field_type in (FieldType.WELL, FieldType.STATION, FieldType.SPRING, FieldType.LICENCE, FieldType.MODEL_RUN):
+                fld.widget.attrs["placeholder"] = {"well": "Well name as registered", "station": "Station name", "spring": "Spring name",
+                                                   "licence": "Licence number", "model_run": "Model run code"}[f.field_type]
         # used by templates/partials/form_grid.html to group and size the field
         fld.section = f.section or "Details"
         fld.wide = f.field_type == FieldType.TEXT and f.name in ("remarks", "comments", "notes")

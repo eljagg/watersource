@@ -74,7 +74,9 @@ def index(request):
     """List of the dashboards with their question."""
     if not _can_view_dashboards(request.user):
         raise PermissionDenied
-    return render(request, "reports/index.html", {"dashboards": [DASHBOARDS[s] for s in WALL_ORDER]})
+    from .models import DisplaySettings
+
+    return render(request, "reports/index.html", {"dashboards": [DASHBOARDS[s] for s in WALL_ORDER], "refresh_minutes": DisplaySettings.get().data_refresh_minutes})
 
 
 @login_required

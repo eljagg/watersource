@@ -24,7 +24,7 @@ def _serialisable(value):
         return str(value)
     if hasattr(value, "isoformat"):
         return value.isoformat()
-    for attr in ("number", "name"):
+    for attr in ("number", "code", "name"):  # licence number, model-run code, site name
         if hasattr(value, attr):
             return getattr(value, attr)
     return str(value)
@@ -81,6 +81,11 @@ def create_submission(version: CategoryVersion, rows: list[dict], user, *, chann
     sub.save()
     run = ImportRun.objects.create(submission=sub, rows_in=len(rows), file_sha256=sha256_of(fileobj) if fileobj is not None else "")
     accepted, flagged, rejected = _store_rows(sub, version, rows, targets)
+    if not is_correction:
+        from .anomalies import flag_anomalies
+
+        if flag_anomalies(sub):
+            accepted, flagged = sub.accepted_count, sub.flagged_count
     run.rows_accepted, run.rows_flagged, run.rows_rejected = accepted, flagged, rejected
     run.finished_at = timezone.now()
     if rejected and channel != Channel.FORM and rejected == len(rows):

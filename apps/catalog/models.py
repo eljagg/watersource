@@ -19,6 +19,7 @@ class TargetModel(models.TextChoices):
     WATER_QUALITY = "obs.WaterQualitySample", "Water quality sample"
     WELL_WATER_LEVEL = "obs.WellWaterLevel", "Well water level"
     STATION_READING = "obs.StationReading", "Streamflow station reading"
+    MODEL_OUTPUT = "obs.ModelOutput", "Model output (simulated values)"
     GENERIC = "submissions.GenericRecord", "Generic (stored as submitted)"
 
 
@@ -129,6 +130,7 @@ class FieldType(models.TextChoices):
     STATION = "station", "Streamflow station (reference)"
     LICENCE = "licence", "Licence number (reference)"
     SPRING = "spring", "Spring (reference)"
+    MODEL_RUN = "model_run", "Model run code (reference)"
 
 
 class CategoryField(models.Model):

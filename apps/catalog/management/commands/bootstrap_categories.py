@@ -65,6 +65,22 @@ WQ_FIELDS = [
     ("alkalinity_mg_l", "Alkalinity", FieldType.DECIMAL, "mg/L", False, dict(min_value=0, target_field="alkalinity_mg_l")),
     ("total_dissolved_solids_mg_l", "Total dissolved solids", FieldType.DECIMAL, "mg/L", False, dict(min_value=0, target_field="total_dissolved_solids_mg_l")),
 ]
+MODEL_OUTPUT_FIELDS = [
+    ("run", "Model run code", FieldType.MODEL_RUN, "", True, dict(target_field="run", help_text="Create the run first: Admin console → Observations → Model runs.")),
+    ("feature_type", "Model element", FieldType.ENUM, "", True, dict(choices=["station", "well", "reach", "subbasin"], target_field="feature_type")),
+    ("station", "Gauged station (if element is station)", FieldType.STATION, "", False, dict(target_field="station")),
+    ("well", "Well (if element is well)", FieldType.WELL, "", False, dict(target_field="well")),
+    ("feature_ref", "Model's own element id", FieldType.TEXT, "", False, dict(target_field="feature_ref", help_text="e.g. SWAT+ channel 12, Wflow gauge 3")),
+    ("variable", "Variable", FieldType.ENUM, "", True, dict(choices=["discharge_m3_s", "water_level_m", "recharge_mm", "actual_et_mm", "soil_moisture_mm", "precipitation_mm", "baseflow_m3_s", "other"], target_field="variable")),
+    ("observed_at", "Simulated for (date/time)", FieldType.DATETIME, "", True, dict(target_field="observed_at")),
+    ("value", "Value", FieldType.DECIMAL, "", True, dict(target_field="value")),
+    ("unit", "Unit", FieldType.TEXT, "", False, dict(target_field="unit")),
+    ("remarks", "Remarks", FieldType.TEXT, "", False, dict(target_field="remarks")),
+]
+MODEL_OUTPUT_RULES = [
+    (RuleType.UNIQUE_IN_BATCH, {"fields": ["run", "feature_type", "station", "well", "feature_ref", "variable", "observed_at"]}, Severity.HARD, "Duplicate simulated point in this file."),
+    (RuleType.REQUIRED_IF, {"when": "feature_type", "field": "feature_ref"}, Severity.SOFT, "Give the model's element id so the value can be traced back to the model."),
+]
 WQ_RULES = [
     (RuleType.DATE_ORDER, {"a": "sampled_at", "b": "analysed_at"}, Severity.HARD, "Date analysed cannot be before date sampled."),
     (RuleType.REQUIRED_IF, {"when": "source_type", "field": "well"}, Severity.SOFT, "Well should be given for well samples."),
@@ -77,6 +93,11 @@ SECTIONS = {
         "Licence and source": ["licence", "well", "source_type"],
         "Reporting period": ["period_start", "period_end"],
         "Volumes": ["abstraction_rate_m3_d", "abstraction_volume_m3", "meter_reading"],
+        "Remarks": ["remarks"],
+    },
+    "model_output": {
+        "Run and element": ["run", "feature_type", "station", "well", "feature_ref"],
+        "Value": ["variable", "observed_at", "value", "unit"],
         "Remarks": ["remarks"],
     },
     "water_quality": {
@@ -121,3 +142,4 @@ class Command(BaseCommand):
         wf = WorkflowDefinition.objects.get(code="data_submission_default")
         self._seed("water_abstraction", "Water abstraction (ToR item 6)", TargetModel.ABSTRACTION, LinkKind.LICENCE, wf, ABSTRACTION_FIELDS, ABSTRACTION_RULES)
         self._seed("water_quality", "Water quality (ToR item 10)", TargetModel.WATER_QUALITY, LinkKind.WELL, wf, WQ_FIELDS, WQ_RULES)
+        self._seed("model_output", "Model output (simulated values — design doc 15)", TargetModel.MODEL_OUTPUT, LinkKind.NONE, wf, MODEL_OUTPUT_FIELDS, MODEL_OUTPUT_RULES)
