@@ -1,4 +1,17 @@
 {% extends "base.html" %}{% block content %}
+{% if user.is_authenticated and user.is_staff_user %}
+<section class="mb-8">
+  <p class="eyebrow">Staff tools</p>
+  <h1 class="page-title mt-1">Welcome back, {{ user.full_name }}</h1>
+  <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="{% url 'workflow:queue' %}"><h2 class="text-base">Review queue</h2><p class="text-body mt-1 text-sm">Applications and submissions waiting at your stage.</p></a>
+    <a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="{% url 'reports:index' %}"><h2 class="text-base">Dashboards</h2><p class="text-body mt-1 text-sm">Licensing, monitoring, submissions and executive views.</p></a>
+    <a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="{% url 'reports:wall' %}" target="_blank" rel="noopener"><h2 class="text-base">Wall display ↗</h2><p class="text-body mt-1 text-sm">Full-screen rotation for the operations room.</p></a>
+    {% if user.is_staff %}<a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="{% url 'admin:index' %}"><h2 class="text-base">Admin console</h2><p class="text-body mt-1 text-sm">Reference data, wells and stations, categories, workflows, users.</p></a>{% endif %}
+    <a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="/api/docs/"><h2 class="text-base">API docs</h2><p class="text-body mt-1 text-sm">OpenAPI reference for the REST API and submission endpoint.</p></a>
+  </div>
+</section>
+{% endif %}
 <section class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 px-6 py-12 text-white shadow-(--shadow-card) sm:px-10 sm:py-16 dark:border-slate-800">
   <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-400/20 blur-3xl" aria-hidden="true"></div>
   <div class="pointer-events-none absolute -bottom-32 left-1/3 h-80 w-80 rounded-full bg-accent-400/10 blur-3xl" aria-hidden="true"></div>

@@ -35,6 +35,7 @@
   .wall .ds-status > div, .wall .ds-list li { font-size: calc(17px * var(--ds-scale)); }
   .wall .ds-status b { font-size: calc(28px * var(--ds-scale)); }
   .wall-foot { display: flex; justify-content: space-between; font-size: calc(14px * var(--ds-scale)); color: var(--ds-muted); }
+  .wall-exit { color: var(--ds-muted); text-decoration: none; opacity: .55; } .wall-exit:hover { opacity: 1; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -46,7 +47,7 @@
     <div class="wall-clock"><div class="t" data-clock>&nbsp;</div><div class="d" data-date>&nbsp;</div></div>
   </header>
   <div data-dashboard-root></div>
-  <footer class="wall-foot"><span data-wall-note></span><span><span data-refreshed></span> · <span data-counter></span></span></footer>
+  <footer class="wall-foot"><span data-wall-note></span><span><span data-refreshed></span> · <span data-counter></span> · <a class="wall-exit" href="{% url 'reports:index' %}">← Dashboards</a></span></footer>
 </div>
 <script src="{% static 'js/echarts.min.js' %}" nonce="{{ request.csp_nonce }}"></script>
 <script src="{% static 'js/dashboards.js' %}" nonce="{{ request.csp_nonce }}"></script>

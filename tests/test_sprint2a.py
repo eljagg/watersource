@@ -91,3 +91,19 @@ def test_wall_role_sees_wall_only(db):
     assert client.get("/dashboards/").status_code == 403
     guest = Client()
     assert guest.get("/wall/").status_code == 302  # login required
+
+
+def test_staff_navigation_reaches_every_tool(db):
+    """Every staff page is linked from the header or the home page — no typed URLs (Omar, 5 Oct)."""
+    staff = _user("nav@wra.gov.jm", roles.REVIEWER)
+    staff.is_staff = True
+    staff.save()
+    c = Client()
+    c.force_login(staff)
+    body = c.get("/").content.decode()
+    for href in ("/workflow/queue/", "/dashboards/", "/wall/", "/admin/", "/api/docs/"):
+        assert f'href="{href}"' in body, href
+    wall = c.get("/wall/").content.decode()
+    assert 'href="/dashboards/"' in wall
+    anon = Client().get("/").content.decode()
+    assert "Staff tools" not in anon

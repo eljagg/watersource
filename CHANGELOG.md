@@ -2,6 +2,11 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.3.1] — 5 Oct 2026
+
+### Changed
+- Navigation: every staff page reachable without typing a URL — header gains **Admin console** (accounts with admin access) and the mobile menu gains **Wall display**; staff home page shows a "Staff tools" row (Review queue, Dashboards, Wall display, Admin console, API docs); the wall footer links back to Dashboards.
+
 ## [0.3.0] — Sprint 2a (4 Oct 2026)
 
 ### Added
