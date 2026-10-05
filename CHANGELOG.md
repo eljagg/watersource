@@ -2,6 +2,11 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.4.1] — 5 Oct 2026
+
+### Fixed
+- **Re-seeding the demo data no longer deletes the demo accounts.** `seed_demo_data --force` (run on every deploy with `DEMO_DATA=1`) used to delete and recreate `demo.*` users, which cascaded to their authenticator enrolments — so after each deploy the two-factor set-up page came back and the code in Google Authenticator was refused. Users are now kept and refreshed (password, role, flags); their TOTP devices survive. One more scan is needed after this deploy; none after that.
+
 ## [0.4.0] — 5 Oct 2026 — Sprint 2b, part 1
 
 ### Added

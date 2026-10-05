@@ -188,3 +188,22 @@ def test_dashboards_index_reads_display_settings(client, reviewer):
     ds.save()
     client.force_login(reviewer)
     assert "every 7 minutes" in client.get("/dashboards/").content.decode()
+
+
+# --- re-seeding keeps demo accounts (and their authenticator enrolments) -----------------------
+
+
+@pytest.mark.django_db
+def test_reseed_keeps_demo_users_and_mfa_devices():
+    """``seed_demo_data --force`` twice: demo.admin keeps the same primary key and its confirmed TOTP device."""
+    from django.contrib.auth import get_user_model
+    from django_otp.plugins.otp_totp.models import TOTPDevice
+
+    call_command("load_reference_data", verbosity=0)
+    call_command("seed_demo_data", force=True, verbosity=0)
+    admin = get_user_model().objects.get(email="demo.admin@wra-demo.local")
+    TOTPDevice.objects.create(user=admin, name="phone", confirmed=True)
+    call_command("seed_demo_data", force=True, verbosity=0)
+    again = get_user_model().objects.get(email="demo.admin@wra-demo.local")
+    assert again.pk == admin.pk and again.is_superuser
+    assert TOTPDevice.objects.filter(user=again, confirmed=True).exists()

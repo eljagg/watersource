@@ -171,8 +171,9 @@ class Command(BaseCommand):
         wells.delete()
         stations.delete()
         springs.delete()
-        Party.objects.filter(name__startswith=PREFIX).delete()
-        User.objects.filter(email__startswith="demo.").delete()
+        Party.objects.filter(name__startswith=PREFIX).exclude(email="demo.client@example.com").delete()
+        # demo.* users are kept (and refreshed in _users) so their authenticator enrolments survive a re-seed;
+        # deleting them cascaded to the TOTP devices and forced everyone to scan a new QR code after each deploy.
 
     def _lookups(self):
         """Make sure the reference lookups the demo refers to exist (load_reference_data normally does this)."""
@@ -191,13 +192,22 @@ class Command(BaseCommand):
         password = os.environ.get("DEMO_PASSWORD", "WaterSource-Demo-2026!")
         self.users = {}
         for email, name, utype, role in DEMO_USERS:
-            u = User.objects.create_user(email=email, password=password, full_name=name, user_type=utype, email_verified_at=timezone.now(), phone="876-555-0100", organisation="WRA (demo)" if utype == UserType.STAFF else "Demo Farms Ltd")
-            u.groups.add(Group.objects.get(name=role))
+            u = User.objects.filter(email=email).first()
+            if u is None:
+                u = User.objects.create_user(email=email, password=password, full_name=name, user_type=utype, email_verified_at=timezone.now(), phone="876-555-0100",
+                                             organisation="WRA (demo)" if utype == UserType.STAFF else "Demo Farms Ltd")
+            else:  # existing demo user: refresh password, role and flags but keep the account (and its MFA device)
+                u.set_password(password)
+                u.full_name, u.user_type, u.is_active, u.must_change_password = name, utype, True, False
+                u.save()
+            u.groups.set([Group.objects.get(name=role)])
             if role == roles.ADMINISTRATOR:  # demo.admin can open /admin/ (Django admin needs is_staff; superuser for full model access)
                 u.is_staff = u.is_superuser = True
                 u.save(update_fields=["is_staff", "is_superuser"])
             self.users[role] = u
-        self.users[roles.CLIENT].party = Party.objects.create(kind=PartyKind.APPLICANT, name=f"{PREFIX} Farms Ltd", email="demo.client@example.com", phone="876-555-0100", address="Old Harbour, St. Catherine", is_organisation=True)
+        party, _ = Party.objects.get_or_create(email="demo.client@example.com", defaults=dict(
+            kind=PartyKind.APPLICANT, name=f"{PREFIX} Farms Ltd", phone="876-555-0100", address="Old Harbour, St. Catherine", is_organisation=True))
+        self.users[roles.CLIENT].party = party
         self.users[roles.CLIENT].save(update_fields=["party"])
 
     def _sites(self):
