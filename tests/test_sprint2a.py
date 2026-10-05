@@ -130,3 +130,63 @@ def test_display_settings_drive_wall_and_refresh(db):
     assert bi.refresh_if_stale(5) is False  # fresh now
     r = c.get("/dashboards/licensing/data/")
     assert r.json()["refreshed_at"]
+
+
+# --- MFA enrolment page and CSRF failure handling (v0.3.3) ---------------------------------
+
+
+@pytest.mark.django_db
+def test_mfa_setup_shows_qr_and_manual_key(client):
+    """The enrolment page renders an inline SVG QR code and the grouped manual key."""
+    from django.contrib.auth import get_user_model
+
+    u = get_user_model().objects.create_user(email="mfa@example.com", password="Str0ng-Passw0rd!!", full_name="M")
+    client.force_login(u)
+    r = client.get("/accounts/mfa/setup/")
+    assert r.status_code == 200
+    html = r.content.decode()
+    assert "<svg" in html and "Scan this QR code" in html
+    assert "WaterSource Jamaica" in html
+    assert "Enter the key manually" in html
+
+
+@pytest.mark.django_db
+def test_mfa_setup_accepts_spaced_code(client):
+    """'123 456' as shown by authenticator apps is accepted as 123456."""
+    from django.contrib.auth import get_user_model
+    from django_otp.oath import totp
+    from django_otp.plugins.otp_totp.models import TOTPDevice
+
+    u = get_user_model().objects.create_user(email="mfa2@example.com", password="Str0ng-Passw0rd!!", full_name="M")
+    client.force_login(u)
+    client.get("/accounts/mfa/setup/")
+    device = TOTPDevice.objects.get(user=u, confirmed=False)
+    code = f"{totp(device.bin_key, device.step, device.t0, device.digits, device.drift):06d}"
+    r = client.post("/accounts/mfa/setup/", {"token": code[:3] + " " + code[3:]})
+    assert r.status_code == 302
+    assert TOTPDevice.objects.get(user=u).confirmed is True
+
+
+@pytest.mark.django_db
+def test_csrf_failure_on_logout_signs_out(client):
+    """A stale sign-out form (bad CSRF token) still signs the user out instead of a bare 403."""
+    from django.contrib.auth import get_user_model
+    from django.test import Client
+
+    u = get_user_model().objects.create_user(email="csrf@example.com", password="Str0ng-Passw0rd!!", full_name="C")
+    c = Client(enforce_csrf_checks=True)
+    c.force_login(u)
+    r = c.post("/accounts/logout/", {"csrfmiddlewaretoken": "stale"})
+    assert r.status_code == 302 and r["Location"].startswith("/accounts/login")
+    assert c.get("/accounts/profile/").status_code == 302  # no longer signed in
+
+
+@pytest.mark.django_db
+def test_csrf_failure_elsewhere_is_friendly(client):
+    """Other CSRF failures get the explanatory page, still a 403."""
+    from django.test import Client
+
+    c = Client(enforce_csrf_checks=True)
+    r = c.post("/accounts/login/", {"username": "x", "password": "y"})
+    assert r.status_code == 403
+    assert "That page had expired" in r.content.decode()

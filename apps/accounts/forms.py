@@ -62,4 +62,16 @@ class LoginForm(AuthenticationForm):
 
 class TOTPTokenForm(forms.Form):
     """Six-digit TOTP code entry for MFA setup and verification."""
-    token = forms.CharField(label="6-digit code", max_length=8, min_length=6)
+    token = forms.CharField(
+        label="6-digit code",
+        max_length=8,
+        min_length=6,
+        widget=forms.TextInput(attrs={
+            "inputmode": "numeric", "autocomplete": "one-time-code", "pattern": "[0-9 ]*", "placeholder": "123 456",
+            "autofocus": True, "class": "code-input",
+        }),
+    )
+
+    def clean_token(self):
+        """Accept the code with or without the space authenticator apps show in the middle."""
+        return self.cleaned_data["token"].replace(" ", "")

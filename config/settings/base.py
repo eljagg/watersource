@@ -179,6 +179,8 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 LOGIN_URL = "accounts:login"
+CSRF_FAILURE_VIEW = "apps.accounts.views.csrf_failure"
+OTP_TOTP_ISSUER = "WaterSource Jamaica"  # the account name shown in Google / Microsoft Authenticator
 LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = "core:home"
 

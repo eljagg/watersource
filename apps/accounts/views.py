@@ -1,6 +1,7 @@
 """Account views: login/logout, registration with email verification, MFA setup, password management, profile (ToR H.i–v)."""
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
@@ -128,7 +129,49 @@ def mfa_setup(request):
             messages.success(request, "Two-factor authentication is now active on your account.")
             return redirect("core:home")
         form.add_error("token", "That code was not accepted. Check the time on your phone and try again.")
-    return render(request, "accounts/mfa_setup.html", {"form": form, "otpauth_url": device.config_url})
+    return render(request, "accounts/mfa_setup.html", {
+        "form": form,
+        "otpauth_url": device.config_url,
+        "qr_svg": qr_svg(device.config_url),
+        "manual_key": grouped_key(device),
+        "issuer": settings.OTP_TOTP_ISSUER,
+    })
+
+
+def qr_svg(text: str) -> str:
+    """Render ``text`` as an inline SVG QR code (no external request, CSP-safe)."""
+    import qrcode
+    from qrcode.image.svg import SvgPathImage
+
+    img = qrcode.make(text, image_factory=SvgPathImage, box_size=10, border=2, error_correction=qrcode.constants.ERROR_CORRECT_M)
+    svg = img.to_string(encoding="unicode")
+    # Drop the XML prolog so the markup can be inlined; size via CSS, not attributes.
+    return svg[svg.index("<svg"):]
+
+
+def grouped_key(device: TOTPDevice) -> str:
+    """The base32 secret in groups of four, the way authenticator apps ask for a manual entry."""
+    import base64
+
+    key = base64.b32encode(device.bin_key).decode().rstrip("=")
+    return " ".join(key[i:i + 4] for i in range(0, len(key), 4))
+
+
+def csrf_failure(request, reason=""):
+    """Friendlier CSRF failure (403) than Django's default page.
+
+    A failed POST to the sign-out URL — almost always a stale tab after an idle
+    time-out or a second sign-in — simply signs the user out, which is what they
+    asked for. Any other CSRF failure explains what happened and offers a way back.
+    """
+    from django.http import HttpResponseForbidden
+
+    audit.log("auth.csrf_failed", None, summary=reason[:255], path=request.path)
+    if request.path == reverse("accounts:logout"):
+        auth_logout(request)
+        messages.info(request, "You have been signed out.")
+        return redirect("accounts:login")
+    return HttpResponseForbidden(render(request, "accounts/csrf_failed.html", {"reason": reason}).content)
 
 
 @login_required

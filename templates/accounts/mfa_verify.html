@@ -1,4 +1,6 @@
-{% extends "base.html" %}{% block content %}<div class="card mx-auto max-w-md p-6 sm:p-8"><h1 class="page-title mb-6">Enter your authentication code</h1>
-{% block intro %}{% endblock %}
+{% extends "base.html" %}{% block content %}<div class="card mx-auto max-w-md p-6 sm:p-8"><h1 class="page-title mb-2">Enter your authentication code</h1>
+<p class="text-body mb-6 text-sm">Open your authenticator app and type the 6-digit code shown for <strong>WaterSource Jamaica</strong>. The code changes every 30 seconds.</p>
 <form method="post">{% csrf_token %}{% include "accounts/_form.html" %}<button class="btn-primary">Continue</button></form>
-{% block after %}{% endblock %}</div>{% endblock %}
+<form method="post" action="{% url 'accounts:logout' %}" class="mt-3">{% csrf_token %}<button class="link text-sm" type="submit">Sign out</button></form>
+<p class="text-muted mt-6 text-xs">Lost your phone? Ask a WaterSource administrator to reset two-factor on your account; you will set it up again at your next sign-in.</p>
+</div>{% endblock %}

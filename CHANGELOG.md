@@ -2,6 +2,15 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.3.3] — 5 Oct 2026
+
+### Changed
+- **Two-factor set-up redesigned**: a scannable QR code (inline SVG, rendered server-side — nothing leaves the server), three plain steps, "Can't scan? Enter the key manually" with the key in groups of four, a large numeric code box that accepts `123 456`, and a "Not now — sign out" exit. The account is labelled **WaterSource Jamaica (email)** in Google / Microsoft Authenticator (`OTP_TOTP_ISSUER`).
+- The code-entry page at sign-in has the same treatment and a lost-phone note.
+
+### Fixed
+- **"Forbidden (403) CSRF verification failed" on Sign out.** A stale sign-out form (page open across an idle time-out, or a second sign-in in another tab) now simply signs the user out and returns to the sign-in page. Any other CSRF failure shows a plain-language "That page had expired" page instead of Django's default; each failure is recorded in the audit trail (`auth.csrf_failed`) with the path and reason so the cause can be seen in the admin console.
+
 ## [0.3.2] — 5 Oct 2026
 
 ### Added

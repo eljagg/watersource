@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block content %}<div class="card mx-auto max-w-md p-6 sm:p-8"><h1 class="page-title mb-2">That page had expired</h1>
+<p class="text-body mb-4 text-sm">The form you submitted came from a page that is no longer current — usually because the session timed out or you signed in again in another tab. Nothing was saved.</p>
+<p class="text-body mb-6 text-sm">Go back, refresh the page and try again.</p>
+<div class="flex gap-3"><a class="btn-primary" href="{% url 'core:home' %}">Home</a><a class="btn-secondary" href="{% url 'accounts:login' %}">Sign in</a></div>
+</div>{% endblock %}
