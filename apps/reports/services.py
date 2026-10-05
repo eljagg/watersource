@@ -21,6 +21,27 @@ BI_VIEWS = [
     "bi.licence_expiry",
     "bi.licence_active_by_parish",
     "bi.licensing_kpis",
+    # dashboards (migration 0003) — order matters: kpis views read the status/share views
+    "bi.application_stage_counts",
+    "bi.open_applications_by_parish",
+    "bi.longest_waiting_applications",
+    "bi.well_level_status",
+    "bi.station_flow_status",
+    "bi.groundwater_index_by_basin",
+    "bi.station_flow_recent",
+    "bi.abstraction_share_latest",
+    "bi.wq_exceedances_90d",
+    "bi.monitoring_kpis",
+    "bi.submissions_monthly",
+    "bi.review_backlog_age",
+    "bi.observation_grades",
+    "bi.validation_failures",
+    "bi.submissions_kpis",
+    "bi.licences_by_status",
+    "bi.service_standard_monthly",
+    "bi.expiries_next_12m",
+    "bi.governance_kpis",
+    "bi.executive_kpis",
 ]
 #: Views the Licensing overview dashboard reads (design doc 13 §5.1).
 LICENSING_DASHBOARD = ["bi.licensing_kpis", "bi.licensing_pipeline", "bi.applications_monthly", "bi.licence_expiry", "bi.licence_active_by_parish", "bi.licensing_monthly"]

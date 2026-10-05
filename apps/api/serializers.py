@@ -2,6 +2,7 @@
 from rest_framework import serializers
 
 from apps.catalog.models import CategoryVersion, DataCategory
+from apps.core.restrict import mask_site
 from apps.lic.models import Licence, LicenceApplication
 from apps.obs.models import AbstractionRecord, WaterQualitySample, WellWaterLevel
 from apps.ref.models import Parish, StreamflowStation, Well
@@ -15,26 +16,42 @@ class ParishSerializer(serializers.ModelSerializer):
         fields = ["code", "name"]
 
 
-class WellSerializer(serializers.ModelSerializer):
-    """Public well fields (no owner/personal data)."""
+class SiteMaskMixin:
+    """Coarsen coordinates of public-supply sources for callers without a restricted-data role (ADR-0002)."""
+
+    def to_representation(self, instance):
+        """Serialise, then overwrite coordinate fields with the masked values."""
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        masked = mask_site(instance, user)
+        for key in ("easting", "northing", "elevation_m"):
+            if key in data:
+                data[key] = None if masked[key] is None else f"{masked[key]:.3f}"
+        data["coordinates_coarsened"] = masked["coordinates_coarsened"]
+        return data
+
+
+class WellSerializer(SiteMaskMixin, serializers.ModelSerializer):
+    """Public well fields (no owner/personal data); coordinates coarsened for public-supply wells."""
     parish = serializers.SlugRelatedField(read_only=True, slug_field="name")
     basin = serializers.SlugRelatedField(read_only=True, slug_field="name")
     wmu = serializers.SlugRelatedField(read_only=True, slug_field="name")
 
     class Meta:
         model = Well
-        fields = ["id", "name", "aliases", "easting", "northing", "elevation_m", "parish", "basin", "wmu", "use",
+        fields = ["id", "name", "aliases", "is_public_supply", "easting", "northing", "elevation_m", "parish", "basin", "wmu", "use",
                   "is_licensed", "is_abandoned", "is_index_well", "completion_date", "classification", "approval_state"]
 
 
-class StationSerializer(serializers.ModelSerializer):
-    """Streamflow station fields."""
+class StationSerializer(SiteMaskMixin, serializers.ModelSerializer):
+    """Streamflow station fields; coordinates coarsened for public-supply intakes."""
     parish = serializers.SlugRelatedField(read_only=True, slug_field="name")
     river = serializers.SlugRelatedField(read_only=True, slug_field="name")
 
     class Meta:
         model = StreamflowStation
-        fields = ["id", "name", "aliases", "river", "easting", "northing", "elevation_m", "parish", "is_active", "classification"]
+        fields = ["id", "name", "aliases", "river", "is_public_supply", "easting", "northing", "elevation_m", "parish", "is_active", "classification"]
 
 
 class WellWaterLevelSerializer(serializers.ModelSerializer):

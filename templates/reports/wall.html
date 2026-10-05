@@ -1,0 +1,60 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" class="h-full{% if theme != 'light' %} dark{% endif %}">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<title>WaterSource — wall display</title>
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<style nonce="{{ request.csp_nonce }}">
+  /* Wall frame (design doc 13 §4.3): 1920×1080 composition, scaled by --ds-scale for 4K; no interaction, no scrolling */
+  :root { --ds-scale: 1; }
+  @media (min-width: 3000px) { :root { --ds-scale: 1.5; } }
+  html, body { height: 100%; overflow: hidden; }
+  body { background: var(--ds-page); }
+  .wall { height: 100vh; padding: calc(28px * var(--ds-scale)) calc(36px * var(--ds-scale)); display: flex; flex-direction: column; gap: calc(22px * var(--ds-scale)); }
+  .wall-head { display: flex; align-items: center; gap: calc(20px * var(--ds-scale)); }
+  .wall-mark { width: calc(48px * var(--ds-scale)); height: calc(48px * var(--ds-scale)); border-radius: 30%; background: var(--ds-s1); display: grid; place-items: center; color: #fff; }
+  html.dark .wall-mark { color: #020617; }
+  .wall-title { font-size: calc(30px * var(--ds-scale)); font-weight: 600; letter-spacing: -.01em; line-height: 1.1; color: var(--ds-ink); }
+  .wall-sub { font-size: calc(15px * var(--ds-scale)); color: var(--ds-muted); margin-top: 4px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+  .wall-dots { display: flex; gap: 8px; margin-left: calc(28px * var(--ds-scale)); }
+  .wall-dots i { width: 12px; height: 12px; border-radius: 999px; background: var(--ds-axis); } .wall-dots i.on { background: var(--ds-s1); }
+  .wall-clock { margin-left: auto; text-align: right; }
+  .wall-clock .t { font-size: calc(34px * var(--ds-scale)); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; color: var(--ds-ink); }
+  .wall-clock .d { font-size: calc(15px * var(--ds-scale)); color: var(--ds-muted); margin-top: 6px; }
+  .wall [data-dashboard-root] { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: calc(22px * var(--ds-scale)); }
+  .wall .ds-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(22px * var(--ds-scale)); margin: 0; }
+  .wall .ds-tile { padding: calc(22px * var(--ds-scale)) calc(26px * var(--ds-scale)); }
+  .wall .ds-tile h3 { font-size: calc(17px * var(--ds-scale)); }
+  .wall .ds-tile .ds-v { font-size: calc(56px * var(--ds-scale)); line-height: 1.05; }
+  .wall .ds-tile .ds-v small { font-size: calc(24px * var(--ds-scale)); }
+  .wall .ds-delta { font-size: calc(17px * var(--ds-scale)); }
+  .wall .ds-grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 1fr; gap: calc(22px * var(--ds-scale)); flex: 1; min-height: 0; margin: 0; }
+  .wall .ds-card { min-height: 0; padding: calc(20px * var(--ds-scale)) calc(24px * var(--ds-scale)) calc(14px * var(--ds-scale)); }
+  .wall .ds-card h2 { font-size: calc(21px * var(--ds-scale)); }
+  .wall .ds-card p { font-size: calc(14px * var(--ds-scale)); }
+  .wall .ds-status > div, .wall .ds-list li { font-size: calc(17px * var(--ds-scale)); }
+  .wall .ds-status b { font-size: calc(28px * var(--ds-scale)); }
+  .wall-foot { display: flex; justify-content: space-between; font-size: calc(14px * var(--ds-scale)); color: var(--ds-muted); }
+</style>
+</head>
+<body>
+<div class="wall">
+  <header class="wall-head">
+    <div class="wall-mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></div>
+    <div><div class="wall-title" data-wall-title>Loading…</div><div class="wall-sub">Water Resources Authority · WaterSource Jamaica</div></div>
+    <div class="wall-dots">{% for s in order %}<i data-dot></i>{% endfor %}</div>
+    <div class="wall-clock"><div class="t" data-clock>&nbsp;</div><div class="d" data-date>&nbsp;</div></div>
+  </header>
+  <div data-dashboard-root></div>
+  <footer class="wall-foot"><span data-wall-note></span><span><span data-refreshed></span> · <span data-counter></span></span></footer>
+</div>
+<script src="{% static 'js/echarts.min.js' %}" nonce="{{ request.csp_nonce }}"></script>
+<script src="{% static 'js/dashboards.js' %}" nonce="{{ request.csp_nonce }}"></script>
+<script nonce="{{ request.csp_nonce }}">
+WSDash.wall(document.querySelector('[data-dashboard-root]'), {
+  order: {{ order|safe }}, start: "{{ start|escapejs }}", rotate: {{ rotate_seconds }}, refresh: {{ refresh_seconds }},
+  urls: { {% for s in order %}"{{ s }}": "{% url 'reports:dashboard_data' s %}"{% if not forloop.last %}, {% endif %}{% endfor %} }
+});
+</script>
+</body>
+</html>

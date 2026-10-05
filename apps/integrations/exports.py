@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 
 from django.conf import settings
-from django.contrib.gis.db.models.functions import Transform
 from django.utils import timezone
 
 from apps.obs.models import AbstractionRecord
@@ -25,20 +24,42 @@ def _feature(obj, props, geom_field="geom4326"):
     return {"type": "Feature", "geometry": json.loads(g.geojson) if g else None, "properties": props}
 
 
+def _public_point(site):
+    """Point for export: exact for ordinary sites, snapped to the public grid for public-supply sources (ADR-0002)."""
+    from django.contrib.gis.geos import Point
+
+    from apps.core.restrict import mask_site
+
+    m = mask_site(site, None)
+    if m["easting"] is None or m["northing"] is None:
+        return None
+    pt = Point(float(m["easting"]), float(m["northing"]), srid=3448)
+    pt.transform(4326)
+    return pt
+
+
 def export_public_geojson() -> list[str]:
-    """Only rows in public views (approved + public) leave the system."""
+    """Only rows in public views (approved + public) leave the system; public-supply coordinates are coarsened."""
     stamp = timezone.now().strftime("%Y%m%d")
     out = _out_dir("arcgis")
     files = []
-    wells = Well.objects.public().annotate(geom4326=Transform("location", 4326)).select_related("parish", "basin", "wmu")
-    feats = [_feature(w, {"name": w.name, "parish": w.parish.name if w.parish_id else None, "basin": w.basin.name if w.basin_id else None,
-                           "wmu": w.wmu.name if w.wmu_id else None, "elevation_m": float(w.elevation_m) if w.elevation_m is not None else None,
-                           "use": w.use, "status": "abandoned" if w.is_abandoned else "in_use"}) for w in wells]
+    wells = Well.objects.public().select_related("parish", "basin", "wmu")
+    feats = []
+    for w in wells:
+        w.geom4326 = _public_point(w)
+        feats.append(_feature(w, {"name": w.name, "parish": w.parish.name if w.parish_id else None, "basin": w.basin.name if w.basin_id else None,
+                                  "wmu": w.wmu.name if w.wmu_id else None,
+                                  "elevation_m": None if w.is_public_supply else (float(w.elevation_m) if w.elevation_m is not None else None),
+                                  "use": w.use, "status": "abandoned" if w.is_abandoned else "in_use", "coordinates_coarsened": w.is_public_supply}))
     path = out / f"wells_public_{stamp}.geojson"
     path.write_text(json.dumps({"type": "FeatureCollection", "crs": {"type": "name", "properties": {"name": "EPSG:4326"}}, "features": feats}))
     files.append(str(path))
-    stations = StreamflowStation.objects.public().annotate(geom4326=Transform("location", 4326)).select_related("parish", "river")
-    feats = [_feature(s, {"name": s.name, "river": s.river.name if s.river_id else None, "parish": s.parish.name if s.parish_id else None}) for s in stations]
+    stations = StreamflowStation.objects.public().select_related("parish", "river")
+    feats = []
+    for st in stations:
+        st.geom4326 = _public_point(st)
+        feats.append(_feature(st, {"name": st.name, "river": st.river.name if st.river_id else None, "parish": st.parish.name if st.parish_id else None,
+                                   "coordinates_coarsened": st.is_public_supply}))
     path = out / f"streamflow_stations_public_{stamp}.geojson"
     path.write_text(json.dumps({"type": "FeatureCollection", "features": feats}))
     files.append(str(path))

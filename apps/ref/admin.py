@@ -105,8 +105,8 @@ class VisitInline(admin.TabularInline):
 class WellAdmin(admin.GISModelAdmin):
     """Well master record with all item 2–9 detail as inlines."""
 
-    list_display = ("name", "parish", "basin", "wmu", "use", "is_licensed", "is_pumping", "is_abandoned", "approval_state", "classification")
-    list_filter = ("parish", "basin", "use", "is_licensed", "is_abandoned", "is_index_well", "approval_state", "classification")
+    list_display = ("name", "parish", "basin", "wmu", "use", "is_public_supply", "is_licensed", "is_pumping", "is_abandoned", "approval_state", "classification")
+    list_filter = ("is_public_supply", "parish", "basin", "use", "is_licensed", "is_abandoned", "is_index_well", "approval_state", "classification")
     search_fields = ("name", "aliases", "licence_number", "legacy_ids")
     inlines = [StatusEventInline, LithologyInline, CasingInline, PumpTestInline, OwnershipInline, ReferencePointInline, InstallationInline, VisitInline]
     autocomplete_fields = ("current_owner", "driller", "replaces")
@@ -117,9 +117,9 @@ class WellAdmin(admin.GISModelAdmin):
 class StationAdmin(admin.GISModelAdmin):
     """Streamflow station master record with site-master inlines."""
 
-    list_display = ("name", "river", "parish", "is_active", "approval_state", "classification")
+    list_display = ("name", "river", "parish", "is_active", "is_public_supply", "approval_state", "classification")
     search_fields = ("name", "aliases", "aquarius_identifier")
-    list_filter = ("parish", "is_active", "classification")
+    list_filter = ("is_public_supply", "parish", "is_active", "classification")
     inlines = [ReferencePointInline, InstallationInline, VisitInline]
 
 

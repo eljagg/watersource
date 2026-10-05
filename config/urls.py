@@ -9,6 +9,7 @@ urlpatterns = [
     path("licensing/", include("apps.lic.urls", namespace="lic")),
     path("submissions/", include("apps.submissions.urls", namespace="submissions")),
     path("workflow/", include("apps.workflow.urls", namespace="workflow")),
+    path("", include("apps.reports.urls", namespace="reports")),
     path("api/v1/", include("apps.api.urls", namespace="api")),
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="api-schema"), name="api-docs"),

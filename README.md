@@ -9,7 +9,7 @@ One Django project, two user-facing applications on one PostgreSQL/PostGIS datab
 |---|---|---|
 | Licence Application Processing | §G.1 | `lic` (+ `workflow`, `core`, `accounts`, `ref`) |
 | Data Submission | §G.2 | `submissions`, `catalog` (+ `workflow`, `obs`) |
-| Consolidated database & BI | §C, §F.4 | `ref`, `obs`, `reports` (bi schema), Metabase |
+| Consolidated database & BI | §C, §F.4 | `ref`, `obs`, `reports` (bi schema, four dashboards, `/wall/` display), Metabase |
 | Integrations & exports | §E, Add. 1 §9, H.xiii | `integrations` |
 | REST API | §F.7, H.xii | `api` (OpenAPI at `/api/docs/`) |
 
@@ -37,7 +37,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Then: `/` (public), `/accounts/register/` (client self-registration with email verification), `/admin/` (staff
+Then: `/` (public), `/dashboards/` and `/wall/` (staff; wall also for the `wall_display` role), `/accounts/register/` (client self-registration with email verification), `/admin/` (staff
 configuration: categories, workflows, roles), `/workflow/queue/` (staff review queue), `/api/docs/` (OpenAPI).
 
 Everything in Docker: `docker compose up --build` (add `--profile bi` for Metabase, `--profile security` for ClamAV).

@@ -2,6 +2,19 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.3.0] — Sprint 2a (4 Oct 2026)
+
+### Added
+- Four dashboards (`/dashboards/`): Licensing overview, Water resources monitoring, Data submissions and quality, Executive and compliance summary — Apache ECharts (vendored, CSP-clean), light/dark, phone to 4K; declarative panel specs in `apps/reports/dashboards.py`; JSON per dashboard at `/dashboards/<slug>/data/`.
+- Wall display `/wall/`: full-screen kiosk rotating through the four dashboards every 60 s, data refresh every 5 min, dark by default (`?theme=light`), arrow keys to step; `wall_display` role for the kiosk account.
+- Twenty new `bi` views (migration 0003): application stages, longest-waiting items, well/station percentile status (USGS bands), groundwater index by basin, abstraction share by licence, water-quality exceedances, submissions by month/channel/category, review backlog age, validation failures, observation grades, licences by status, service-standard trend, expiries next 12 months, governance and executive KPIs.
+- Restricted classification (Methodology §4A, ADR-0002): `restricted` level; `is_public_supply` on wells and stations; coordinates coarsened to 1 km and elevation withheld for public-supply sources in the API, ArcGIS export and `bi.public_*` views; classification and flag changes audited.
+- Demo data: three years of well levels with declining/recovering/stale wells, over-limit licences, water-quality exceedances, thirteen months of submissions with validation outcomes, public-supply flags.
+
+### Changed
+- `staff_only` relabelled "Internal (WRA staff)"; `visible_to` hides restricted rows from staff without a restricted-data role.
+- Dashboards link in the header for staff.
+
 ## [0.2.2] — 30 Sep 2026
 
 ### Changed

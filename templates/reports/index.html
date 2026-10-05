@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}Dashboards — {{ SITE_NAME }}{% endblock %}{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div><p class="eyebrow">Insights</p><h1 class="page-title">Dashboards</h1><p class="text-body mt-1 text-sm">Four views of the service and the resource, refreshed every five minutes from the approved record.</p></div>
+  <a class="btn-secondary btn-sm" href="{% url 'reports:wall' %}" target="_blank" rel="noopener">Open wall display ↗</a>
+</div>
+<div class="grid gap-4 md:grid-cols-2">
+  {% for d in dashboards %}
+  <a class="card block p-5 transition hover:border-brand-400 dark:hover:border-brand-500" href="{% url 'reports:dashboard' d.slug %}">
+    <h2 class="text-lg">{{ d.title }}</h2><p class="text-body mt-1 text-sm">{{ d.question }}</p>
+    <p class="text-muted mt-3 text-xs">{{ d.kpis|length }} indicators · {{ d.panels|length }} panels</p>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -18,9 +18,18 @@ from .middleware import get_current_user
 
 
 class Classification(models.TextChoices):
-    """Access classification applied at approval (ToR H.x)."""
-    STAFF_ONLY = "staff_only", "Staff only"
+    """Access classification applied at approval (ToR H.x; Methodology §4A).
+
+    Three levels: ``public`` is visible to guests, the API and exports;
+    ``staff_only`` ("Internal") is visible to any signed-in WRA staff member;
+    ``restricted`` is visible only to the roles in
+    ``roles.RESTRICTED_DATA_ROLES`` — used for public-supply source details and
+    licensee particulars (ADR-0002).
+    """
+
     PUBLIC = "public", "Public"
+    STAFF_ONLY = "staff_only", "Internal (WRA staff)"
+    RESTRICTED = "restricted", "Restricted"
 
 
 class ApprovalState(models.TextChoices):
@@ -90,10 +99,22 @@ class PublishableModel(AuditedModel):
     class Meta:
         abstract = True
 
+    def save(self, *args, **kwargs):
+        """Save, writing an audit entry whenever the classification changes (Methodology §4A)."""
+        old = None
+        if not self._state.adding and self.pk is not None:
+            old = type(self)._default_manager.filter(pk=self.pk).values_list("classification", flat=True).first()
+        super().save(*args, **kwargs)
+        if old is not None and old != self.classification:
+            from . import audit
+
+            audit.log("classification.changed", self, summary=f"{old} → {self.classification}", old=old, new=self.classification)
+
     @property
     def is_public(self) -> bool:
         """True when approved and classified public."""
         return self.approval_state == ApprovalState.APPROVED and self.classification == Classification.PUBLIC
+
 
 
 class ObservationGrade(models.TextChoices):
@@ -161,14 +182,20 @@ class PublishedQuerySet(models.QuerySet):
         return self.approved().filter(classification=Classification.PUBLIC)
 
     def visible_to(self, user):
-        """Public rows for guests/clients; approved rows for staff; everything for reviewers+."""
+        """Rows the user may see.
+
+        Guests and clients: public rows. Staff: approved rows. Reviewers and the
+        technical roles: unapproved rows too. ``restricted`` rows only for
+        ``roles.RESTRICTED_DATA_ROLES`` (Methodology §4A).
+        """
         if user is None or not user.is_authenticated or not user.is_staff_user:
             return self.public()
         from apps.accounts import roles
 
-        if user.has_role(*roles.UNAPPROVED_DATA_ROLES):
-            return self
-        return self.approved()
+        qs = self if user.has_role(*roles.UNAPPROVED_DATA_ROLES) else self.approved()
+        if not user.has_role(*roles.RESTRICTED_DATA_ROLES):
+            qs = qs.exclude(classification=Classification.RESTRICTED)
+        return qs
 
 
 class AuditLog(models.Model):

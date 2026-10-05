@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <nav class="ml-4 hidden items-center gap-1 md:flex" aria-label="Primary">
       <a href="{% url 'lic:application_list' %}" class="nav-link">Licence applications</a>
       <a href="{% url 'submissions:index' %}" class="nav-link">Data submissions</a>
-      {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link">Review queue</a>{% endif %}
+      {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link">Review queue</a><a href="{% url 'reports:index' %}" class="nav-link">Dashboards</a>{% endif %}
       <a href="/api/docs/" class="nav-link">API</a>
     </nav>
 
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <nav id="mobile-nav" class="hidden border-t border-slate-200 px-4 py-2 md:hidden dark:border-slate-800" aria-label="Primary mobile">
     <a href="{% url 'lic:application_list' %}" class="nav-link block">Licence applications</a>
     <a href="{% url 'submissions:index' %}" class="nav-link block">Data submissions</a>
-    {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link block">Review queue</a>{% endif %}
+    {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link block">Review queue</a><a href="{% url 'reports:index' %}" class="nav-link block">Dashboards</a>{% endif %}
     <a href="/api/docs/" class="nav-link block">API</a>
     {% if user.is_authenticated %}<a href="{% url 'accounts:profile' %}" class="nav-link block">{{ user.full_name }}</a>{% endif %}
   </nav>

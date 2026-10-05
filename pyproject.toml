@@ -17,6 +17,7 @@ convention = "google"
 "manage.py" = ["D100"]
 "config/*" = ["D100"]
 "apps/*/management/*" = ["E501"]
+"apps/reports/dashboards.py" = ["E501"]  # declarative panel specs read better on one line
 "apps/*/migrations/*" = ["D"]
 
 [tool.bandit]

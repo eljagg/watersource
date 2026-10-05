@@ -26,13 +26,17 @@ BI_ANALYST = "bi_analyst"
 HYDROLOGIST = "hydrologist"
 HYDROGEOLOGIST = "hydrogeologist"
 TECHNICIAN = "technician"
+WALL_DISPLAY = "wall_display"
 
-ALL = [CLIENT, UPDATER, REVIEWER, APPROVER, ADMINISTRATOR, DATA_MIGRATION, BI_ANALYST, HYDROLOGIST, HYDROGEOLOGIST, TECHNICIAN]
+ALL = [CLIENT, UPDATER, REVIEWER, APPROVER, ADMINISTRATOR, DATA_MIGRATION, BI_ANALYST, HYDROLOGIST, HYDROGEOLOGIST, TECHNICIAN, WALL_DISPLAY]
 STAFF_ROLES = [UPDATER, REVIEWER, APPROVER, ADMINISTRATOR, DATA_MIGRATION, BI_ANALYST, HYDROLOGIST, HYDROGEOLOGIST, TECHNICIAN]
 #: Roles that may see observations before they are approved (working / in review).
 UNAPPROVED_DATA_ROLES = [REVIEWER, APPROVER, ADMINISTRATOR, HYDROLOGIST, HYDROGEOLOGIST]
 #: Roles that may approve observations (set grade/qualifiers and open approval periods).
 OBSERVATION_APPROVER_ROLES = [APPROVER, ADMINISTRATOR, HYDROLOGIST, HYDROGEOLOGIST]
+#: Roles that may see ``restricted`` records and the exact coordinates / engineering
+#: details of public-supply sources and licensee particulars (Methodology §4A, ADR-0002).
+RESTRICTED_DATA_ROLES = [APPROVER, ADMINISTRATOR, HYDROLOGIST, HYDROGEOLOGIST, REVIEWER]
 
 DESCRIPTIONS = {
     CLIENT: "Self-registered external user: applies for licences, submits data, sees own records and public data.",
@@ -45,4 +49,5 @@ DESCRIPTIONS = {
     HYDROLOGIST: "Surface-water specialist: grades and approves streamflow observations, technical assessment of applications.",
     HYDROGEOLOGIST: "Groundwater specialist: grades and approves well observations, technical assessment of applications.",
     TECHNICIAN: "Field staff: site visits, readings, instrument events and gaugings. No approval rights.",
+    WALL_DISPLAY: "Kiosk account for the wall display: may open /wall/ only; sees public-classified aggregates, never personal data.",
 }

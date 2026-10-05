@@ -319,6 +319,9 @@ WATERSOURCE = {
     "SRID_STORAGE": 3448,  # JAD2001 / Jamaica Metric Grid
     "SRID_EXPORT": 4326,
     "LICENCE_EXPIRY_WARNING_DAYS": [90, 30, 7],
+    "PUBLIC_COORDINATE_GRID_M": 1000,  # public-supply sources: coordinates shown to the public snap to this grid (Methodology §4A)
+    "WALL_ROTATE_SECONDS": 60,  # wall display: seconds per dashboard (design doc 13 §6)
+    "WALL_REFRESH_SECONDS": 300,  # wall display: data refresh interval
     "RETENTION": {
         "LICENCE_DATA_YEARS_AFTER_EXPIRY": 7,
         "INACTIVE_CLIENT_ACCOUNT_MONTHS": 24,

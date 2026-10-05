@@ -127,6 +127,7 @@ class Command(BaseCommand):
             self._applications_and_licences()
             self._observations()
             self._field_records()
+            self._submissions()
         self.stdout.write(self.style.SUCCESS(
             f"DEMO data ready: {Well.objects.filter(name__startswith=PREFIX).count()} wells, "
             f"{Licence.objects.filter(source_name__startswith=PREFIX).count()} licences, "
@@ -150,6 +151,9 @@ class Command(BaseCommand):
         WaterQualitySample.objects.filter(well__in=wells).delete()
         WaterQualitySample.objects.filter(station__in=stations).delete()
         WaterQualitySample.objects.filter(spring__in=springs).delete()
+        from apps.submissions.models import Submission
+
+        Submission.objects.filter(submitter__email__startswith="demo.").delete()
         apps_qs = LicenceApplication.objects.filter(source_name__startswith=PREFIX)
         AbstractionRecord.objects.filter(licence__application__in=apps_qs).delete()
         Licence.objects.filter(application__in=apps_qs).delete()
@@ -202,6 +206,7 @@ class Command(BaseCommand):
                 name=f"{PREFIX} {name}", parish=self.parish[parish], basin=self.basin[basin], wmu=self.wmu.get(wmu), hydrostrat_unit=self.hsu,
                 use=use, easting=e, northing=n, elevation_m=Decimal(self.rng.randint(5, 120)), current_owner=owner, driller=driller,
                 pump_attached=use != WellUse.OBSERVATION, is_pumping=use != WellUse.OBSERVATION, is_index_well=use == WellUse.OBSERVATION,
+                is_public_supply=use == WellUse.PUBLIC_SUPPLY,
                 approval_state=ApprovalState.APPROVED, classification=Classification.PUBLIC, source=DataSource.MIGRATED,
             )
             for seq, (strata, top, bottom) in enumerate(LITHOLOGY, start=1):
@@ -222,6 +227,7 @@ class Command(BaseCommand):
             s = StreamflowStation.objects.create(
                 name=f"{PREFIX} {name}", river=self.river[river], parish=self.parish[parish], basin=self.basin[basin], wmu=self.wmu.get(wmu),
                 easting=e, northing=n, elevation_m=Decimal(self.rng.randint(20, 300)), aquarius_identifier=name.replace(" ", "_"),
+                is_public_supply=name.startswith("Hope River"),
                 approval_state=ApprovalState.APPROVED, classification=Classification.PUBLIC, source=DataSource.MIGRATED,
             )
             ReferencePoint.objects.create(station=s, description="Gauge board zero", elevation_m=s.elevation_m, valid_from=date(2015, 1, 1))
@@ -293,15 +299,19 @@ class Command(BaseCommand):
         hydro = self.users[roles.HYDROLOGIST]
         tech = self.users[roles.TECHNICIAN]
         start = self.today - timedelta(days=365)
+        level_start = self.today - timedelta(days=3 * 365)  # three years of weekly levels so percentile classes are meaningful
         working_from = self.today - timedelta(days=30)  # last month left unapproved
         levels, readings, samples, abstractions = [], [], [], []
-        for w in self.wells:
+        for i, w in enumerate(self.wells):
             base = float(self.rng.randint(6, 28))
-            d = start
-            while d <= self.today:
+            # per-well story: 0-3 steady, 4-6 declining (over-pumped), 7-8 recovering, 9 stale (no reading for 4 months), 10-11 steady
+            drift = {4: 0.0025, 5: 0.0035, 6: 0.003, 7: -0.0015, 8: -0.002}.get(i, 0.0)  # metres per day; + = deeper
+            last_day = self.today - timedelta(days=120) if i == 9 else self.today
+            d = level_start
+            while d <= last_day:
                 # seasonal: deeper (larger number) in Mar–Apr, shallower after Oct–Nov rains
                 seasonal = 1.8 * math.sin((d.timetuple().tm_yday - 60) / 365 * 6.283)
-                value = round(base + seasonal + self.rng.gauss(0, 0.15), 3)
+                value = round(base + seasonal + drift * (d - level_start).days + self.rng.gauss(0, 0.15), 3)
                 grade = ObservationGrade.GOOD if self.rng.random() > 0.08 else self.rng.choice([ObservationGrade.FAIR, ObservationGrade.POOR, ObservationGrade.ESTIMATED])
                 quals = ["PUMPING"] if (w.is_pumping and self.rng.random() < 0.1) else []
                 approved = d < working_from
@@ -330,11 +340,13 @@ class Command(BaseCommand):
                 d += timedelta(days=1)
         StationReading.objects.bulk_create(readings, batch_size=500)
         # abstraction: one row per month per active licence
-        for lic in self.licences:
+        for li, lic in enumerate(self.licences):
             if lic.status != LicenceStatus.ACTIVE:
                 continue
             m = date(start.year, start.month, 1)
             over_month = self.rng.randint(0, 11) if self.rng.random() < 0.3 else None
+            if li in (2, 5, 8):  # three licences over the limit in the latest complete month
+                over_month = 11
             k = 0
             while m <= self.today:
                 nxt = date(m.year + (m.month == 12), m.month % 12 + 1, 1)
@@ -359,12 +371,13 @@ class Command(BaseCommand):
             for q in range(4):
                 d = start + timedelta(days=45 + 91 * q)
                 cond = self.rng.randint(300, 1400) if kind != SampleSource.STREAM else self.rng.randint(150, 500)
+                hot = q == 3 and kind == SampleSource.WELL and site.pk % 4 == 0  # a few recent exceedances for the monitoring dashboard
                 samples.append(WaterQualitySample(
                     source_type=kind, well=site if kind == SampleSource.WELL else None, spring=site if kind == SampleSource.SPRING else None,
                     station=site if kind == SampleSource.STREAM else None, laboratory=self.lab, sample_ref=f"{PREFIX}-{site.pk}-{q + 1}",
                     sampled_at=self._dt(d, 10), analysed_at=self._dt(d + timedelta(days=4), 14), sampled_by=self.users[roles.TECHNICIAN].full_name,
                     specific_conductivity_us_cm=cond, temperature_c=Decimal(str(round(self.rng.uniform(24, 29), 1))), ph=Decimal(str(round(self.rng.uniform(6.8, 8.1), 2))),
-                    nitrate_mg_l=Decimal(str(round(self.rng.uniform(1, 28), 2))), chloride_mg_l=Decimal(str(round(cond * 0.12, 2))), hardness_mg_l=Decimal(str(round(cond * 0.35, 1))),
+                    nitrate_mg_l=Decimal(str(round(self.rng.uniform(52, 70) if hot else self.rng.uniform(1, 28), 2))), chloride_mg_l=Decimal(str(round(cond * (0.3 if hot else 0.12), 2))), hardness_mg_l=Decimal(str(round(cond * 0.35, 1))),
                     total_dissolved_solids_mg_l=Decimal(str(round(cond * 0.64, 1))), turbidity_ntu=Decimal(str(round(self.rng.uniform(0.2, 6), 2))),
                     grade=ObservationGrade.GOOD, approval_state=ApprovalState.APPROVED, classification=Classification.PUBLIC, source=DataSource.SUBMISSION,
                 ))
@@ -374,6 +387,43 @@ class Command(BaseCommand):
             ApprovalPeriod.objects.create(series=SeriesKind.WELL_LEVEL, well=w, starts_at=self._dt(start, 0), ends_at=self._dt(working_from, 0), approved_by=hydro, rows_approved=WellWaterLevel.objects.filter(well=w, approval_state=ApprovalState.APPROVED).count())
         for s in self.stations:
             ApprovalPeriod.objects.create(series=SeriesKind.STATION_STAGE, station=s, starts_at=self._dt(start, 0), ends_at=self._dt(working_from, 0), approved_by=hydro, rows_approved=StationReading.objects.filter(station=s, approval_state=ApprovalState.APPROVED).count())
+
+    def _submissions(self):
+        """Twelve months of data-submission history (form / CSV / API) with validation outcomes for the submissions dashboard."""
+        from apps.catalog.models import CategoryVersion
+        from apps.submissions.models import Channel, RecordStatus, Submission, SubmissionRecord, SubmissionStatus
+
+        versions = list(CategoryVersion.objects.filter(category__code__in=["water_abstraction", "water_quality"], status="published").select_related("category"))
+        if not versions:
+            return
+        client = self.users[roles.CLIENT]
+        fails = ["abstraction_volume_m3", "period_end", "licence", "ph", "sampled_at", "nitrate_mg_l"]
+        for k in range(13):  # current month (partial) plus twelve full months
+            month_start = date(self.today.year, self.today.month, 1)
+            for _ in range(k):
+                month_start = date(month_start.year, month_start.month, 1) - timedelta(days=1)
+                month_start = date(month_start.year, month_start.month, 1)
+            last_day = min(27, (self.today - month_start).days) if k == 0 else 27
+            for n in range(self.rng.randint(6, 14) if k else max(2, self.rng.randint(1, 4))):
+                v = versions[n % len(versions)]
+                channel = self.rng.choice([Channel.FORM, Channel.FORM, Channel.CSV, Channel.CSV, Channel.API])
+                rows = 1 if channel == Channel.FORM else self.rng.randint(8, 60)
+                rejected = 0 if self.rng.random() < 0.7 else self.rng.randint(1, max(1, rows // 6))
+                flagged = 0 if self.rng.random() < 0.6 else self.rng.randint(1, max(1, rows // 8))
+                accepted = max(0, rows - rejected - flagged)
+                status = SubmissionStatus.APPROVED if k > 0 or self.rng.random() < 0.5 else self.rng.choice([SubmissionStatus.UNDER_REVIEW, SubmissionStatus.APPROVED, SubmissionStatus.REJECTED])
+                when = self._dt(month_start + timedelta(days=self.rng.randint(0, max(0, last_day))), 11)
+                sub = Submission.objects.create(
+                    category_version=v, submitter=client, party=client.party, channel=channel, status=status, row_count=rows,
+                    accepted_count=accepted, flagged_count=flagged, rejected_count=rejected, classification=Classification.PUBLIC if status == SubmissionStatus.APPROVED else None,
+                    created_at=when,
+                )
+                recs = []
+                for r in range(min(rows, 12)):
+                    st = RecordStatus.REJECTED if r < rejected else RecordStatus.FLAGGED if r < rejected + flagged else RecordStatus.ACCEPTED
+                    errors = {self.rng.choice(fails): ["Value out of range"]} if st == RecordStatus.REJECTED else {}
+                    recs.append(SubmissionRecord(submission=sub, row_no=r + 1, payload={"demo": True}, errors=errors, status=st))
+                SubmissionRecord.objects.bulk_create(recs)
 
     def _field_records(self):
         tech = self.users[roles.TECHNICIAN]

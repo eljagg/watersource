@@ -6,6 +6,7 @@
 
 @source "../templates";
 @source "../apps";
+@source inline("{md:,xl:}col-span-{3,4,5,6,7,12}"); /* dashboard panel spans are composed in templates/reports/dashboard.html */
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -29,6 +30,21 @@
   --radius-card: 0.875rem;
   --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 8px 24px -12px rgb(15 23 42 / 0.18);
   --shadow-card-dark: 0 1px 2px 0 rgb(0 0 0 / 0.5), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+}
+
+/* ---------- Dashboard tokens (design doc 13 §4.1): read by static/js/dashboards.js via getComputedStyle ---------- */
+:root {
+  --ds-page: #f1f5f9; --ds-surface: #ffffff; --ds-surface-2: #f8fafc; --ds-ink: #0f172a; --ds-ink-2: #475569; --ds-muted: #64748b;
+  --ds-grid: #e2e8f0; --ds-axis: #cbd5e1; --ds-ring: rgba(15, 23, 42, .08);
+  --ds-s1: #2470e0; --ds-s2: #eb6834; --ds-s3: #1baf7a; --ds-s4: #eda100; --ds-s5: #e87ba4; --ds-s6: #008300;
+  --ds-good: #0ca30c; --ds-warn: #fab219; --ds-serious: #ec835a; --ds-critical: #d03b3b;
+  --ds-seq1: #cde2fb; --ds-seq2: #9ec5f4; --ds-seq3: #6da7ec; --ds-seq4: #3987e5; --ds-seq5: #256abf; --ds-seq6: #184f95; --ds-seq7: #0d366b;
+  --ds-scale: 1;
+}
+html.dark {
+  --ds-page: #020617; --ds-surface: #0f172a; --ds-surface-2: #111c33; --ds-ink: #f8fafc; --ds-ink-2: #cbd5e1; --ds-muted: #94a3b8;
+  --ds-grid: #1e293b; --ds-axis: #334155; --ds-ring: rgba(255, 255, 255, .08);
+  --ds-s1: #3a8ff0; --ds-s2: #d95926; --ds-s3: #199e70; --ds-s4: #c98500; --ds-s5: #d55181; --ds-s6: #008300;
 }
 
 /* ---------- Base: page surfaces, typography, forms ---------- */
@@ -111,6 +127,39 @@
   .form-help { @apply text-xs text-slate-500 dark:text-slate-400; }
   .form-error { @apply text-xs font-medium text-rose-700 dark:text-rose-400; }
   .req { @apply ml-0.5 text-rose-600 dark:text-rose-400; }
+  /* Dashboards (desk + wall share these; wall adds its own frame in templates/reports/wall.html) */
+  .ds-kpis { @apply grid grid-cols-2 gap-4 xl:grid-cols-4; }
+  .ds-tile { @apply rounded-(--radius-card) border border-slate-200/80 bg-white shadow-(--shadow-card) dark:border-slate-800 dark:bg-slate-900 dark:shadow-(--shadow-card-dark) p-4 sm:p-5; }
+  .ds-tile h3 { @apply text-sm font-semibold text-slate-600 dark:text-slate-300; }
+  .ds-tile .ds-v { @apply mt-1 text-4xl font-semibold tracking-tight tabular-nums; }
+  .ds-tile .ds-v small { @apply ml-1.5 text-lg font-medium text-slate-500 dark:text-slate-400; }
+  .ds-delta { @apply mt-2 text-sm font-medium; }
+  .ds-delta-up { @apply text-emerald-700 dark:text-emerald-400; }
+  .ds-delta-down { @apply text-rose-700 dark:text-rose-400; }
+  .ds-delta-flat { @apply text-slate-500 dark:text-slate-400; }
+  .ds-grid { @apply mt-4 grid grid-cols-1 gap-4 md:grid-cols-12; }
+  .ds-card { @apply rounded-(--radius-card) border border-slate-200/80 bg-white shadow-(--shadow-card) dark:border-slate-800 dark:bg-slate-900 dark:shadow-(--shadow-card-dark) flex min-h-[20rem] flex-col p-4 sm:p-5; }
+  .ds-card h2 { @apply text-base font-semibold; }
+  .ds-card p { @apply mt-0.5 text-xs text-slate-500 dark:text-slate-400; }
+  .ds-chart { @apply mt-2 min-h-0 flex-1; }
+  .ds-status { @apply grid grid-cols-2 content-start gap-2; }
+  .ds-status > div { @apply flex items-center gap-2.5 rounded-xl bg-slate-50 px-3 py-2.5 text-sm dark:bg-slate-800/60; }
+  .ds-status b { @apply ml-auto text-xl tabular-nums; }
+  .ds-status-compact > div { @apply py-1.5 text-xs; }
+  .ds-sw { @apply h-3 w-3 shrink-0 rounded; }
+  .ds-list { @apply mt-2 flex list-none flex-col gap-2 p-0; }
+  .ds-list li { @apply flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800/60; }
+  .ds-ref { @apply min-w-[9.5rem] font-semibold tabular-nums; }
+  .ds-who { @apply flex-1 truncate text-slate-600 dark:text-slate-300; }
+  .ds-pill { @apply inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .ds-pill-critical { @apply bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300; }
+  .ds-pill-serious { @apply bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300; }
+  .ds-pill-warn { @apply bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300; }
+  .ds-empty { @apply text-sm text-slate-500 dark:text-slate-400; }
+  .ds-tabs { @apply flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800; }
+  .ds-tab { @apply -mb-px rounded-t-lg border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white; }
+  .ds-tab-on { @apply border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300; }
+
   .form-actions { @apply sticky bottom-0 flex flex-wrap items-center justify-end gap-2 rounded-b-(--radius-card) border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-900/90; }
   .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400; }
 }

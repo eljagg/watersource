@@ -184,6 +184,11 @@ class Well(PublishableModel):
     wmu = models.ForeignKey(WMU, null=True, blank=True, on_delete=models.PROTECT, related_name="wells")
     sub_wmu = models.ForeignKey(SubWMU, null=True, blank=True, on_delete=models.PROTECT, related_name="wells")
     hydrostrat_unit = models.ForeignKey(HydrostratUnit, null=True, blank=True, on_delete=models.PROTECT, related_name="wells")
+    # security of the source information (Methodology §4A, ADR-0002)
+    is_public_supply = models.BooleanField(
+        "Public-supply source", default=False, db_index=True,
+        help_text="Serves public water supply: exact coordinates and engineering details are restricted outside WRA technical staff.",
+    )
     # current status (item 7)
     pump_attached = models.BooleanField(null=True, blank=True)
     is_pumping = models.BooleanField(null=True, blank=True)
@@ -210,12 +215,24 @@ class Well(PublishableModel):
         return self.name
 
     def save(self, *args, **kwargs):
-        """Derive the PostGIS point from easting/northing when only the grid values were supplied."""
+        """Derive the PostGIS point from the grid values; audit changes to the public-supply flag."""
         if self.location is None and self.easting is not None and self.northing is not None:
             from django.contrib.gis.geos import Point
 
             self.location = Point(float(self.easting), float(self.northing), srid=SRID)
+        _audit_public_supply_change(self)
         super().save(*args, **kwargs)
+
+
+def _audit_public_supply_change(site) -> None:
+    """Write an audit entry when ``is_public_supply`` flips on an existing site (Methodology §4A)."""
+    if site._state.adding or site.pk is None:
+        return
+    old = type(site)._default_manager.filter(pk=site.pk).values_list("is_public_supply", flat=True).first()
+    if old is not None and old != site.is_public_supply:
+        from apps.core import audit
+
+        audit.log("site.public_supply_changed", site, summary=f"is_public_supply {old} → {site.is_public_supply}")
 
 
 def _depth_order_constraint(name: str) -> models.CheckConstraint:
@@ -423,6 +440,10 @@ class StreamflowStation(PublishableModel):
     basin = models.ForeignKey(Basin, null=True, blank=True, on_delete=models.PROTECT, related_name="stations")
     wmu = models.ForeignKey(WMU, null=True, blank=True, on_delete=models.PROTECT, related_name="stations")
     is_active = models.BooleanField(default=True)
+    is_public_supply = models.BooleanField(
+        "Public-supply source", default=False, db_index=True,
+        help_text="Intake for public water supply: exact coordinates and engineering details are restricted outside WRA technical staff.",
+    )
 
     objects = PublishedQuerySet.as_manager()
 
@@ -435,11 +456,12 @@ class StreamflowStation(PublishableModel):
         return self.name
 
     def save(self, *args, **kwargs):
-        """Derive the PostGIS point from easting/northing when only the grid values were supplied."""
+        """Derive the PostGIS point from the grid values; audit changes to the public-supply flag."""
         if self.location is None and self.easting is not None and self.northing is not None:
             from django.contrib.gis.geos import Point
 
             self.location = Point(float(self.easting), float(self.northing), srid=SRID)
+        _audit_public_supply_change(self)
         super().save(*args, **kwargs)
 
 
