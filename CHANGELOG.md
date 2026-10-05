@@ -2,6 +2,15 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.5.3] — 5 Oct 2026
+
+### Fixed
+- Review panel: **Request information**, **Reject**, **Return** and **Add comment** appeared to do nothing. The panel refreshed itself in place, so the reason an action was refused (a comment is mandatory for all of them) and the success message were never shown. Every action now reloads the page with a clear outcome message and the updated history; actions that move the item away from the user's stage (approve, reject, return, request information) take the user back to the review queue.
+- Review panel: the comment box is marked required (Approve is the only action that works without one), and an item that is waiting on the submitter says so instead of looking untouched.
+
+### Added
+- "← Back to review queue" link at the top of every workflow item.
+
 ## [0.5.2] — 5 Oct 2026
 
 ### Changed

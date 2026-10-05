@@ -1,4 +1,5 @@
 {% extends "base.html" %}{% block content %}
+<p class="mb-3 text-sm"><a class="link" href="{% url 'workflow:queue' %}">← Back to review queue</a></p>
 <h1 class="page-title mb-1">{{ instance.summary }}</h1>
 <p class="text-body mb-4 text-sm">{{ instance.definition.name }} · {{ instance.get_state_display }}{% if instance.current_stage %} · stage: {{ instance.current_stage.name }}{% endif %}</p>
 <div class="grid gap-6 md:grid-cols-3">

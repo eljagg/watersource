@@ -228,3 +228,32 @@ def test_demo_set_has_items_at_technical_assessment_and_upgrade_is_idempotent(cl
     before = WorkflowInstance.objects.count()
     call_command("seed_demo_data", force=True, if_missing=True, verbosity=0)
     assert WorkflowInstance.objects.count() == before
+
+
+# --- v0.5.3: panel actions always show their outcome -------------------------------------------
+
+
+@pytest.mark.django_db
+def test_panel_actions_report_outcome_and_return_to_queue(client, reviewer, hydrologist, application):
+    call_command("bootstrap_workflows", verbosity=0)
+    wf = _advance_to_assessment(application, reviewer)
+    _verified_login(client, hydrologist)
+    html = client.get(f"/workflow/{wf.pk}/").content.decode()
+    assert "Back to review queue" in html and 'name="comment" rows="3" required' in html
+    # no comment → stays on the item with the reason shown
+    r = client.post(f"/workflow/{wf.pk}/act/", {"action": "request_info", "comment": ""}, follow=True)
+    assert r.redirect_chain[-1][0].endswith(f"/workflow/{wf.pk}/") and "Tell the submitter what is needed" in r.content.decode()
+    # with a comment → parked, user sent back to the queue with a message
+    r = client.post(f"/workflow/{wf.pk}/act/", {"action": "request_info", "comment": "Please attach the pump test."}, follow=True)
+    assert r.redirect_chain[-1][0].endswith("/workflow/queue/") and "Information requested" in r.content.decode()
+    wf.refresh_from_db()
+    assert wf.state == "info_requested"
+    assert "Waiting on the submitter" in client.get(f"/workflow/{wf.pk}/").content.decode()
+    # htmx callers get an HX-Redirect instead of a panel fragment
+    r = client.post(f"/workflow/{wf.pk}/act/", {"action": "comment", "comment": "noted"}, HTTP_HX_REQUEST="true")
+    assert r.status_code == 204 and r["HX-Redirect"].endswith(f"/workflow/{wf.pk}/")
+    # reject closes the item
+    r = client.post(f"/workflow/{wf.pk}/act/", {"action": "reject", "comment": "Aquifer fully allocated."}, follow=True)
+    assert "Rejected" in r.content.decode()
+    wf.refresh_from_db()
+    assert wf.state == "rejected" and "Closed:" in client.get(f"/workflow/{wf.pk}/").content.decode()

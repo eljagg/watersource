@@ -6,15 +6,16 @@
   {% if subject.assessment %}<div class="alert-success mb-3 text-xs">Technical assessment recorded by {{ subject.assessment.assessed_by.full_name|default:"staff" }} on {{ subject.assessment.assessed_at|date:"d M Y" }}: <strong>{{ subject.assessment.get_recommendation_display }}</strong>{% if subject.assessment.recommended_daily_volume_m3 %} · {{ subject.assessment.recommended_daily_volume_m3 }} m³/day{% endif %}{% if subject.assessment.wmu_utilisation_after_pct %} · WMU {{ subject.assessment.wmu_utilisation_after_pct }} % after grant{% endif %}. <a class="link" href="{% url 'lic:assessment' subject.reference %}">Edit</a></div>
   {% else %}<div class="alert-warning mb-3 text-xs">This stage needs the technical assessment before it can be approved. <a class="link" href="{% url 'lic:assessment' subject.reference %}">Complete the technical assessment →</a></div>{% endif %}
 {% endif %}
-<form method="post" action="{% url 'workflow:act' instance.pk %}" hx-post="{% url 'workflow:act' instance.pk %}" hx-target="#panel" hx-swap="innerHTML" class="space-y-2 text-sm">{% csrf_token %}
-<label class="block space-y-1">Comment<textarea name="comment" rows="3"></textarea></label>
+{% if instance.state == "info_requested" %}<div class="alert-warning mb-3 text-xs">Waiting on the submitter since {{ instance.updated_at|date:"d M Y H:i" }}. The item comes back to your queue when they resubmit; until then it can only be commented on or rejected.</div>{% endif %}
+<form method="post" action="{% url 'workflow:act' instance.pk %}" class="space-y-2 text-sm">{% csrf_token %}
+<label class="block space-y-1">Comment <span class="text-muted">(required for Request information, Reject, Return and Add comment — tell the submitter what is needed or why)</span><textarea name="comment" rows="3" required></textarea></label>
 {% if instance.current_stage.is_final %}
   <label class="block space-y-1">Access classification on approval<select name="classification" ><option value="staff_only">Staff only</option><option value="public">Public</option></select></label>
   {% if subject.reference %}{% if subject.assessment %}<p class="text-muted text-xs">Assessment: {{ subject.assessment.get_recommendation_display }} · {{ subject.assessment.conditions.count }} standard condition(s) will be printed on the licence.</p>{% endif %}<label class="block space-y-1">Daily volume granted (m³)<input name="daily_volume_granted_m3" type="number" step="0.001" value="{% if subject.assessment.recommended_daily_volume_m3 %}{{ subject.assessment.recommended_daily_volume_m3 }}{% else %}{{ subject.daily_volume_requested_m3 }}{% endif %}" ></label>
   <label class="block space-y-1">Term (years)<input name="term_years" type="number" value="1" min="1" max="10" ></label>{% endif %}
 {% endif %}
 <div class="flex flex-wrap gap-2 pt-2">
-  <button name="action" value="approve" class="btn-success btn-sm">{% if instance.current_stage.is_final %}Approve{% else %}Approve → next stage{% endif %}</button>
+  <button name="action" value="approve" formnovalidate class="btn-success btn-sm">{% if instance.current_stage.is_final %}Approve{% else %}Approve → next stage{% endif %}</button>
   {% if instance.current_stage.can_return_to_submitter %}<button name="action" value="request_info" class="btn-warning btn-sm">Request information</button>{% endif %}
   {% if instance.current_stage.can_reject %}<button name="action" value="reject" class="btn-danger btn-sm">Reject</button>{% endif %}
   <button name="action" value="comment" class="btn-secondary btn-sm">Add comment</button>
