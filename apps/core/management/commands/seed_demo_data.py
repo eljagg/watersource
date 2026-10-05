@@ -121,7 +121,8 @@ class Command(BaseCommand):
             with transaction.atomic():
                 self._users()
                 self._prune_orphans()
-            self.stdout.write("DEMO data already present — kept; demo accounts refreshed (set DEMO_DATA=reseed to rebuild the data).")
+                self._upgrade_existing()
+            self.stdout.write("DEMO data already present — kept; demo accounts refreshed and demo set upgraded to this release (DEMO_DATA=reseed rebuilds it).")
             return
         if not options["force"] and Well.objects.exclude(name__startswith=PREFIX).exists():
             raise CommandError("Database holds non-demo wells; refusing without --force.")
@@ -158,10 +159,6 @@ class Command(BaseCommand):
         from apps.obs.models import ModelRun
 
         ModelRun.objects.filter(code__startswith="demo-").delete()
-        from apps.ref.models import Aquifer
-
-        Well.objects.filter(name__startswith=PREFIX).update(aquifer=None)
-        Aquifer.objects.filter(code__startswith="DEMO-AQ-").delete()
         ApprovalPeriod.objects.filter(well__in=wells).delete()
         ApprovalPeriod.objects.filter(station__in=stations).delete()
         WellWaterLevel.objects.filter(well__in=wells).delete()
@@ -179,7 +176,11 @@ class Command(BaseCommand):
         from apps.workflow.models import WorkflowInstance
 
         WorkflowInstance.objects.filter(summary__startswith=PREFIX).delete()
-        apps_qs.delete()
+        apps_qs.delete()  # cascades the technical assessments, which protect the demo aquifers
+        from apps.ref.models import Aquifer
+
+        Well.objects.filter(name__startswith=PREFIX).update(aquifer=None)
+        Aquifer.objects.filter(code__startswith="DEMO-AQ-").delete()
         InstrumentInstallation.objects.filter(instrument__serial_number__startswith=PREFIX).delete()
         Instrument.objects.filter(serial_number__startswith=PREFIX).delete()
         wells.delete()
@@ -188,6 +189,69 @@ class Command(BaseCommand):
         Party.objects.filter(name__startswith=PREFIX).exclude(email="demo.client@example.com").delete()
         # demo.* users are kept (and refreshed in _users) so their authenticator enrolments survive a re-seed;
         # deleting them cascaded to the TOTP devices and forced everyone to scan a new QR code after each deploy.
+
+    def _demo_assessment(self, app):
+        """A recorded technical assessment on one demo application (shows the 'assessment recorded' state in the panel)."""
+        from apps.lic.models import LicenceCondition, TechnicalAssessment
+        from apps.lic.services import wmu_balance
+
+        wmu = app.well.wmu if app.well_id else None
+        bal = wmu_balance(wmu) if wmu else None
+        ta, _ = TechnicalAssessment.objects.get_or_create(application=app, defaults=dict(
+            assessed_by=self.users[roles.HYDROLOGIST], wmu=wmu, aquifer=app.well.aquifer if app.well_id else None,
+            wmu_safe_yield_m3_d=bal["safe_yield"] if bal else None, wmu_allocated_m3_d=bal["allocated"] if bal else None, wmu_reported_m3_d=bal["reported_avg"] if bal else None,
+            impact="low", recommendation="grant", recommended_daily_volume_m3=app.daily_volume_requested_m3,
+            findings="Demo assessment: yield test adequate; no public-supply source within 500 m; WMU within safe yield after grant."))
+        ta.conditions.set(LicenceCondition.objects.filter(is_default=True, is_active=True))
+        app.wmu = wmu
+        app.save(update_fields=["wmu", "updated_at"])
+
+    def _upgrade_existing(self):
+        """Bring a demo set created by an earlier release up to the current one without rebuilding it (idempotent).
+
+        Runs on every deploy with DEMO_DATA=1 so Omar never needs a reseed to see the latest demo features:
+        safe yields on WMUs, demo aquifers, conditions on demo licences, live items at the Technical assessment stage.
+        """
+        from apps.lic.models import Licence, LicenceCondition
+        from apps.ref.models import Aquifer
+        from apps.workflow import engine
+        from apps.workflow.models import WorkflowInstance
+
+        self.wmu = {w.code: w for w in WMU.objects.all()}
+        self.basin = {b.code: b for b in Basin.objects.all()}
+        self.hsu = HydrostratUnit.objects.first()
+        changed = []
+        for code in {w[3] for w in WELLS}:
+            u = self.wmu.get(code)
+            if u is not None and u.safe_yield_m3_d is None:
+                u.safe_yield_m3_d = Decimal(self.rng.randint(4, 20) * 1000)
+                u.safe_yield_source = "DEMO figure — replace with the Water Resources Master Plan value"
+                u.save(update_fields=["safe_yield_m3_d", "safe_yield_source"])
+                changed.append(f"safe yield {code}")
+        for code in {w[2] for w in WELLS}:
+            b = self.basin.get(code)
+            if b is not None and not Aquifer.objects.filter(code=f"DEMO-AQ-{code}").exists():
+                aq = Aquifer.objects.create(code=f"DEMO-AQ-{code}", name=f"{PREFIX} {b.name} limestone aquifer", basin=b, hydrostrat_unit=self.hsu,
+                                            safe_yield_m3_d=Decimal(self.rng.randint(3, 12) * 1000), notes="Demo aquifer record (Planning & Investigation Unit).")
+                Well.objects.filter(name__startswith=PREFIX, basin=b, aquifer__isnull=True).update(aquifer=aq)
+                changed.append(f"aquifer {code}")
+        for lic in Licence.objects.filter(number__startswith="DEMO-L", conditions=[]):
+            lic.conditions = [c.render(lic.application, lic.daily_volume_granted_m3) for c in LicenceCondition.objects.filter(is_default=True, is_active=True).filter(applies_to__in=["both", lic.water_source])]
+            lic.wmu = lic.well.wmu if lic.well_id else None
+            lic.save(update_fields=["conditions", "wmu", "updated_at"])
+            changed.append(f"conditions {lic.number}")
+        open_apps = WorkflowInstance.objects.filter(definition__code="licence_application", state="in_progress", summary__startswith=PREFIX).order_by("pk")
+        at_assessment = [wf for wf in open_apps if wf.current_stage and wf.current_stage.code == "hydrogeology"]
+        if len(at_assessment) < 2:
+            for wf in [w for w in open_apps if w.current_stage and w.current_stage.code == "intake"][: 2 - len(at_assessment)]:
+                engine.approve(wf, self.users[roles.REVIEWER], "Intake complete — documents in order.")
+                at_assessment.append(wf)
+                changed.append(f"advanced {wf.summary}")
+        if at_assessment and not any(hasattr(wf.subject, "assessment") for wf in at_assessment):
+            self._demo_assessment(at_assessment[-1].subject)
+            changed.append("demo assessment")
+        if changed:
+            self.stdout.write(f"demo set upgraded: {', '.join(changed[:8])}{' …' if len(changed) > 8 else ''}")
 
     def _prune_orphans(self):
         """Remove workflow instances whose subject no longer exists (left behind by earlier re-seeds)."""
@@ -351,7 +415,11 @@ class Command(BaseCommand):
                 app.save()
                 from apps.workflow import engine
 
-                engine.start("licence_application", app, client, summary=f"{PREFIX} {app.reference} · {app.applicant_name} · {parish.name}")
+                wf = engine.start("licence_application", app, client, summary=f"{PREFIX} {app.reference} · {app.applicant_name} · {parish.name}")
+                if i in (33, 34):  # two live items at the Technical assessment stage so the hydrologist's queue is not empty
+                    engine.approve(wf, self.users[roles.REVIEWER], "Intake complete — documents in order.")
+                    if i == 34:
+                        self._demo_assessment(app)
             else:
                 app.status, app.submitted_at = ApplicationStatus.DRAFT, None
                 app.save()

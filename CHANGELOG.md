@@ -2,6 +2,16 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.5.2] — 5 Oct 2026
+
+### Changed
+- **`DEMO_DATA=1` is now the only setting needed.** On every deploy the demo set is kept, the demo accounts are refreshed, and the demo set is *upgraded* to the current release without a rebuild: safe yields on the demo WMUs, demo aquifers, conditions on demo licences, and two live applications moved to the Technical assessment stage (one with its assessment already recorded). `DEMO_DATA=reseed` remains available only as an optional full rebuild.
+- Demo data: two of the four open applications now sit at the Technical assessment stage, so the hydrologist's review queue is not empty.
+- Review queue: the empty-state message names the stage(s) the signed-in user acts at and explains that items arrive once the previous stage approves them.
+
+### Fixed
+- `DEMO_DATA=reseed` failed when a demo technical assessment referenced a demo aquifer (protected foreign key); the demo aquifers are now removed after the applications.
+
 ## [0.5.1] — 5 Oct 2026
 
 ### Fixed

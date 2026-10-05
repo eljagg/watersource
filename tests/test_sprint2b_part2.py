@@ -207,3 +207,24 @@ def test_if_missing_still_creates_new_demo_accounts_and_prunes_orphans():
     assert U.objects.filter(email="demo.finance@wra-demo.local").exists()
     assert U.objects.filter(email="demo.hydrologist@wra-demo.local", groups__name="hydrologist").exists()
     assert not WorkflowInstance.objects.filter(pk=orphan.pk).exists()
+
+
+@pytest.mark.django_db
+def test_demo_set_has_items_at_technical_assessment_and_upgrade_is_idempotent(client):
+    from apps.workflow.models import WorkflowInstance
+
+    call_command("load_reference_data", verbosity=0)
+    call_command("seed_demo_data", force=True, verbosity=0)
+    at = [w for w in WorkflowInstance.objects.filter(state="in_progress", definition__code="licence_application") if w.current_stage.code == "hydrogeology"]
+    assert len(at) == 2 and sum(hasattr(w.subject, "assessment") for w in at) == 1
+    # hydrologist sees them in the queue
+    from django.contrib.auth import get_user_model
+
+    hydro = get_user_model().objects.get(email="demo.hydrologist@wra-demo.local")
+    _verified_login(client, hydro)
+    html = client.get("/workflow/queue/").content.decode()
+    assert "Technical assessment" in html and html.count("DEMO WRA-LA") == 2
+    # a second run with the data kept changes nothing
+    before = WorkflowInstance.objects.count()
+    call_command("seed_demo_data", force=True, if_missing=True, verbosity=0)
+    assert WorkflowInstance.objects.count() == before

@@ -29,7 +29,8 @@ def queue(request):
     definition = request.GET.get("definition")
     if definition:
         items = items.filter(definition__code=definition)
-    return render(request, "staff/queue.html", {"items": items[:200], "definition": definition})
+    my_stages = [] if request.user.is_superuser else sorted({s.name for s in WorkflowStage.objects.filter(approver_group__in=request.user.groups.all())})
+    return render(request, "staff/queue.html", {"items": items[:200], "definition": definition, "my_stages": my_stages})
 
 
 @staff_required
