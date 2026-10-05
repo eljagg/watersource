@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded',function(){
 <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-3 focus:py-2 focus:shadow dark:focus:bg-slate-900">Skip to content</a>
 
 <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:border-slate-800 dark:bg-slate-950/80">
-  <div class="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
+  <div class="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6">
     <a href="{% url 'core:home' %}" class="flex items-center gap-2.5" aria-label="{{ branding.product_name }} home">
       {% if branding.has_logo %}
       <img src="{% url 'core:branding_logo' %}?v={{ branding.version }}" alt="{{ branding.organisation_name }}" class="h-9 w-auto max-w-[180px] object-contain{% if branding.has_logo_dark %} dark:hidden{% endif %}">
@@ -43,12 +43,12 @@ document.addEventListener('DOMContentLoaded',function(){
       <span class="leading-tight"><span class="block text-base font-semibold tracking-tight text-slate-900 dark:text-white">{{ branding.product_name }}</span>{% if branding.tagline %}<span class="block max-w-[11rem] truncate text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400" title="{{ branding.tagline }}">{{ branding.tagline }}</span>{% endif %}</span>
     </a>
 
-    <nav class="ml-4 hidden items-center gap-1 md:flex" aria-label="Primary">
-      <a href="{% url 'lic:application_list' %}" class="nav-link">Licence applications</a>
-      <a href="{% url 'submissions:index' %}" class="nav-link">Data submissions</a>
-      {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link">Review queue</a><a href="{% url 'reports:index' %}" class="nav-link">Dashboards</a>{% endif %}
-      {% if user.is_authenticated and user.is_staff %}<a href="{% url 'admin:index' %}" class="nav-link">Admin console</a>{% endif %}
-      <a href="/api/docs/" class="nav-link">API</a>
+    <nav class="ml-3 hidden items-center gap-1 md:flex" aria-label="Primary">
+      <a href="{% url 'lic:application_list' %}" class="nav-link {% active_tab '/licensing/' %}">Licence applications</a>
+      <a href="{% url 'submissions:index' %}" class="nav-link {% active_tab '/submissions/' %}">Data submissions</a>
+      {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link {% active_tab '/workflow/' %}">Review queue</a><a href="{% url 'reports:index' %}" class="nav-link {% active_tab '/dashboards/' %}">Dashboards</a>{% endif %}
+      {% if user.is_authenticated and user.is_staff %}<a href="{% url 'admin:index' %}" class="nav-link {% active_tab '/admin/' %}">Admin console</a>{% endif %}
+      <a href="/api/docs/" class="nav-link {% active_tab '/api/' %}">API</a>
     </nav>
 
     <div class="ml-auto flex items-center gap-1.5">
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded',function(){
           <span class="sr-only">Notifications</span>
           {% if unread_notifications %}<span class="absolute -right-0.5 -top-0.5 min-w-[1.1rem] rounded-full bg-accent-400 px-1 text-center text-[10px] font-bold leading-[1.1rem] text-slate-900">{{ unread_notifications }}</span>{% endif %}
         </a>
-        <a href="{% url 'accounts:profile' %}" class="nav-link hidden sm:inline-flex">{{ user.full_name }}</a>
+        <a href="{% url 'accounts:profile' %}" class="nav-text hidden whitespace-nowrap xl:inline-flex {% active_tab '/accounts/profile/' %}">{{ user.full_name }}</a>
         <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="btn-secondary btn-sm">Sign out</button></form>
       {% else %}
         <a href="{% url 'accounts:login' %}" class="nav-link">Sign in</a>
@@ -75,12 +75,12 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
   </div>
   <nav id="mobile-nav" class="hidden border-t border-slate-200 px-4 py-2 md:hidden dark:border-slate-800" aria-label="Primary mobile">
-    <a href="{% url 'lic:application_list' %}" class="nav-link block">Licence applications</a>
-    <a href="{% url 'submissions:index' %}" class="nav-link block">Data submissions</a>
-    {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link block">Review queue</a><a href="{% url 'reports:index' %}" class="nav-link block">Dashboards</a><a href="{% url 'reports:wall' %}" class="nav-link block">Wall display</a>{% endif %}
-    {% if user.is_authenticated and user.is_staff %}<a href="{% url 'admin:index' %}" class="nav-link block">Admin console</a>{% endif %}
-    <a href="/api/docs/" class="nav-link block">API</a>
-    {% if user.is_authenticated %}<a href="{% url 'accounts:profile' %}" class="nav-link block">{{ user.full_name }}</a>{% endif %}
+    <a href="{% url 'lic:application_list' %}" class="nav-link-m {% active_tab '/licensing/' %}">Licence applications</a>
+    <a href="{% url 'submissions:index' %}" class="nav-link-m {% active_tab '/submissions/' %}">Data submissions</a>
+    {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link-m {% active_tab '/workflow/' %}">Review queue</a><a href="{% url 'reports:index' %}" class="nav-link-m {% active_tab '/dashboards/' %}">Dashboards</a><a href="{% url 'reports:wall' %}" class="nav-link-m">Wall display</a>{% endif %}
+    {% if user.is_authenticated and user.is_staff %}<a href="{% url 'admin:index' %}" class="nav-link-m {% active_tab '/admin/' %}">Admin console</a>{% endif %}
+    <a href="/api/docs/" class="nav-link-m {% active_tab '/api/' %}">API</a>
+    {% if user.is_authenticated %}<a href="{% url 'accounts:profile' %}" class="nav-link-m">{{ user.full_name }}</a>{% endif %}
   </nav>
 </header>
 

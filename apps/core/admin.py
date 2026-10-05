@@ -116,7 +116,7 @@ class SiteBrandingAdmin(admin.ModelAdmin):
     fieldsets = (
         ("Names", {"fields": ("organisation_name", "product_name", "tagline", "footer_text", "copyright_text")}),
         ("Colours", {"fields": ("tile_color", "accent_color"),
-                     "description": "Home-page tiles and navigation tabs use the tile colour with a thin metallic border in the border colour."}),
+                     "description": "Tile colour fills the active navigation tab; border colour is the thin metallic border on tiles and tabs."}),
         ("Logo", {"fields": ("current_logo", "logo_upload", "remove_logo", "logo_dark_upload", "remove_logo_dark"),
                   "description": "Changes appear on every page within a minute. The logo replaces the blue droplet in the header and on the wall display."}),
     )

@@ -117,16 +117,18 @@ html.dark {
   .badge-accent { @apply bg-accent-400 text-slate-900; }
   .badge-neutral { @apply bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300; }
 
-  /* Navigation tabs and home-page tiles: tile colour + thin metallic border, both set in Admin → Site branding (--ws-tile / --ws-accent). */
-  .nav-link { @apply rounded-md px-3 py-1.5 text-sm font-medium text-white transition; background: var(--ws-tile); border: 1px solid var(--ws-accent);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.25); }
-  .nav-link:hover { filter: brightness(1.12); }
-  .tile { @apply rounded-(--radius-card) text-white transition; background: linear-gradient(160deg, color-mix(in srgb, var(--ws-tile) 88%, white) 0%, var(--ws-tile) 45%, color-mix(in srgb, var(--ws-tile) 80%, black) 100%);
-    border: 1px solid var(--ws-accent); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), inset 0 -1px 0 rgba(0,0,0,.3), 0 0 0 1px color-mix(in srgb, var(--ws-accent) 45%, transparent), 0 6px 18px -8px rgba(0,0,0,.5); }
-  .tile:hover { filter: brightness(1.08); }
-  .tile h2 { @apply text-white; }
-  .tile .text-body { @apply text-white/85; }
-  .tile-link { @apply font-medium text-white underline decoration-white/50 underline-offset-2 hover:decoration-white; }
+  /* Navigation tabs: original text look with a thin metallic border; the active tab is filled with the tile colour.
+     Tiles: the original card look with the same border. Colours come from Admin → Site branding (--ws-tile / --ws-accent). */
+  .nav-link { @apply inline-flex h-10 w-24 items-center justify-center rounded-md px-1 text-center text-[11px] lg:w-[6.75rem] lg:px-1.5 lg:text-xs font-medium leading-tight text-slate-700 transition hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white;
+    border: 1px solid var(--ws-accent); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(0,0,0,.25); }
+  .nav-link.is-active { @apply text-white; background: var(--ws-tile); }
+  .nav-link.is-active:hover { filter: brightness(1.1); }
+  .nav-text { @apply rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white; }
+  .nav-link-m { @apply block rounded-md px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200; border: 1px solid var(--ws-accent); }
+  .nav-link-m.is-active { @apply text-white; background: var(--ws-tile); }
+  .tile { @apply rounded-(--radius-card) bg-white transition dark:bg-slate-900;
+    border: 1px solid var(--ws-accent); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(0,0,0,.25), 0 0 0 1px color-mix(in srgb, var(--ws-accent) 35%, transparent); }
+  a.tile:hover { filter: brightness(1.05); }
   .page-title { @apply text-2xl font-semibold tracking-tight; }
 
   /* Sectioned forms (templates/partials/form_section.html, form_grid.html) */

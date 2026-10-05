@@ -28,22 +28,22 @@
 
 <section class="mt-8 grid gap-5 md:grid-cols-3">
   <div class="tile p-6">
-    <span class="grid h-10 w-10 place-items-center rounded-lg bg-white/15 text-white"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h6"/></svg></span>
+    <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h6"/></svg></span>
     <h2 class="mt-4 text-lg">Licence applications</h2>
     <p class="text-body mt-2 text-sm">Complete the application online, upload supporting documents, and track its progress from screening to approval.</p>
-    <a class="tile-link mt-4 inline-block text-sm" href="{% url 'lic:application_list' %}">View applications →</a>
+    <a class="link mt-4 inline-block text-sm" href="{% url 'lic:application_list' %}">View applications →</a>
   </div>
   <div class="tile p-6">
-    <span class="grid h-10 w-10 place-items-center rounded-lg bg-white/15 text-white"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg></span>
+    <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg></span>
     <h2 class="mt-4 text-lg">Data submissions</h2>
     <p class="text-body mt-2 text-sm">Licensed abstractors, laboratories and field staff submit readings by form, CSV template or the REST API. Every row is validated on arrival.</p>
-    <a class="tile-link mt-4 inline-block text-sm" href="{% url 'submissions:index' %}">Go to submissions →</a>
+    <a class="link mt-4 inline-block text-sm" href="{% url 'submissions:index' %}">Go to submissions →</a>
   </div>
   <div class="tile p-6">
-    <span class="grid h-10 w-10 place-items-center rounded-lg bg-white/15 text-white"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>
+    <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>
     <h2 class="mt-4 text-lg">Secure by design</h2>
     <p class="text-body mt-2 text-sm">Role-based access, two-factor authentication for staff, full audit trail, and personal data handled under the Data Protection Act, 2020.</p>
-    <a class="tile-link mt-4 inline-block text-sm" href="/privacy/">Read the privacy notice →</a>
+    <a class="link mt-4 inline-block text-sm" href="/privacy/">Read the privacy notice →</a>
   </div>
 </section>
 {% endblock %}

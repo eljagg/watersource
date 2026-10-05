@@ -27,3 +27,11 @@ def get_item(mapping, key):
         return mapping.get(key, "")
     except AttributeError:
         return ""
+
+
+@register.simple_tag(takes_context=True)
+def active_tab(context, *prefixes):
+    """Return ``is-active`` when the current path starts with any of ``prefixes`` (navigation tabs)."""
+    request = context.get("request")
+    path = getattr(request, "path", "") or ""
+    return "is-active" if any(path.startswith(p) for p in prefixes) else ""

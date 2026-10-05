@@ -2,6 +2,11 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.4.4] — 5 Oct 2026
+
+### Changed
+- Reverted the blue fill from 0.4.3 (Omar, 5 Oct): tiles are back to the original card colour with the thin metallic red border; navigation tabs are outlined in red, all the same size (fixed width and height, two-line labels), and only the **active** tab is filled blue. The user-name link is plain text again. Header content width widened to 7xl so six tabs fit on a 1280-px screen; the user name shows from 1280 px up.
+
 ## [0.4.3] — 5 Oct 2026
 
 ### Changed

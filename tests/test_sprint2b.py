@@ -256,3 +256,11 @@ def test_footer_copyright_uses_current_year_and_colours_are_emitted(client):
     b.save()
     html = client.get("/").content.decode()
     assert "--ws-tile:#123456" in html and f"Copyright {tz.localdate().year} WRA" in html
+
+
+@pytest.mark.django_db
+def test_active_tab_marked(client, reviewer):
+    client.force_login(reviewer)
+    html = client.get("/dashboards/").content.decode()
+    assert 'class="nav-link is-active">Dashboards' in html
+    assert 'class="nav-link ">Data submissions' in html
