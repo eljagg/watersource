@@ -2,7 +2,7 @@
 <html lang="en" class="h-full{% if theme != 'light' %} dark{% endif %}">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
-<title>WaterSource — wall display</title>
+<title>{{ branding.product_name }} — wall display</title>
 <link rel="stylesheet" href="{% static 'css/app.css' %}">
 <style nonce="{{ request.csp_nonce }}">
   /* Wall frame (design doc 13 §4.3): 1920×1080 composition, scaled by --ds-scale for 4K; no interaction, no scrolling */
@@ -40,14 +40,15 @@
   .wall .ds-card p { font-size: calc(14px * var(--ds-scale)); }
   .wall .ds-status > div, .wall .ds-list li { font-size: calc(17px * var(--ds-scale)); }
   .wall .ds-status b { font-size: calc(28px * var(--ds-scale)); }
+  .wall-logo { height: calc(44px * var(--ds-scale)); width: auto; max-width: 260px; object-fit: contain; }
   .wall-foot { display: flex; justify-content: space-between; font-size: calc(14px * var(--ds-scale)); color: var(--ds-muted); }
 </style>
 </head>
 <body>
 <div class="wall">
   <header class="wall-head">
-    <div class="wall-mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></div>
-    <div><div class="wall-title" data-wall-title>Loading…</div><div class="wall-sub">Water Resources Authority · WaterSource Jamaica</div></div>
+    {% if branding.has_logo %}<img class="wall-logo" src="{% if theme == 'dark' %}{% url 'core:branding_logo_dark' %}{% else %}{% url 'core:branding_logo' %}{% endif %}?v={{ branding.version }}" alt="">{% else %}<div class="wall-mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></div>{% endif %}
+    <div><div class="wall-title" data-wall-title>Loading…</div><div class="wall-sub">{{ branding.organisation_name }} · {{ branding.product_name }}</div></div>
     <div class="wall-dots" role="tablist" aria-label="Dashboards">{% for s in order %}<button type="button" class="wall-dot" data-dot="{{ forloop.counter0 }}" title="{{ titles|get_item:s }}" aria-label="{{ titles|get_item:s }}"></button>{% endfor %}</div>
     <div class="wall-controls">
       <button type="button" class="wall-btn" data-prev title="Previous dashboard (←)">‹</button>

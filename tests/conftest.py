@@ -52,3 +52,13 @@ def well(db, parish):
 @pytest.fixture
 def party(db):
     return Party.objects.create(kind=PartyKind.APPLICANT, name="Jane Brown", email="jane@example.com", phone="876-000-0000", address="Spanish Town")
+
+
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    """Start every test with an empty cache (branding row, bi refresh stamps, locks)."""
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()

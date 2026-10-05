@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from .branding import SiteBranding
 from .models import Notification
 
 
@@ -70,3 +71,32 @@ def privacy(request):
     approved notice in the Requirements Specification.
     """
     return render(request, "core/privacy.html")
+
+
+def _logo_response(request, data, ctype, version):
+    """Serve stored logo bytes with long-lived caching keyed on the version query string."""
+    from django.http import Http404, HttpResponse
+
+    if not data:
+        raise Http404
+    resp = HttpResponse(bytes(data), content_type=ctype)
+    resp["Cache-Control"] = "public, max-age=86400"
+    resp["ETag"] = f'"{version}"'
+    resp["X-Content-Type-Options"] = "nosniff"
+    if ctype == "image/svg+xml":
+        resp["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'"
+    return resp
+
+
+def branding_logo(request):
+    """The uploaded logo (light backgrounds)."""
+    b = SiteBranding.get()
+    return _logo_response(request, b.logo, b.logo_type, b.version)
+
+
+def branding_logo_dark(request):
+    """The uploaded dark-background logo, falling back to the main one."""
+    b = SiteBranding.get()
+    if b.has_logo_dark:
+        return _logo_response(request, b.logo_dark, b.logo_dark_type, b.version)
+    return _logo_response(request, b.logo, b.logo_type, b.version)

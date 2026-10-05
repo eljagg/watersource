@@ -2,6 +2,14 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.3.4] — 5 Oct 2026
+
+### Added
+- **Site branding** in the admin console (Site settings and audit → Site branding): organisation name, application name, tagline, footer line, and a logo upload (PNG/JPEG/WebP/SVG ≤ 512 KB, optional dark-background variant). The logo replaces the droplet mark in the header, on the wall display and in the admin console header; names flow through every page title, the footer and the wall sub-title. Stored in the database so every container serves the same image; changes show within a minute; recorded in the audit trail (`branding.changed`).
+
+### Changed
+- Admin console header reads "WaterSource admin console" (follows the application name) instead of "Django administration"; the "Core" section is now "Site settings and audit".
+
 ## [0.3.3] — 5 Oct 2026
 
 ### Changed

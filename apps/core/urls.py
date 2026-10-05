@@ -11,3 +11,7 @@ urlpatterns = [
     path("notifications/<int:pk>/read/", views.notification_read, name="notification_read"),
 ]
 urlpatterns += [path("privacy/", views.privacy, name="privacy")]
+urlpatterns += [
+    path("branding/logo/", views.branding_logo, name="branding_logo"),
+    path("branding/logo-dark/", views.branding_logo_dark, name="branding_logo_dark"),
+]

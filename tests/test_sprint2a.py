@@ -190,3 +190,83 @@ def test_csrf_failure_elsewhere_is_friendly(client):
     r = c.post("/accounts/login/", {"username": "x", "password": "y"})
     assert r.status_code == 403
     assert "That page had expired" in r.content.decode()
+
+
+# --- Site branding (v0.3.4) ---------------------------------------------------------------
+
+
+@pytest.fixture
+def superuser(db, client):
+    """A superuser for admin tests, signed in and MFA-verified."""
+    from django.contrib.auth import get_user_model
+    from django_otp.plugins.otp_totp.models import TOTPDevice
+
+    u = get_user_model().objects.create_superuser(email="root@example.com", password="Str0ng-Passw0rd!!", full_name="Root")
+    device = TOTPDevice.objects.create(user=u, name="t", confirmed=True)
+    client.force_login(u)
+    session = client.session
+    session["otp_device_id"] = device.persistent_id
+    session.save()
+    return u
+
+
+def _png(w=120, h=40):
+    import io
+
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (w, h), (0, 158, 224)).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@pytest.mark.django_db
+def test_branding_defaults_render(client):
+    """Without any upload the header shows the defaults and the logo URL is a 404."""
+    r = client.get("/")
+    html = r.content.decode()
+    assert "WaterSource" in html and "Water Resources Authority of Jamaica" in html
+    assert client.get("/branding/logo/").status_code == 404
+
+
+@pytest.mark.django_db
+def test_branding_upload_via_admin(client, superuser):
+    """Uploading a PNG and changing names through the admin changes every page and serves the logo."""
+    from django.core.cache import cache
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.core.branding import SiteBranding
+
+    client.force_login(superuser)
+    r = client.get("/admin/core/sitebranding/")
+    assert r.status_code == 302 and r["Location"].endswith("/admin/core/sitebranding/1/change/")
+    r = client.post(r["Location"], {
+        "organisation_name": "Water Resources Authority", "product_name": "HydroHub", "tagline": "Jamaica", "footer_text": "",
+        "logo_upload": SimpleUploadedFile("logo.png", _png(), content_type="image/png"),
+    })
+    assert r.status_code == 302, r.content.decode()[:500]
+    cache.clear()
+    b = SiteBranding.get()
+    assert b.product_name == "HydroHub" and b.has_logo and b.logo_type == "image/png"
+    logo = client.get("/branding/logo/")
+    assert logo.status_code == 200 and logo["Content-Type"] == "image/png" and logo["Cache-Control"].startswith("public")
+    html = client.get("/").content.decode()
+    assert "HydroHub" in html and "/branding/logo/?v=" in html
+    admin_html = client.get("/admin/").content.decode()
+    assert "HydroHub admin console" in admin_html and "Django administration" not in admin_html
+
+
+@pytest.mark.django_db
+def test_branding_rejects_bad_files(client, superuser):
+    """A text file or an SVG with scripting is refused."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    client.force_login(superuser)
+    url = "/admin/core/sitebranding/1/change/"
+    client.get("/admin/core/sitebranding/")  # creates the row
+    base = {"organisation_name": "X", "product_name": "Y", "tagline": "", "footer_text": ""}
+    r = client.post(url, {**base, "logo_upload": SimpleUploadedFile("x.txt", b"hello", content_type="text/plain")})
+    assert r.status_code == 200 and "Use a PNG, JPEG, WebP or SVG image" in r.content.decode()
+    bad_svg = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+    r = client.post(url, {**base, "logo_upload": SimpleUploadedFile("x.svg", bad_svg, content_type="image/svg+xml")})
+    assert r.status_code == 200 and "scripting" in r.content.decode()

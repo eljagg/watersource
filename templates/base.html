@@ -30,11 +30,16 @@ document.addEventListener('DOMContentLoaded',function(){
 
 <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:border-slate-800 dark:bg-slate-950/80">
   <div class="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
-    <a href="{% url 'core:home' %}" class="flex items-center gap-2.5" aria-label="WaterSource Jamaica home">
+    <a href="{% url 'core:home' %}" class="flex items-center gap-2.5" aria-label="{{ branding.product_name }} home">
+      {% if branding.has_logo %}
+      <img src="{% url 'core:branding_logo' %}?v={{ branding.version }}" alt="{{ branding.organisation_name }}" class="h-9 w-auto max-w-[180px] object-contain{% if branding.has_logo_dark %} dark:hidden{% endif %}">
+      {% if branding.has_logo_dark %}<img src="{% url 'core:branding_logo_dark' %}?v={{ branding.version }}" alt="{{ branding.organisation_name }}" class="hidden h-9 w-auto max-w-[180px] object-contain dark:block">{% endif %}
+      {% else %}
       <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white shadow-sm dark:bg-brand-500 dark:text-slate-950">
         <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9 14a3 3 0 0 0 3 3"/></svg>
       </span>
-      <span class="leading-tight"><span class="block text-base font-semibold tracking-tight text-slate-900 dark:text-white">WaterSource</span><span class="block text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Jamaica · WRA</span></span>
+      {% endif %}
+      <span class="leading-tight"><span class="block text-base font-semibold tracking-tight text-slate-900 dark:text-white">{{ branding.product_name }}</span>{% if branding.tagline %}<span class="block max-w-[11rem] truncate text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400" title="{{ branding.tagline }}">{{ branding.tagline }}</span>{% endif %}</span>
     </a>
 
     <nav class="ml-4 hidden items-center gap-1 md:flex" aria-label="Primary">
@@ -85,7 +90,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
 <footer class="border-t border-slate-200 dark:border-slate-800">
   <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:text-slate-400">
-    <p>Water Resources Authority of Jamaica</p>
+    <p>{{ branding.footer }}</p>
     <p>Personal data is processed under the Data Protection Act, 2020 — see the <a href="/privacy/" class="link">privacy notice</a>.</p>
   </div>
 </footer>

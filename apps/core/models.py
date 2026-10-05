@@ -265,3 +265,6 @@ class Notification(TimeStampedModel):
 
     def __str__(self):
         return self.title
+
+
+from .branding import SiteBranding  # noqa: E402,F401  (registered with the core app; see branding.py)

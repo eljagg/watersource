@@ -3,6 +3,10 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+admin.site.site_header = "WaterSource admin console"
+admin.site.site_title = "WaterSource admin console"
+admin.site.index_title = "Administration"
+
 urlpatterns = [
     path("", include("apps.core.urls", namespace="core")),
     path("accounts/", include("apps.accounts.urls", namespace="accounts")),
