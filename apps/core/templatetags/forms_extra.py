@@ -35,3 +35,9 @@ def active_tab(context, *prefixes):
     request = context.get("request")
     path = getattr(request, "path", "") or ""
     return "is-active" if any(path.startswith(p) for p in prefixes) else ""
+
+
+@register.filter
+def has_role(user, name):
+    """``{% if user|has_role:"finance" %}`` — role (group) membership check for templates."""
+    return bool(getattr(user, "is_authenticated", False)) and user.has_role(name)

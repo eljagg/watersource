@@ -78,6 +78,8 @@ class LicenceApplication(AuditedModel):
     water_source = models.CharField(max_length=8, choices=WaterSource.choices)
     source_name = models.CharField("Name of source", max_length=150)
     well = models.ForeignKey("ref.Well", null=True, blank=True, on_delete=models.PROTECT, related_name="applications")
+    wmu = models.ForeignKey("ref.WMU", null=True, blank=True, on_delete=models.PROTECT, related_name="applications", verbose_name="Watershed management unit",
+                            help_text="Set by the technical assessment (defaults to the well's WMU).")
     daily_volume_requested_m3 = models.DecimalField(max_digits=14, decimal_places=3)
     daily_volume_granted_m3 = models.DecimalField(max_digits=14, decimal_places=3, null=True, blank=True)
     purpose = models.TextField("Purpose for which water will be used")
@@ -113,16 +115,25 @@ class LicenceApplication(AuditedModel):
         return instance_for(self)
 
     # -- workflow hooks --------------------------------------------------------
+    def workflow_can_advance(self, instance, actor):
+        """Block the technical-assessment stage until the assessment is recorded (design doc 14 §4)."""
+        stage = instance.current_stage
+        if stage is not None and stage.code in ASSESSMENT_STAGE_CODES and not hasattr(self, "assessment"):
+            return "Complete the technical assessment before approving this stage."
+        return None
+
     def on_workflow_approved(self, instance, actor, **meta):
-        """Final-approval hook: mark granted and issue the licence."""
-        granted = meta.get("daily_volume_granted_m3") or self.daily_volume_granted_m3 or self.daily_volume_requested_m3
+        """Final-approval hook: mark granted and issue the licence (volume and conditions default from the assessment)."""
+        assessment = getattr(self, "assessment", None)
+        granted = meta.get("daily_volume_granted_m3") or (assessment.recommended_daily_volume_m3 if assessment else None) \
+            or self.daily_volume_granted_m3 or self.daily_volume_requested_m3
         years = int(meta.get("term_years") or 1)
         self.daily_volume_granted_m3 = granted
         self.status = ApplicationStatus.GRANTED
         self.decided_at = timezone.now()
         self.decision_remarks = meta.get("comment", "")
         self.save()
-        lic = Licence.issue(self, granted, years, actor)
+        lic = Licence.issue(self, granted, years, actor, conditions=assessment.condition_texts() if assessment else [])
         if self.renewal_of_id:
             self.renewal_of.status = LicenceStatus.RENEWED
             self.renewal_of.save(update_fields=["status", "updated_at"])
@@ -196,6 +207,8 @@ class Licence(AuditedModel):
     source_name = models.CharField(max_length=150)
     well = models.ForeignKey("ref.Well", null=True, blank=True, on_delete=models.PROTECT, related_name="licences")
     daily_volume_granted_m3 = models.DecimalField(max_digits=14, decimal_places=3)
+    wmu = models.ForeignKey("ref.WMU", null=True, blank=True, on_delete=models.PROTECT, related_name="licences")
+    conditions = models.JSONField(default=list, blank=True, help_text="Licence conditions as issued (text snapshot from the conditions library).")
     purpose = models.TextField()
     issued_on = models.DateField()
     expires_on = models.DateField(db_index=True)
@@ -221,8 +234,8 @@ class Licence(AuditedModel):
         return (self.expires_on - date.today()).days
 
     @classmethod
-    def issue(cls, application: LicenceApplication, granted, years: int, actor):
-        """Issue a licence for a granted application and flag its well as licensed."""
+    def issue(cls, application: LicenceApplication, granted, years: int, actor, conditions: list | None = None):
+        """Issue a licence for a granted application (with its conditions) and flag its well as licensed."""
         from dateutil.relativedelta import relativedelta
 
         today = date.today()
@@ -230,8 +243,9 @@ class Licence(AuditedModel):
             number=Sequence.next("licence", settings.WATERSOURCE["LICENCE_NO_PREFIX"]),
             application=application, licensee=application.applicant, parish=application.parish,
             water_source=application.water_source, source_name=application.source_name, well=application.well,
-            daily_volume_granted_m3=granted, purpose=application.purpose, issued_on=today,
+            daily_volume_granted_m3=granted, purpose=application.purpose, issued_on=today, wmu=application.wmu,
             expires_on=today + relativedelta(years=years), issued_by=actor if getattr(actor, "is_authenticated", False) else None,
+            conditions=conditions or [],
         )
         if application.well_id:
             application.well.is_licensed = True
@@ -246,3 +260,107 @@ class TimeStampedNote(TimeStampedModel):
     application = models.ForeignKey(LicenceApplication, on_delete=models.CASCADE, related_name="notes")
     author = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     text = models.TextField()
+
+
+# ---------------------------------------------------------------------------
+# Technical assessment and the conditions library (design doc 14 §4; Permits & Licences + Planning & Investigation)
+# ---------------------------------------------------------------------------
+#: Workflow stage codes at which the technical assessment must exist before the item may advance.
+ASSESSMENT_STAGE_CODES = ("hydrogeology", "technical_assessment")
+
+
+class ConditionCategory(models.TextChoices):
+    """Grouping of standard licence conditions."""
+
+    GENERAL = "general", "General"
+    METERING = "metering", "Metering and measurement"
+    REPORTING = "reporting", "Reporting of abstraction"
+    MONITORING = "monitoring", "Monitoring (levels, quality)"
+    ENVIRONMENTAL = "environmental", "Environmental protection"
+    CONSTRUCTION = "construction", "Well construction and maintenance"
+
+
+class LicenceCondition(TimeStampedModel):
+    """A standard condition WRA attaches to licences; the hydrologist picks from this library at assessment."""
+
+    code = models.SlugField(max_length=32, unique=True)
+    title = models.CharField(max_length=150)
+    text = models.TextField(help_text="Wording as it appears on the licence. {volume} is replaced with the granted daily volume, {source} with the source name.")
+    category = models.CharField(max_length=16, choices=ConditionCategory.choices, default=ConditionCategory.GENERAL)
+    applies_to = models.CharField(max_length=8, choices=[("both", "Surface and ground water"), *WaterSource.choices], default="both")
+    is_default = models.BooleanField(default=False, help_text="Pre-selected on every new assessment.")
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveSmallIntegerField(default=100)
+
+    class Meta:
+        ordering = ["order", "code"]
+
+    def __str__(self):
+        return f"{self.code} — {self.title}"
+
+    def render(self, application: LicenceApplication, volume) -> str:
+        """Condition text with placeholders filled."""
+        return self.text.replace("{volume}", f"{volume:,.0f}" if volume is not None else "the granted").replace("{source}", application.source_name)
+
+
+class ImpactLevel(models.TextChoices):
+    """Expected impact of the abstraction on existing users and the resource."""
+
+    NONE = "none", "None expected"
+    LOW = "low", "Low"
+    MODERATE = "moderate", "Moderate — conditions required"
+    HIGH = "high", "High — refuse or reduce"
+
+
+class Recommendation(models.TextChoices):
+    """Hydrologist's recommendation to the licensing officer."""
+
+    GRANT = "grant", "Grant as requested"
+    GRANT_REDUCED = "grant_reduced", "Grant at a reduced volume"
+    MORE_INFO = "more_info", "Request further information / pump test"
+    REFUSE = "refuse", "Refuse"
+
+
+class TechnicalAssessment(AuditedModel):
+    """The hydrologist's assessment of an application against the WMU balance (design doc 14 §4).
+
+    One per application; required before the technical-assessment stage can be
+    approved. Its recommended volume and conditions become the defaults the
+    licensing officer sees at final approval and are snapshotted onto the licence.
+    """
+
+    application = models.OneToOneField(LicenceApplication, on_delete=models.CASCADE, related_name="assessment")
+    assessed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="assessments")
+    assessed_at = models.DateTimeField(default=timezone.now)
+    wmu = models.ForeignKey("ref.WMU", null=True, blank=True, on_delete=models.PROTECT, related_name="assessments", verbose_name="Watershed management unit")
+    aquifer = models.ForeignKey("ref.Aquifer", null=True, blank=True, on_delete=models.PROTECT, related_name="assessments")
+    wmu_safe_yield_m3_d = models.DecimalField(max_digits=14, decimal_places=3, null=True, blank=True, help_text="Snapshot at assessment time.")
+    wmu_allocated_m3_d = models.DecimalField(max_digits=14, decimal_places=3, null=True, blank=True, help_text="Active licences in the WMU at assessment time (snapshot).")
+    wmu_reported_m3_d = models.DecimalField(max_digits=14, decimal_places=3, null=True, blank=True, help_text="Average reported abstraction, last 12 months (snapshot).")
+    impact = models.CharField(max_length=10, choices=ImpactLevel.choices, default=ImpactLevel.LOW)
+    recommendation = models.CharField(max_length=14, choices=Recommendation.choices, default=Recommendation.GRANT)
+    recommended_daily_volume_m3 = models.DecimalField("Recommended daily volume (m³)", max_digits=14, decimal_places=3, null=True, blank=True)
+    conditions = models.ManyToManyField(LicenceCondition, blank=True, related_name="assessments")
+    extra_conditions = models.TextField(blank=True, help_text="Additional conditions specific to this licence, one per line.")
+    findings = models.TextField(help_text="Source reliability, nearby users, water-quality concerns, pump-test results.")
+
+    class Meta:
+        verbose_name = "technical assessment"
+
+    def __str__(self):
+        return f"Assessment of {self.application.reference}"
+
+    @property
+    def wmu_utilisation_after_pct(self):
+        """Share of safe yield allocated if the recommended volume were granted."""
+        if not self.wmu_safe_yield_m3_d:
+            return None
+        vol = self.recommended_daily_volume_m3 or self.application.daily_volume_requested_m3
+        return round(float((self.wmu_allocated_m3_d or 0) + vol) / float(self.wmu_safe_yield_m3_d) * 100, 1)
+
+    def condition_texts(self) -> list[str]:
+        """Rendered standard conditions plus the free-text ones."""
+        vol = self.recommended_daily_volume_m3 or self.application.daily_volume_requested_m3
+        out = [c.render(self.application, vol) for c in self.conditions.filter(is_active=True)]
+        out += [ln.strip() for ln in self.extra_conditions.splitlines() if ln.strip()]
+        return out

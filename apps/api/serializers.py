@@ -144,3 +144,12 @@ class SubmissionCreateSerializer(serializers.Serializer):
     rows = serializers.ListField(child=serializers.DictField(), min_length=1, max_length=50000)
     note = serializers.CharField(required=False, allow_blank=True, default="")
     idempotency_key = serializers.CharField(required=False, allow_blank=True, default="", max_length=64)
+
+
+class FinanceRowSerializer(serializers.Serializer):
+    """Shape of one row in the Finance export (for the OpenAPI document; columns depend on the endpoint)."""
+
+    licence_number = serializers.CharField()
+    licensee = serializers.CharField()
+    parish = serializers.CharField()
+    daily_volume_granted_m3 = serializers.DecimalField(max_digits=14, decimal_places=3)

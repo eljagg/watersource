@@ -10,6 +10,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django_otp import login as otp_login
+from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.core import audit
@@ -126,8 +127,8 @@ def mfa_setup(request):
             device.save(update_fields=["confirmed"])
             otp_login(request, device)
             audit.log("auth.mfa_enrolled", request.user)
-            messages.success(request, "Two-factor authentication is now active on your account.")
-            return redirect("core:home")
+            messages.success(request, "Two-factor authentication is now active on your account. Save your backup codes below.")
+            return redirect("accounts:backup_codes_new")
         form.add_error("token", "That code was not accepted. Check the time on your phone and try again.")
     return render(request, "accounts/mfa_setup.html", {
         "form": form,
@@ -180,20 +181,75 @@ def mfa_verify(request):
     devices = TOTPDevice.objects.filter(user=request.user, confirmed=True)
     form = TOTPTokenForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
+        token = form.cleaned_data["token"]
         for device in devices:
-            if device.verify_token(form.cleaned_data["token"]):
+            if device.verify_token(token):
                 otp_login(request, device)
                 audit.log("auth.mfa_verified", request.user)
+                return redirect(request.GET.get("next") or "core:home")
+        for device in StaticDevice.objects.filter(user=request.user, confirmed=True):  # one-time backup codes
+            if device.verify_token(token):
+                otp_login(request, device)
+                left = device.token_set.count()
+                audit.log("auth.mfa_backup_code_used", request.user, summary=f"{left} left")
+                messages.warning(request, f"You signed in with a backup code; {left} remain. Generate a new set from your account page if you are running low.")
                 return redirect(request.GET.get("next") or "core:home")
         form.add_error("token", "Invalid code.")
         audit.log("auth.mfa_failed", request.user)
     return render(request, "accounts/mfa_verify.html", {"form": form})
 
 
+BACKUP_CODE_COUNT = 10
+
+
+def _issue_backup_codes(user) -> list[str]:
+    """Replace the user's backup codes with a fresh set of eight-digit one-time codes."""
+    import secrets
+
+    StaticDevice.objects.filter(user=user).delete()
+    device = StaticDevice.objects.create(user=user, name="Backup codes", confirmed=True)
+    codes = [f"{secrets.randbelow(10**8):08d}" for _ in range(BACKUP_CODE_COUNT)]
+    StaticToken.objects.bulk_create([StaticToken(device=device, token=c) for c in codes])
+    return codes
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def backup_codes_new(request):
+    """Generate (or regenerate) backup codes and show them once (ToR H.ii; tracker 'MFA backup codes')."""
+    if not TOTPDevice.objects.filter(user=request.user, confirmed=True).exists():
+        messages.info(request, "Set up your authenticator app first.")
+        return redirect("accounts:mfa_setup")
+    if request.method == "POST" or not StaticDevice.objects.filter(user=request.user).exists():
+        codes = _issue_backup_codes(request.user)
+        audit.log("auth.mfa_backup_codes_issued", request.user, summary=f"{len(codes)} codes")
+        return render(request, "accounts/backup_codes.html", {"codes": codes})
+    return render(request, "accounts/backup_codes.html", {"codes": None, "remaining": StaticToken.objects.filter(device__user=request.user).count()})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def mfa_reset(request):
+    """Remove the authenticator and backup codes so the user enrols a new phone (confirm page, then POST; needs a verified session)."""
+    if request.user.mfa_required and not request.user.is_verified():
+        return redirect("accounts:mfa_verify")
+    if request.method == "GET":
+        return render(request, "accounts/mfa_reset.html")
+    TOTPDevice.objects.filter(user=request.user).delete()
+    StaticDevice.objects.filter(user=request.user).delete()
+    audit.log("auth.mfa_reset", request.user)
+    messages.info(request, "Authenticator removed. Scan the new QR code to set it up again.")
+    return redirect("accounts:mfa_setup")
+
+
 @login_required
 def profile(request):
-    """Data-subject self-service (DPA s.6 rights): see and export what we hold."""
-    return render(request, "accounts/profile.html", {"api_keys": request.user.api_keys.filter(revoked_at__isnull=True)})
+    """Data-subject self-service (DPA s.6 rights): see and export what we hold; two-factor status."""
+    return render(request, "accounts/profile.html", {
+        "api_keys": request.user.api_keys.filter(revoked_at__isnull=True),
+        "mfa_active": TOTPDevice.objects.filter(user=request.user, confirmed=True).exists(),
+        "backup_remaining": StaticToken.objects.filter(device__user=request.user).count(),
+    })
 
 
 @login_required

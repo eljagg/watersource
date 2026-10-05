@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from apps.core import audit
 
 from . import services
-from .forms import ApplicationForm, DocumentForm
+from .forms import ApplicationForm, DocumentForm, TechnicalAssessmentForm
 from .models import ApplicationDocument, ApplicationStatus, Licence, LicenceApplication
 
 
@@ -113,3 +113,55 @@ def licence_detail(request, number):
     if not (request.user.is_staff_user or request.user.is_superuser or lic.licensee.accounts.filter(pk=request.user.pk).exists()):
         raise Http404
     return render(request, "lic/licence_detail.html", {"licence": lic})
+
+
+def _staff(user):
+    return user.is_staff_user or user.is_superuser
+
+
+@login_required
+def assessment(request, reference):
+    """Record or update the technical assessment of an application (hydrologist / reviewer, design doc 14 §4)."""
+    if not _staff(request.user):
+        raise Http404
+    app = get_object_or_404(LicenceApplication, reference=reference)
+    instance = getattr(app, "assessment", None)
+    form = TechnicalAssessmentForm(request.POST or None, instance=instance, application=app)
+    wmu_id = request.POST.get("wmu") or (instance.wmu_id if instance else None) or form.fields["wmu"].initial
+    balance = None
+    if wmu_id:
+        from apps.ref.models import WMU
+
+        wmu = WMU.objects.filter(pk=wmu_id).first()
+        if wmu is not None:
+            balance = services.wmu_balance(wmu)
+    if request.method == "POST" and form.is_valid():
+        ta = form.save(commit=False)
+        ta.application = app
+        ta.assessed_by = request.user
+        if balance:
+            ta.wmu_safe_yield_m3_d = balance["safe_yield"]
+            ta.wmu_allocated_m3_d = balance["allocated"]
+            ta.wmu_reported_m3_d = balance["reported_avg"]
+        ta.save()
+        form.save_m2m()
+        if ta.wmu_id and app.wmu_id != ta.wmu_id:
+            app.wmu = ta.wmu
+            app.save(update_fields=["wmu", "updated_at"])
+        audit.log("licence.assessment_recorded", app, actor=request.user,
+                  summary=f"{ta.get_recommendation_display()} · {ta.recommended_daily_volume_m3 or app.daily_volume_requested_m3} m³/day")
+        messages.success(request, "Technical assessment saved. You can now approve the stage.")
+        wf = app.workflow
+        return redirect("workflow:detail", pk=wf.pk) if wf else redirect(app.get_absolute_url())
+    return render(request, "lic/assessment_form.html", {"app": app, "form": form, "balance": balance, "assessment": instance})
+
+
+@login_required
+def wmu_balance(request):
+    """WMU balance sheet: safe yield vs licensed allocation, reported abstraction and pending requests (staff)."""
+    if not _staff(request.user):
+        raise Http404
+    from apps.ref.models import WMU
+
+    rows = [services.wmu_balance(w) for w in WMU.objects.select_related("basin").order_by("code")]
+    return render(request, "lic/wmu_balance.html", {"rows": rows})

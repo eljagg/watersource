@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% block content %}<div class="card mx-auto max-w-md p-6 sm:p-8"><h1 class="page-title mb-2">Reset your authenticator</h1>
+<p class="text-body mb-4 text-sm">This removes the authenticator app and all backup codes from your account. You will scan a new QR code straight away — do this when you have changed phone.</p>
+<form method="post">{% csrf_token %}<button class="btn-danger">Remove and set up again</button> <a class="btn-secondary" href="{% url 'accounts:profile' %}">Cancel</a></form></div>{% endblock %}

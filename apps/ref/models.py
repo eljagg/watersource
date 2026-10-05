@@ -54,9 +54,12 @@ class Basin(CodedLookup):
 
 
 class WMU(CodedLookup):
-    """Watershed management unit."""
+    """Watershed management unit — the unit WRA allocates water in (design doc 14 §4, WMU balance sheet)."""
 
     basin = models.ForeignKey(Basin, null=True, blank=True, on_delete=models.PROTECT, related_name="wmus")
+    safe_yield_m3_d = models.DecimalField("Safe yield (m³/day)", max_digits=14, decimal_places=3, null=True, blank=True,
+                                          help_text="Allocation ceiling WRA uses for this unit; from the Water Resources Master Plan.")
+    safe_yield_source = models.CharField(max_length=200, blank=True, help_text="Where the figure comes from and its date, e.g. 'WRMP 2019 table 4.2'.")
 
     class Meta(CodedLookup.Meta):
         verbose_name = "watershed management unit"
@@ -71,6 +74,15 @@ class SubWMU(CodedLookup):
         verbose_name = "sub-watershed management unit"
 
 
+class AquiferType(models.TextChoices):
+    """Lithology class of an aquifer (Jamaica: limestone dominates reliable yield)."""
+
+    LIMESTONE = "limestone", "Limestone (karst)"
+    ALLUVIAL = "alluvial", "Alluvial"
+    VOLCANIC = "volcanic", "Volcanic / igneous"
+    OTHER = "other", "Other"
+
+
 class HydrostratUnit(CodedLookup):
     """Aquifer, aquiclude or aquitard a well is completed in (item 2)."""
 
@@ -79,6 +91,21 @@ class HydrostratUnit(CodedLookup):
 
     class Meta(CodedLookup.Meta):
         verbose_name = "hydrostratigraphic unit"
+
+
+class Aquifer(CodedLookup):
+    """A named aquifer owned by Planning & Investigation (stakeholder model): where wells draw from and what it can safely yield."""
+
+    aquifer_type = models.CharField(max_length=12, choices=AquiferType.choices, default=AquiferType.LIMESTONE)
+    hydrostrat_unit = models.ForeignKey(HydrostratUnit, null=True, blank=True, on_delete=models.PROTECT, related_name="aquifers")
+    wmu = models.ForeignKey(WMU, null=True, blank=True, on_delete=models.PROTECT, related_name="aquifers", help_text="Main WMU the aquifer underlies.")
+    basin = models.ForeignKey(Basin, null=True, blank=True, on_delete=models.PROTECT, related_name="aquifers")
+    safe_yield_m3_d = models.DecimalField("Safe yield (m³/day)", max_digits=14, decimal_places=3, null=True, blank=True)
+    is_saline_risk = models.BooleanField("Saline intrusion risk", default=False)
+    notes = models.TextField(blank=True)
+
+    class Meta(CodedLookup.Meta):
+        verbose_name = "aquifer"
 
 
 class River(CodedLookup):
@@ -184,6 +211,7 @@ class Well(PublishableModel):
     wmu = models.ForeignKey(WMU, null=True, blank=True, on_delete=models.PROTECT, related_name="wells")
     sub_wmu = models.ForeignKey(SubWMU, null=True, blank=True, on_delete=models.PROTECT, related_name="wells")
     hydrostrat_unit = models.ForeignKey(HydrostratUnit, null=True, blank=True, on_delete=models.PROTECT, related_name="wells")
+    aquifer = models.ForeignKey("Aquifer", null=True, blank=True, on_delete=models.PROTECT, related_name="wells")
     # security of the source information (Methodology §4A, ADR-0002)
     is_public_supply = models.BooleanField(
         "Public-supply source", default=False, db_index=True,

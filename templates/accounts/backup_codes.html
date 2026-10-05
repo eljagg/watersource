@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block content %}<div class="card mx-auto max-w-lg p-6 sm:p-8"><h1 class="page-title mb-2">Backup codes</h1>
+{% if codes %}
+<p class="text-body mb-4 text-sm">Each code signs you in <strong>once</strong> if your phone is unavailable. Save them somewhere safe — a password manager or a printed copy locked away. They are shown only now.</p>
+<ol class="grid grid-cols-2 gap-2 font-mono text-lg">{% for c in codes %}<li class="rounded-lg bg-slate-100 px-3 py-2 text-center tracking-widest dark:bg-slate-800">{{ c|slice:":4" }} {{ c|slice:"4:" }}</li>{% endfor %}</ol>
+<p class="text-muted mt-4 text-xs">Generating a new set replaces all of these.</p>
+<a class="btn-primary mt-5 inline-block" href="{% url 'accounts:profile' %}">I have saved them</a>
+{% else %}
+<p class="text-body mb-4 text-sm">You have <strong>{{ remaining }}</strong> unused backup code{{ remaining|pluralize }}. Codes are shown only when generated; if you have lost them, generate a new set — the old ones stop working.</p>
+<form method="post">{% csrf_token %}<button class="btn-primary">Generate a new set</button> <a class="btn-secondary" href="{% url 'accounts:profile' %}">Cancel</a></form>
+{% endif %}
+</div>{% endblock %}

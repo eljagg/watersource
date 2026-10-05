@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}Finance export — {{ SITE_NAME }}{% endblock %}{% block content %}
+<div class="mx-auto max-w-3xl">
+<div class="mb-5"><p class="eyebrow">Finance &amp; Accounts</p><h1 class="page-title">Licence and abstraction export</h1><p class="text-body mt-1 text-sm">For volume-based fee calculation (the calculation itself is done in Finance's own system). Files carry licensee names, so every download is recorded in the audit log.</p></div>
+<div class="card mb-4 p-5 text-sm"><h2 class="mb-2 text-base">Licence register</h2><p class="text-body mb-3">All active licences with licensee, parish, WMU, source, granted daily volume and expiry.</p>
+<a class="btn-primary btn-sm" href="{% url 'exports:finance_licences' %}">Download licences.csv</a> <a class="btn-secondary btn-sm" href="{% url 'exports:finance_licences' %}?status=expired">Expired only</a></div>
+<div class="card p-5 text-sm"><h2 class="mb-2 text-base">Abstraction returns for a period</h2><p class="text-body mb-3">Approved returns only: licence, period, days, granted daily volume, volume abstracted, daily equivalent and over-limit flag.</p>
+<form method="get" action="{% url 'exports:finance_abstraction' %}" class="flex flex-wrap items-end gap-3"><label class="block space-y-1">From<input type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label><label class="block space-y-1">To<input type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label><button class="btn-primary btn-sm">Download abstraction.csv</button></form>
+<p class="text-muted mt-3 text-xs">Finance's own systems can fetch the same data with an API key: <code>GET /api/v1/exports/finance/licences/</code> and <code>GET /api/v1/exports/finance/abstraction/?from=YYYY-MM-DD&amp;to=YYYY-MM-DD</code> (JSON, or add <code>?download=csv</code>).</p></div>
+</div>{% endblock %}

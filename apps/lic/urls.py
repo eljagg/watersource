@@ -11,6 +11,8 @@ urlpatterns = [
     path("applications/<str:reference>/upload/", views.application_upload, name="application_upload"),
     path("applications/<str:reference>/submit/", views.application_submit, name="application_submit"),
     path("documents/<int:pk>/download/", views.document_download, name="document_download"),
+    path("applications/<str:reference>/assessment/", views.assessment, name="assessment"),
+    path("balance/", views.wmu_balance, name="wmu_balance"),
     path("licences/", views.licence_list, name="licence_list"),
     path("licences/<str:number>/", views.licence_detail, name="licence_detail"),
 ]

@@ -2,6 +2,17 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.5.0] — 5 Oct 2026 — Sprint 2b, part 2
+
+### Added
+- **Technical assessment stage** (design doc 14 §4). The second stage of the licence workflow is now "Technical assessment", acted on by the `hydrologist` role, and cannot be approved until the assessment is recorded: WMU and aquifer, impact, recommendation (grant / reduced / more information / refuse), recommended daily volume, standard conditions ticked from the library plus free-text conditions, and findings. The WMU balance (safe yield, licensed, reported 12-month average, pending, utilisation) is shown on the form and snapshotted on the record. At final approval the licensing officer's volume defaults to the recommendation and the conditions are printed on the licence (`Licence.conditions`, shown on the licence page).
+- **Conditions library** (Admin console → Licensing → Licence conditions): ten standard conditions seeded with `{volume}` / `{source}` placeholders, categories, surface/ground applicability, default flag and order; WRA edits freely.
+- **Aquifers** (Admin console → Reference data → Aquifers): named aquifers with type, hydrostratigraphic unit, WMU/basin, safe yield and saline-risk flag; wells link to their aquifer. **WMU safe yield** and source on each watershed management unit.
+- **WMU balance sheet** at Licence applications → WMU balance (home tile for staff) and `bi.wmu_balance` for dashboards: safe yield vs active licences vs reported abstraction vs pending requests, with headroom and utilisation; rows over 85 % amber, over 100 % with pending red.
+- **MFA backup codes**: ten one-time eight-digit codes issued right after enrolment and on demand from the account page; accepted at the code step when the phone is unavailable; "Reset authenticator (new phone)" with a confirm page. Audit: `auth.mfa_backup_codes_issued`, `auth.mfa_backup_code_used`, `auth.mfa_reset`.
+- **Finance export** for the Finance & Accounts Division: new `finance` role; `/exports/finance/` page with the licence register and abstraction-returns CSVs for a period; API `GET /api/v1/exports/finance/licences/` and `/abstraction/?from=&to=` (JSON, `?download=csv`) for Finance's own system via API key. Every download is audited (`export.finance_*`). Demo user demo.finance@wra-demo.local.
+- Demo data: safe yields on the demo WMUs, a demo aquifer per basin, conditions on demo licences.
+
 ## [0.4.4] — 5 Oct 2026
 
 ### Changed

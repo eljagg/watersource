@@ -16,6 +16,8 @@ urlpatterns = [
     path("password/reset/complete/", views.PasswordResetCompleteView.as_view(), name="password_reset_complete"),
     path("mfa/setup/", views.mfa_setup, name="mfa_setup"),
     path("mfa/verify/", views.mfa_verify, name="mfa_verify"),
+    path("mfa/backup-codes/", views.backup_codes_new, name="backup_codes_new"),
+    path("mfa/reset/", views.mfa_reset, name="mfa_reset"),
     path("profile/", views.profile, name="profile"),
     path("profile/export.json", views.my_data_export, name="my_data_export"),
 ]

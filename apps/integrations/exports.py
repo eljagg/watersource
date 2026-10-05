@@ -80,3 +80,34 @@ def export_finance_csv(period_start, period_end) -> str:
                         r.period_start.isoformat(), r.period_end.isoformat(), r.daily_volume_granted_m3, r.abstraction_volume_m3, r.over_limit, r.over_limit_pct or ""])
     os.chmod(path, 0o640)
     return str(path)
+
+
+# ---------------------------------------------------------------------------
+# On-demand Finance export (ToR H.xiii; stakeholder model: Finance & Accounts consumes licence/abstraction via API/CSV)
+# ---------------------------------------------------------------------------
+FINANCE_LICENCE_COLUMNS = ["licence_number", "licensee", "licensee_email", "parish", "wmu", "water_source", "source_name", "purpose",
+                           "daily_volume_granted_m3", "issued_on", "expires_on", "status"]
+FINANCE_ABSTRACTION_COLUMNS = ["licence_number", "licensee", "parish", "period_start", "period_end", "days", "daily_volume_granted_m3",
+                               "abstraction_volume_m3", "daily_equivalent_m3", "over_limit", "over_limit_pct"]
+
+
+def finance_licence_rows(status: str | None = None):
+    """Rows for the licence register export (active by default)."""
+    from apps.lic.models import Licence, LicenceStatus
+
+    qs = Licence.objects.select_related("licensee", "parish", "wmu").order_by("number")
+    qs = qs.filter(status=status) if status else qs.filter(status=LicenceStatus.ACTIVE)
+    for lic in qs:
+        yield [lic.number, lic.licensee.name, lic.licensee.email, lic.parish.name, lic.wmu.name if lic.wmu_id else "", lic.water_source, lic.source_name,
+               lic.purpose, lic.daily_volume_granted_m3, lic.issued_on.isoformat(), lic.expires_on.isoformat(), lic.status]
+
+
+def finance_abstraction_rows(period_start, period_end):
+    """Rows for the abstraction-vs-licence export over a period (approved returns only)."""
+    qs = (AbstractionRecord.objects.approved().filter(period_start__gte=period_start, period_end__lte=period_end)
+          .select_related("licence__licensee", "licence__parish").order_by("licence__number", "period_start"))
+    for r in qs:
+        days = max((r.period_end - r.period_start).total_seconds() / 86400, 1)
+        yield [r.licence.number if r.licence_id else "", r.licence.licensee.name if r.licence_id else "", r.licence.parish.name if r.licence_id else "",
+               r.period_start.date().isoformat(), r.period_end.date().isoformat(), round(days, 2), r.daily_volume_granted_m3,
+               r.abstraction_volume_m3, round(float(r.abstraction_volume_m3) / days, 3), r.over_limit, r.over_limit_pct or ""]

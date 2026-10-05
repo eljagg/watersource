@@ -1,7 +1,7 @@
 """Django admin for licence applications and licences (staff back-office)."""
 from django.contrib import admin
 
-from .models import ApplicationDocument, Licence, LicenceApplication, Sequence
+from .models import ApplicationDocument, Licence, LicenceApplication, LicenceCondition, Sequence, TechnicalAssessment
 
 
 class DocumentInline(admin.TabularInline):
@@ -31,3 +31,25 @@ class LicenceAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Sequence)
+
+
+@admin.register(LicenceCondition)
+class LicenceConditionAdmin(admin.ModelAdmin):
+    """The conditions library hydrologists pick from at assessment."""
+
+    list_display = ("code", "title", "category", "applies_to", "order", "is_default", "is_active")
+    list_filter = ("category", "applies_to", "is_default", "is_active")
+    search_fields = ("code", "title", "text")
+    list_editable = ("order", "is_default", "is_active")
+
+
+@admin.register(TechnicalAssessment)
+class TechnicalAssessmentAdmin(admin.ModelAdmin):
+    """Assessments on record (edit through the application's assessment page)."""
+
+    list_display = ("application", "assessed_by", "assessed_at", "wmu", "aquifer", "impact", "recommendation", "recommended_daily_volume_m3")
+    list_filter = ("recommendation", "impact", "wmu")
+    search_fields = ("application__reference", "application__source_name")
+    autocomplete_fields = ("application",)
+    filter_horizontal = ("conditions",)
+    readonly_fields = ("wmu_safe_yield_m3_d", "wmu_allocated_m3_d", "wmu_reported_m3_d", "created_by", "created_at", "updated_by", "updated_at")

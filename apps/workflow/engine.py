@@ -129,6 +129,11 @@ def approve(instance: WorkflowInstance, actor, comment: str = "", **meta) -> Tra
         raise WorkflowError("Waiting on the submitter; cannot approve until resubmitted.")
     _require_stage_actor(instance, actor)
     stage = instance.current_stage
+    gate = getattr(instance.subject, "workflow_can_advance", None)
+    if gate is not None:
+        blocker = gate(instance, actor)
+        if blocker:
+            raise WorkflowError(blocker)
     nxt = stage.next_stage
     if nxt is not None:
         instance.current_stage = nxt

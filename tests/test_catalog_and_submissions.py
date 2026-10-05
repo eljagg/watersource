@@ -115,7 +115,14 @@ def test_licence_application_end_to_end(client, client_user, reviewer, approver,
     inst = app.workflow
     assert inst.current_stage.code == "intake"
     engine.approve(inst, reviewer)  # intake (reviewer group)
-    engine.approve(inst, reviewer)  # hydrogeology (reviewer group)
+    # technical assessment (hydrologist group, v0.5.0): must be recorded before the stage can advance
+    from apps.accounts import roles as _roles
+    from apps.lic.models import TechnicalAssessment
+    from tests.conftest import _user as _mk
+
+    hydro = _mk("hydro-e2e@wra.gov.jm", _roles.HYDROLOGIST)
+    TechnicalAssessment.objects.create(application=app, assessed_by=hydro, findings="ok")
+    engine.approve(inst, hydro)
     engine.approve(inst, approver)  # licensing officer
     engine.approve(inst, approver, "granted", daily_volume_granted_m3="40", term_years=2)  # director
     app.refresh_from_db()

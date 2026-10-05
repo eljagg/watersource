@@ -15,4 +15,5 @@ router.register("licences", views.LicenceViewSet, basename="licence")
 router.register("applications", views.ApplicationViewSet, basename="application")
 router.register("categories", views.CategoryViewSet, basename="category")
 router.register("submissions", views.SubmissionViewSet, basename="submission")
+router.register("exports/finance", views.FinanceExportViewSet, basename="finance-export")
 urlpatterns: list = router.urls

@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block title %}Technical assessment — {{ SITE_NAME }}{% endblock %}{% block content %}
+<div class="mx-auto max-w-5xl">
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div><p class="eyebrow">Technical assessment</p><h1 class="page-title">{{ app.reference }} · {{ app.source_name }}</h1><p class="text-body mt-1 text-sm">{{ app.applicant_name }} · {{ app.get_water_source_display }} · {{ app.parish.name }} · requests <strong>{{ app.daily_volume_requested_m3 }} m³/day</strong> for {{ app.purpose|truncatechars:80 }}</p></div>
+    <a class="btn-secondary btn-sm" href="{% if app.workflow %}{% url 'workflow:detail' app.workflow.pk %}{% else %}{{ app.get_absolute_url }}{% endif %}">Cancel</a>
+  </div>
+  {% if balance %}<div class="card mb-5 p-5">
+    <h2 class="mb-1 text-base">WMU balance — {{ balance.wmu.name }} ({{ balance.wmu.code }})</h2>
+    <p class="text-muted mb-3 text-xs">Safe yield from the Master Plan against active licences and what licensees actually reported over the last 12 months. Snapshotted onto the assessment when you save.</p>
+    <div class="grid gap-3 sm:grid-cols-5 text-sm">
+      <div><div class="text-muted text-xs">Safe yield</div><div class="text-lg font-semibold">{% if balance.safe_yield %}{{ balance.safe_yield|floatformat:0 }}{% else %}—{% endif %} <span class="text-xs font-normal">m³/day</span></div></div>
+      <div><div class="text-muted text-xs">Licensed ({{ balance.licences }} active)</div><div class="text-lg font-semibold">{{ balance.allocated|floatformat:0 }} <span class="text-xs font-normal">m³/day</span></div></div>
+      <div><div class="text-muted text-xs">Reported, 12-month average</div><div class="text-lg font-semibold">{% if balance.reported_avg %}{{ balance.reported_avg|floatformat:0 }}{% else %}—{% endif %} <span class="text-xs font-normal">m³/day</span></div></div>
+      <div><div class="text-muted text-xs">Pending requests</div><div class="text-lg font-semibold">{{ balance.pending|floatformat:0 }} <span class="text-xs font-normal">m³/day</span></div></div>
+      <div><div class="text-muted text-xs">Utilisation</div><div class="text-lg font-semibold {% if balance.utilisation_with_pending_pct and balance.utilisation_with_pending_pct > 100 %}text-danger{% elif balance.utilisation_pct and balance.utilisation_pct > 85 %}text-warn{% endif %}">{% if balance.utilisation_pct is not None %}{{ balance.utilisation_pct }} %{% else %}no safe yield set{% endif %}</div>{% if balance.utilisation_with_pending_pct %}<div class="text-muted text-xs">{{ balance.utilisation_with_pending_pct }} % with pending</div>{% endif %}</div>
+    </div>
+  </div>{% endif %}
+  <form method="post" class="card divide-y divide-slate-200 dark:divide-slate-800">{% csrf_token %}
+    {% for e in form.non_field_errors %}<div class="alert-danger m-5">{{ e }}</div>{% endfor %}
+    {% with f=form %}
+    {% include "partials/form_section.html" with title="Resource" intro="Change the WMU and the balance above updates when you save; the figures shown are for the unit currently selected." fields=f.wmu|add_fields:f.aquifer %}
+    {% include "partials/form_section.html" with title="Assessment" fields=f.impact|add_fields:f.recommendation|add_fields:f.recommended_daily_volume_m3|add_fields:f.findings %}
+    {% include "partials/form_section.html" with title="Licence conditions" intro="Standard conditions are pre-selected; {volume} and {source} in their wording are filled in on the licence." fields=f.conditions|add_fields:f.extra_conditions %}
+    {% endwith %}
+    <div class="sticky bottom-0 flex items-center justify-end gap-2 rounded-b-(--radius-card) bg-white/90 p-4 backdrop-blur dark:bg-slate-900/90">
+      <a class="btn-secondary" href="{% if app.workflow %}{% url 'workflow:detail' app.workflow.pk %}{% else %}{{ app.get_absolute_url }}{% endif %}">Cancel</a>
+      <button class="btn-primary">{% if assessment %}Update assessment{% else %}Save assessment{% endif %}</button>
+    </div>
+  </form>
+</div>{% endblock %}

@@ -63,3 +63,39 @@ def attach_document(app: LicenceApplication, form, user) -> ApplicationDocument:
 
     transaction.on_commit(lambda: push_document_to_dspace.delay(doc.pk))
     return doc
+
+
+# ---------------------------------------------------------------------------
+# WMU balance sheet (design doc 14 §4) — the numbers the technical assessment is made against
+# ---------------------------------------------------------------------------
+def wmu_balance(wmu) -> dict:
+    """Safe yield, licensed allocation, reported abstraction and pending requests for one WMU (m³/day)."""
+    from datetime import timedelta
+    from decimal import Decimal
+
+    from django.db.models import F, Q, Sum
+    from django.utils import timezone
+
+    from apps.obs.models import AbstractionRecord
+
+    from .models import ApplicationStatus, Licence, LicenceStatus
+
+    today = timezone.localdate()
+    in_wmu = Q(wmu=wmu) | Q(wmu__isnull=True, well__wmu=wmu)
+    allocated = Licence.objects.filter(in_wmu, status=LicenceStatus.ACTIVE, expires_on__gte=today).aggregate(v=Sum("daily_volume_granted_m3"))["v"] or Decimal(0)
+    pending = LicenceApplication.objects.filter(in_wmu, status__in=[ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW, ApplicationStatus.INFO_REQUESTED]) \
+        .aggregate(v=Sum("daily_volume_requested_m3"))["v"] or Decimal(0)
+    since = timezone.now() - timedelta(days=365)
+    recs = AbstractionRecord.objects.filter(approval_state="approved", period_start__gte=since).filter(Q(licence__wmu=wmu) | Q(licence__wmu__isnull=True, well__wmu=wmu))
+    total = recs.aggregate(v=Sum("abstraction_volume_m3"))["v"] or Decimal(0)
+    days = recs.aggregate(d=Sum(F("period_end") - F("period_start")))["d"]
+    day_count = Decimal(days.total_seconds() / 86400) if days else Decimal(0)
+    reported = (total / day_count) if day_count else None
+    safe = wmu.safe_yield_m3_d
+    return {
+        "wmu": wmu, "safe_yield": safe, "allocated": allocated, "pending": pending, "reported_avg": reported,
+        "licences": Licence.objects.filter(in_wmu, status=LicenceStatus.ACTIVE).count(),
+        "headroom": (safe - allocated) if safe is not None else None,
+        "utilisation_pct": round(float(allocated / safe * 100), 1) if safe else None,
+        "utilisation_with_pending_pct": round(float((allocated + pending) / safe * 100), 1) if safe else None,
+    }

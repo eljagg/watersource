@@ -38,6 +38,7 @@ BI_VIEWS = [
     "bi.validation_failures",
     "bi.submissions_kpis",
     "bi.licences_by_status",
+    "bi.wmu_balance",
     "bi.service_standard_monthly",
     "bi.expiries_next_12m",
     "bi.governance_kpis",

@@ -39,7 +39,7 @@ from django.utils import timezone
 from apps.accounts import roles
 from apps.accounts.models import User, UserType
 from apps.core.models import ApprovalState, Classification, DataSource, ObservationGrade
-from apps.lic.models import ApplicationStatus, Licence, LicenceApplication, LicenceStatus, Sequence, WaterSource
+from apps.lic.models import ApplicationStatus, Licence, LicenceApplication, LicenceCondition, LicenceStatus, Sequence, WaterSource
 from apps.obs.models import AbstractionRecord, AbstractionSource, ApprovalPeriod, SampleSource, SeriesKind, StationReading, WaterQualitySample, WellState, WellWaterLevel
 from apps.ref.models import (
     WMU,
@@ -74,6 +74,7 @@ DEMO_USERS = [  # email, name, type, role, WRA unit code (stakeholder model), Su
     ("demo.hydrologist@wra-demo.local", "Demo Hydrologist", UserType.STAFF, roles.HYDROLOGIST, "RMU", True),
     ("demo.technician@wra-demo.local", "Demo Technician", UserType.STAFF, roles.TECHNICIAN, "RMU", False),
     ("demo.admin@wra-demo.local", "Demo Administrator", UserType.STAFF, roles.ADMINISTRATOR, "CGU", True),
+    ("demo.finance@wra-demo.local", "Demo Finance Officer", UserType.STAFF, roles.FINANCE, "FAD", True),
 ]
 WELLS = [  # name, parish code, basin code, wmu code, use, easting, northing
     ("Bog Walk 1", "STC", "B03", "W05", WellUse.PUBLIC_SUPPLY, 758200, 653100),
@@ -153,6 +154,10 @@ class Command(BaseCommand):
         from apps.obs.models import ModelRun
 
         ModelRun.objects.filter(code__startswith="demo-").delete()
+        from apps.ref.models import Aquifer
+
+        Well.objects.filter(name__startswith=PREFIX).update(aquifer=None)
+        Aquifer.objects.filter(code__startswith="DEMO-AQ-").delete()
         ApprovalPeriod.objects.filter(well__in=wells).delete()
         ApprovalPeriod.objects.filter(station__in=stations).delete()
         WellWaterLevel.objects.filter(well__in=wells).delete()
@@ -224,12 +229,28 @@ class Command(BaseCommand):
         driller = Party.objects.create(kind=PartyKind.DRILLER, name=f"{PREFIX} Drilling Co.", is_organisation=True)
         lab = Party.objects.create(kind=PartyKind.LABORATORY, name=f"{PREFIX} Water Laboratory", is_organisation=True)
         self.lab = lab
+        # safe yields on the WMUs the demo wells sit in (WMU balance sheet, v0.5.0) and a demo aquifer per basin used
+        from apps.ref.models import Aquifer
+
+        used = {w[3] for w in WELLS}
+        for code in used:
+            u = self.wmu.get(code)
+            if u is not None and u.safe_yield_m3_d is None:
+                u.safe_yield_m3_d = Decimal(self.rng.randint(4, 20) * 1000)
+                u.safe_yield_source = "DEMO figure — replace with the Water Resources Master Plan value"
+                u.save(update_fields=["safe_yield_m3_d", "safe_yield_source"])
+        self.aquifers = {}
+        for code in {w[2] for w in WELLS}:
+            b = self.basin[code]
+            self.aquifers[code], _ = Aquifer.objects.get_or_create(code=f"DEMO-AQ-{code}", defaults=dict(
+                name=f"{PREFIX} {b.name} limestone aquifer", basin=b, hydrostrat_unit=self.hsu, safe_yield_m3_d=Decimal(self.rng.randint(3, 12) * 1000),
+                notes="Demo aquifer record (Planning & Investigation Unit)."))
         self.wells = []
         for i, (name, parish, basin, wmu, use, e, n) in enumerate(WELLS):
             owner = Party.objects.create(kind=PartyKind.OWNER, name=f"{PREFIX} Owner {i + 1}", is_organisation=i % 2 == 0)
             w = Well.objects.create(
                 name=f"{PREFIX} {name}", parish=self.parish[parish], basin=self.basin[basin], wmu=self.wmu.get(wmu), hydrostrat_unit=self.hsu,
-                use=use, easting=e, northing=n, elevation_m=Decimal(self.rng.randint(5, 120)), current_owner=owner, driller=driller,
+                aquifer=self.aquifers.get(basin), use=use, easting=e, northing=n, elevation_m=Decimal(self.rng.randint(5, 120)), current_owner=owner, driller=driller,
                 pump_attached=use != WellUse.OBSERVATION, is_pumping=use != WellUse.OBSERVATION, is_index_well=use == WellUse.OBSERVATION,
                 is_public_supply=use == WellUse.PUBLIC_SUPPLY,
                 approval_state=ApprovalState.APPROVED, classification=Classification.PUBLIC, source=DataSource.MIGRATED,
@@ -297,8 +318,9 @@ class Command(BaseCommand):
                     expires = self.today + timedelta(days=self.rng.randint(35, 85))
                 lic = Licence.objects.create(
                     number=Sequence.next("licence", "DEMO-L"), application=app, licensee=app.applicant, parish=parish, water_source=source,
-                    source_name=source_name, well=well, daily_volume_granted_m3=granted, purpose=app.purpose, issued_on=issued, expires_on=expires,
+                    source_name=source_name, well=well, wmu=well.wmu if well else None, daily_volume_granted_m3=granted, purpose=app.purpose, issued_on=issued, expires_on=expires,
                     status=LicenceStatus.EXPIRED if expires < self.today else LicenceStatus.ACTIVE, issued_by=approver, classification=Classification.PUBLIC,
+                    conditions=[c.render(app, granted) for c in LicenceCondition.objects.filter(is_default=True, is_active=True).filter(applies_to__in=["both", source])],
                 )
                 if well:
                     Well.objects.filter(pk=well.pk).update(is_licensed=True, licence_number=lic.number)

@@ -9,6 +9,7 @@ from django.contrib.gis import admin
 
 from .models import (
     WMU,
+    Aquifer,
     Basin,
     HydrostratUnit,
     Instrument,
@@ -109,7 +110,7 @@ class WellAdmin(admin.GISModelAdmin):
     list_filter = ("is_public_supply", "parish", "basin", "use", "is_licensed", "is_abandoned", "is_index_well", "approval_state", "classification")
     search_fields = ("name", "aliases", "licence_number", "legacy_ids")
     inlines = [StatusEventInline, LithologyInline, CasingInline, PumpTestInline, OwnershipInline, ReferencePointInline, InstallationInline, VisitInline]
-    autocomplete_fields = ("current_owner", "driller", "replaces")
+    autocomplete_fields = ("current_owner", "driller", "replaces", "aquifer")
     readonly_fields = ("created_by", "created_at", "updated_by", "updated_at")
 
 
@@ -185,5 +186,23 @@ class WellStatusEventAdmin(admin.ModelAdmin):
     date_hierarchy = "occurred_on"
 
 
-for m in (Parish, Basin, WMU, SubWMU, HydrostratUnit, River, Spring):
+@admin.register(WMU)
+class WMUAdmin(admin.GISModelAdmin):
+    """Watershed management units with their safe yield (used by the balance sheet)."""
+
+    list_display = ("code", "name", "basin", "safe_yield_m3_d", "safe_yield_source")
+    list_filter = ("basin",)
+    search_fields = ("code", "name")
+
+
+@admin.register(Aquifer)
+class AquiferAdmin(admin.GISModelAdmin):
+    """Aquifers (Planning & Investigation Unit)."""
+
+    list_display = ("code", "name", "aquifer_type", "wmu", "basin", "safe_yield_m3_d", "is_saline_risk")
+    list_filter = ("aquifer_type", "basin", "is_saline_risk")
+    search_fields = ("code", "name")
+
+
+for m in (Parish, Basin, SubWMU, HydrostratUnit, River, Spring):
     admin.site.register(m, admin.GISModelAdmin)

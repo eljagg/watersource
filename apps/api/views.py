@@ -152,3 +152,68 @@ class SubmissionViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixi
         out = serializers.SubmissionSerializer(sub)
         code = status.HTTP_202_ACCEPTED if sub.status == "under_review" else status.HTTP_422_UNPROCESSABLE_ENTITY
         return Response(out.data, status=code)
+
+
+# ---------------------------------------------------------------------------
+# Finance & Accounts export endpoints (ToR H.xiii) — JSON by default, ?download=csv for a file
+# ---------------------------------------------------------------------------
+class FinanceOnly(permissions.BasePermission):
+    """Permission: ``finance`` or ``administrator`` role (API keys inherit their owner's roles)."""
+
+    def has_permission(self, request, view):
+        """True for finance/administrator users and superusers."""
+        from apps.accounts import roles
+
+        u = request.user
+        return u.is_authenticated and (u.is_superuser or u.has_role(*roles.FINANCE_EXPORT_ROLES))
+
+
+def _finance_response(request, name: str, columns: list[str], rows) -> Response:
+    """Rows as a JSON list of objects, or as CSV when ``?download=csv``."""
+    import csv
+
+    from django.http import HttpResponse
+
+    from apps.core import audit
+
+    rows = list(rows)
+    audit.log(f"export.finance_{name}", None, actor=request.user, summary=f"api · {len(rows)} rows")
+    if request.query_params.get("download") == "csv":
+        resp = HttpResponse(content_type="text/csv; charset=utf-8")
+        resp["Content-Disposition"] = f'attachment; filename="{name}.csv"'
+        w = csv.writer(resp)
+        w.writerow(columns)
+        w.writerows(rows)
+        return resp
+    return Response({"count": len(rows), "columns": columns, "results": [dict(zip(columns, r, strict=True)) for r in rows]})
+
+
+class FinanceExportViewSet(viewsets.ViewSet):
+    """Licence register and abstraction returns for Finance's fee system (``finance`` role or administrator)."""
+
+    permission_classes = [FinanceOnly]
+    serializer_class = serializers.FinanceRowSerializer  # documentation only; rows are plain dicts
+
+    @action(detail=False, methods=["get"], url_path="licences")
+    def licences(self, request):
+        """Active licences (``?status=expired`` etc. for other states)."""
+        from apps.integrations import exports
+
+        return _finance_response(request, "licences", exports.FINANCE_LICENCE_COLUMNS, exports.finance_licence_rows(request.query_params.get("status") or None))
+
+    @action(detail=False, methods=["get"], url_path="abstraction")
+    def abstraction(self, request):
+        """Approved abstraction returns in ``?from=YYYY-MM-DD&to=YYYY-MM-DD`` (default: current month to date)."""
+        from datetime import datetime, time
+
+        from django.utils import timezone
+        from django.utils.dateparse import parse_date
+
+        from apps.integrations import exports
+
+        today = timezone.localdate()
+        start = parse_date(request.query_params.get("from", "")) or today.replace(day=1)
+        end = parse_date(request.query_params.get("to", "")) or today
+        tz = timezone.get_current_timezone()
+        s, e = timezone.make_aware(datetime.combine(start, time.min), tz), timezone.make_aware(datetime.combine(end, time.max), tz)
+        return _finance_response(request, "abstraction", exports.FINANCE_ABSTRACTION_COLUMNS, exports.finance_abstraction_rows(s, e))

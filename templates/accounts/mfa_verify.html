@@ -2,5 +2,5 @@
 <p class="text-body mb-6 text-sm">Open your authenticator app and type the 6-digit code shown for <strong>WaterSource Jamaica</strong>. The code changes every 30 seconds.</p>
 <form method="post">{% csrf_token %}{% include "accounts/_form.html" %}<button class="btn-primary">Continue</button></form>
 <form method="post" action="{% url 'accounts:logout' %}" class="mt-3">{% csrf_token %}<button class="link text-sm" type="submit">Sign out</button></form>
-<p class="text-muted mt-6 text-xs">Lost your phone? Ask a WaterSource administrator to reset two-factor on your account; you will set it up again at your next sign-in.</p>
+<p class="text-muted mt-6 text-xs">No phone to hand? Enter one of your eight-digit backup codes instead. Lost both? Ask a WaterSource administrator to reset two-factor on your account; you will set it up again at your next sign-in.</p>
 </div>{% endblock %}
