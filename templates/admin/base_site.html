@@ -5,3 +5,9 @@
 {% if user.is_anonymous %}{% include "admin/color_theme_toggle.html" %}{% endif %}
 {% endblock %}
 {% block nav-global %}{% endblock %}
+{% block extrastyle %}{{ block.super }}<style nonce="{{ request.csp_nonce }}">
+  #user-tools { font-size: 0.95rem; letter-spacing: 0.02em; text-transform: none; }
+  #user-tools strong { font-size: 1rem; }
+  .breadcrumbs { font-size: 0.95rem; }
+  #header { padding: 12px 40px; }
+</style>{% endblock %}

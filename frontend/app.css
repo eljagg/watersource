@@ -189,7 +189,16 @@ html.dark {
 
   .form-actions { @apply sticky bottom-0 flex flex-wrap items-center justify-end gap-2 rounded-b-(--radius-card) border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-900/90; }
   .legend-swatch { @apply mr-1 inline-block h-3 w-3 rounded-sm align-middle; }
+  .legend-dot { @apply mr-1 inline-block h-3 w-3 rounded-full border-2 align-middle; }
   .leaflet-container { @apply bg-slate-100 dark:bg-slate-800; font: inherit; }
-  .leaflet-popup-content { @apply text-sm text-slate-800; }
+  .leaflet-popup-content { @apply text-sm leading-snug text-slate-800; }
+  .leaflet-control-layers { @apply text-sm text-slate-800; }
+  .leaflet-control-layers-expanded { padding: 8px 12px 8px 8px; }
+  .ws-full-btn { @apply flex h-[30px] w-[30px] items-center justify-center bg-white text-lg text-slate-800 no-underline; }
+  .ws-label { @apply pointer-events-none whitespace-nowrap text-center font-semibold; text-shadow: 0 0 3px #fff, 0 0 6px #fff, 0 0 2px #fff; transform: translate(-50%, -50%); width: auto !important; height: auto !important; }
+  .ws-label-parish { @apply text-[11px] uppercase tracking-wider text-slate-600; }
+  .ws-label-basin { @apply text-[15px] text-sky-800; }
+  .ws-label-wmu { @apply text-[12px] text-slate-900; }
+  .ws-tip { @apply text-sm; }
   .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400; }
 }

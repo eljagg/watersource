@@ -3,18 +3,19 @@
 {% block content %}
 <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
   <div><p class="eyebrow">Planning</p><h1 class="page-title">Map</h1>
-    <p class="text-body mt-1 text-sm">Parishes, hydrological basins, water management units coloured by licensed utilisation, aquifers, and monitoring sites.{% if not exact_coordinates %} Public-supply sources are shown at coarsened positions.{% endif %}</p></div>
-  <div class="flex gap-2">{% if user.is_staff_user %}<a class="btn-secondary btn-sm" href="{% url 'lic:wmu_balance' %}">WMU balance sheet</a>{% endif %}{% if can_export %}<a class="btn-secondary btn-sm" href="{% url 'maps:export' %}">GIS package</a>{% endif %}</div>
+    <p class="text-body mt-1 text-sm">Parishes, hydrological basins, water management units coloured by licensed utilisation, aquifers, and monitoring sites. Hover for names, click for figures.{% if not exact_coordinates %} Public-supply sources are shown at coarsened positions.{% endif %}</p></div>
+  <div class="flex flex-wrap gap-2"><a class="btn-secondary btn-sm" href="{% url 'maps:full' %}" target="_blank" rel="noopener">Full screen (TV) ↗</a>{% if user.is_staff_user %}<a class="btn-secondary btn-sm" href="{% url 'lic:wmu_balance' %}">WMU balance sheet</a>{% endif %}{% if can_export %}<a class="btn-secondary btn-sm" href="{% url 'maps:export' %}">GIS package (download)</a>{% endif %}</div>
 </div>
-<div class="grid gap-4 lg:grid-cols-4">
-  <div class="card p-4 text-sm lg:col-span-1">
+<div class="grid gap-4 xl:grid-cols-5">
+  <div class="card p-4 text-sm xl:col-span-1">
     <h2 class="mb-2 text-base">Layers</h2>
     <div id="layer-controls" class="space-y-2">
-      <label class="flex items-center gap-2"><input type="checkbox" data-layer="parishes" checked> Parishes</label>
+      <label class="flex items-center gap-2"><input type="checkbox" data-layer="parishes"> Parishes</label>
       <label class="flex items-center gap-2"><input type="checkbox" data-layer="basins"> Basins</label>
-      <label class="flex items-center gap-2"><input type="checkbox" data-layer="wmus" checked> Water management units</label>
+      <label class="flex items-center gap-2"><input type="checkbox" data-layer="wmus"> Water management units</label>
       <label class="flex items-center gap-2"><input type="checkbox" data-layer="aquifers"> Aquifers</label>
-      <label class="flex items-center gap-2"><input type="checkbox" data-layer="sites" checked> Wells, stations and springs</label>
+      <label class="flex items-center gap-2"><input type="checkbox" data-layer="sites"> Wells, stations and springs</label>
+      <label class="flex items-center gap-2"><input type="checkbox" data-layer="labels"> Names on the map</label>
     </div>
     <h2 class="mb-2 mt-5 text-base">WMU utilisation</h2>
     <ul class="space-y-1 text-xs">
@@ -24,12 +25,17 @@
       <li><span class="legend-swatch" style="background:#ef4444"></span> over 100 % (with pending)</li>
       <li><span class="legend-swatch" style="background:#64748b"></span> no safe yield set</li>
     </ul>
+    <h2 class="mb-2 mt-5 text-base">Sites</h2>
+    <ul class="space-y-1 text-xs">
+      <li><span class="legend-dot" style="background:#3b82f6;border-color:#1d4ed8"></span> Well</li>
+      <li><span class="legend-dot" style="background:#10b981;border-color:#047857"></span> Streamflow station</li>
+      <li><span class="legend-dot" style="background:#f59e0b;border-color:#b45309"></span> Spring</li>
+      <li><span class="legend-swatch" style="background:#0ea5e9"></span> Basin outline · <span class="legend-swatch" style="background:#a855f7"></span> Aquifer</li>
+    </ul>
     <div id="map-sources" class="text-muted mt-5 text-xs"></div>
     <div id="map-info" class="mt-4 text-sm"></div>
   </div>
-  <div class="card overflow-hidden lg:col-span-3"><div id="map" class="h-[70vh] min-h-[480px] w-full"
-    data-tiles="{{ tiles_url }}" data-attribution="{{ tiles_attribution }}" data-lat="{{ map_center.0 }}" data-lng="{{ map_center.1 }}" data-zoom="{{ map_zoom }}"
-    data-layer-url="{% url 'maps:layer' 'LAYER' %}"></div></div>
+  <div class="card overflow-hidden xl:col-span-4">{% include "maps/_map.html" %}</div>
 </div>
 <script src="{% static 'vendor/leaflet/leaflet.js' %}" nonce="{{ request.csp_nonce }}"></script>
 <script src="{% static 'js/maps.js' %}" nonce="{{ request.csp_nonce }}"></script>

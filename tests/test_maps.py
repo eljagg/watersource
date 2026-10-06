@@ -70,3 +70,41 @@ def test_geopackage_export_roles(client, boundaries, reviewer):
     assert r.status_code == 200 and r["Content-Disposition"].endswith('watersource-4326.gpkg"')
     body = b"".join(r.streaming_content)
     assert body[:15] == b"SQLite format 3"
+
+
+# --- v0.7.1: Map tab, full-screen page, base maps, aquifer footprints, admin audit search ------------
+
+
+@pytest.mark.django_db
+def test_map_tab_full_page_and_basemaps(client, boundaries):
+    html = client.get("/").content.decode()
+    assert 'href="/maps/" class="nav-link ">Map</a>' in html  # visible to visitors, not only staff
+    html = client.get("/maps/").content.decode()
+    assert 'class="nav-link is-active">Map</a>' in html and "Full screen (TV)" in html and '&quot;Streets&quot;' in html and '&quot;Satellite&quot;' in html
+    full = client.get("/maps/full/")
+    assert full.status_code == 200 and 'data-refresh="300"' in full.content.decode() and "nav-link" not in full.content.decode()
+    assert "tile.openstreetmap.org" in full["Content-Security-Policy"] and "server.arcgisonline.com" in full["Content-Security-Policy"]
+
+
+@pytest.mark.django_db
+def test_demo_aquifers_get_footprints_and_all_wmus_safe_yields(boundaries):
+    from apps.ref.models import Aquifer
+
+    call_command("seed_demo_data", force=True, verbosity=0)
+    assert Aquifer.objects.filter(code__startswith="DEMO-AQ-", geom__isnull=False).count() == Aquifer.objects.filter(code__startswith="DEMO-AQ-").count() > 0
+    assert not WMU.objects.filter(safe_yield_m3_d__isnull=True).exists()
+    assert Aquifer.objects.filter(code__startswith="DEMO-AQ-").first().geom_source == "demonstration stand-in"
+
+
+@pytest.mark.django_db
+def test_audit_log_admin_searches_by_action(client):
+    from django.contrib.auth import get_user_model
+
+    from apps.core.audit import log
+    from tests.test_sprint2b_part2 import _verified_login
+
+    su = get_user_model().objects.create_superuser(email="su2@wra.gov.jm", password="Str0ng-Passw0rd!!", full_name="SU")
+    log("maps.gis_export", summary="GeoPackage downloaded (EPSG:3448)", actor=su)
+    _verified_login(client, su)
+    html = client.get("/admin/core/auditlog/?q=maps.gis_export").content.decode()
+    assert "1 audit log" in html or "GeoPackage downloaded" in html

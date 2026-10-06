@@ -208,6 +208,25 @@ class Command(BaseCommand):
         app.wmu = wmu
         app.save(update_fields=["wmu", "updated_at"])
 
+    @staticmethod
+    def _aquifer_footprints():
+        """v0.7.1: give demo aquifers a stand-in footprint (their basin inset by 1.5 km) so the Aquifers map layer shows something."""
+        from apps.ref.models import Aquifer
+
+        n = 0
+        for aq in Aquifer.objects.filter(code__startswith="DEMO-AQ-", geom__isnull=True).select_related("basin"):
+            if aq.basin_id and aq.basin.geom is not None:
+                g = aq.basin.geom.buffer(-1500)
+                if g.empty:
+                    continue
+                from django.contrib.gis.geos import MultiPolygon
+
+                aq.geom = g if g.geom_type == "MultiPolygon" else MultiPolygon(g, srid=g.srid)
+                aq.geom_source = "demonstration stand-in"
+                aq.save(update_fields=["geom", "geom_source"])
+                n += 1
+        return n
+
     def _upgrade_existing(self):
         """Bring a demo set created by an earlier release up to the current one without rebuilding it (idempotent).
 
@@ -223,13 +242,11 @@ class Command(BaseCommand):
         self.basin = {b.code: b for b in Basin.objects.all()}
         self.hsu = HydrostratUnit.objects.first()
         changed = []
-        for code in {w[3] for w in WELLS}:
-            u = self.wmu.get(code)
-            if u is not None and u.safe_yield_m3_d is None:
-                u.safe_yield_m3_d = Decimal(self.rng.randint(4, 20) * 1000)
-                u.safe_yield_source = "DEMO figure — replace with the Water Resources Master Plan value"
-                u.save(update_fields=["safe_yield_m3_d", "safe_yield_source"])
-                changed.append(f"safe yield {code}")
+        for u in WMU.objects.filter(safe_yield_m3_d__isnull=True):  # v0.7.1: every WMU, so the map has a colour for each
+            u.safe_yield_m3_d = Decimal(self.rng.randint(4, 20) * 1000)
+            u.safe_yield_source = "DEMO figure — replace with the Water Resources Master Plan value"
+            u.save(update_fields=["safe_yield_m3_d", "safe_yield_source"])
+            changed.append(f"safe yield {u.code}")
         for code in {w[2] for w in WELLS}:
             b = self.basin.get(code)
             if b is not None and not Aquifer.objects.filter(code=f"DEMO-AQ-{code}").exists():
@@ -237,6 +254,8 @@ class Command(BaseCommand):
                                             safe_yield_m3_d=Decimal(self.rng.randint(3, 12) * 1000), notes="Demo aquifer record (Planning & Investigation Unit).")
                 Well.objects.filter(name__startswith=PREFIX, basin=b, aquifer__isnull=True).update(aquifer=aq)
                 changed.append(f"aquifer {code}")
+        if self._aquifer_footprints():
+            changed.append("aquifer footprints")
         for lic in Licence.objects.filter(number__startswith="DEMO-L", conditions=[]):
             lic.conditions = [c.render(lic.application, lic.daily_volume_granted_m3) for c in LicenceCondition.objects.filter(is_default=True, is_active=True).filter(applies_to__in=["both", lic.water_source])]
             lic.wmu = lic.well.wmu if lic.well_id else None
@@ -315,19 +334,17 @@ class Command(BaseCommand):
         # safe yields on the WMUs the demo wells sit in (WMU balance sheet, v0.5.0) and a demo aquifer per basin used
         from apps.ref.models import Aquifer
 
-        used = {w[3] for w in WELLS}
-        for code in used:
-            u = self.wmu.get(code)
-            if u is not None and u.safe_yield_m3_d is None:
-                u.safe_yield_m3_d = Decimal(self.rng.randint(4, 20) * 1000)
-                u.safe_yield_source = "DEMO figure — replace with the Water Resources Master Plan value"
-                u.save(update_fields=["safe_yield_m3_d", "safe_yield_source"])
+        for u in WMU.objects.filter(safe_yield_m3_d__isnull=True):
+            u.safe_yield_m3_d = Decimal(self.rng.randint(4, 20) * 1000)
+            u.safe_yield_source = "DEMO figure — replace with the Water Resources Master Plan value"
+            u.save(update_fields=["safe_yield_m3_d", "safe_yield_source"])
         self.aquifers = {}
         for code in {w[2] for w in WELLS}:
             b = self.basin[code]
             self.aquifers[code], _ = Aquifer.objects.get_or_create(code=f"DEMO-AQ-{code}", defaults=dict(
                 name=f"{PREFIX} {b.name} limestone aquifer", basin=b, hydrostrat_unit=self.hsu, safe_yield_m3_d=Decimal(self.rng.randint(3, 12) * 1000),
                 notes="Demo aquifer record (Planning & Investigation Unit)."))
+        self._aquifer_footprints()
         self.wells = []
         for i, (name, parish, basin, wmu, use, e, n) in enumerate(WELLS):
             owner = Party.objects.create(kind=PartyKind.OWNER, name=f"{PREFIX} Owner {i + 1}", is_organisation=i % 2 == 0)

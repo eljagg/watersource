@@ -25,7 +25,10 @@ CACHE_SECONDS = 600
 
 def _map_context(request, **extra):
     ws = settings.WATERSOURCE
+    import json
+
     return {"tiles_url": ws["MAP_TILES_URL"], "tiles_attribution": ws["MAP_TILES_ATTRIBUTION"], "map_center": ws["MAP_CENTER"], "map_zoom": ws["MAP_ZOOM"],
+            "basemaps_json": json.dumps(ws["MAP_BASEMAPS"]),
             "exact_coordinates": can_see_restricted(request.user), "can_export": _export_allowed(request.user), **extra}
 
 
@@ -33,6 +36,12 @@ def _map_context(request, **extra):
 def index(request):
     """Interactive map: parishes, basins, WMUs coloured by utilisation, aquifers and sites."""
     return render(request, "maps/index.html", _map_context(request))
+
+
+@require_GET
+def full(request):
+    """The map alone, edge to edge, for a large screen or TV (no navigation; layers refresh every five minutes)."""
+    return render(request, "maps/full.html", _map_context(request))
 
 
 @require_GET

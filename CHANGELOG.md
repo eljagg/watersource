@@ -2,6 +2,15 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.7.1] — 6 Oct 2026
+
+### Changed
+- **Map tab** in the navigation for everyone, visitors included (no address to type). Home tile stays.
+- **Map detail**: three base maps on the map (Streets/OpenStreetMap, Topographic/OpenTopoMap, Satellite/Esri World Imagery — settings `MAP_TOPO_URL`, `MAP_SATELLITE_URL`, blank to disable); names on the map for parishes, basins and WMUs (zoom-dependent, switchable); hover highlight and name tips; basins drawn as a thick blue outline on top so they read distinctly from WMUs; aquifers dashed purple; scale bar; the map fits the island on load. Demo aquifers now have a footprint and every demo WMU a safe yield, so the Aquifers layer and the colour scheme are visible.
+- **Full screen**: a ⛶ button on the map (browser full screen) and a chrome-less page `/maps/full/` ("Full screen (TV)") for large screens, refreshing its layers every five minutes.
+- Admin console: header and breadcrumb text enlarged; the audit-log search box now matches the action name (e.g. `maps.gis_export`).
+- Map page layout: side panel narrower, map wider (4/5 of the width); "GIS package (download)" button wording.
+
 ## [0.7.0] — 6 Oct 2026
 
 Maps (stakeholder-model plan, "maps and ArcGIS file export").

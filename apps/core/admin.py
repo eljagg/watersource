@@ -19,7 +19,7 @@ class AuditLogAdmin(admin.ModelAdmin):
     """Read-only audit log browser."""
     list_display = ("at", "actor", "action", "content_type", "object_id", "summary", "ip_address")
     list_filter = ("action", "content_type")
-    search_fields = ("summary", "object_id", "actor__email")
+    search_fields = ("action", "summary", "object_id", "actor__email")
     readonly_fields = [f.name for f in AuditLog._meta.fields]
 
     def has_add_permission(self, request):

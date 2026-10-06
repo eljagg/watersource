@@ -1,0 +1,15 @@
+{% load static %}<!doctype html>
+<html lang="en" class="h-full dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map — {{ SITE_NAME }}</title>
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+</head>
+<body class="h-full overflow-hidden bg-slate-950">
+<div id="map-info" class="hidden"></div><div id="map-sources" class="hidden"></div><div id="layer-controls" class="hidden"></div>
+{% include "maps/_map.html" with map_class="h-screen" refresh_seconds=300 default_layers="parishes,basins,wmus,sites,labels" %}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}" nonce="{{ request.csp_nonce }}"></script>
+<script src="{% static 'js/maps.js' %}" nonce="{{ request.csp_nonce }}"></script>
+</body>
+</html>

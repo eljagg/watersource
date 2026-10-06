@@ -1,0 +1,4 @@
+{% load static %}<div id="map" class="{{ map_class|default:'h-[calc(100vh-14rem)] min-h-[520px]' }} w-full"
+  data-basemaps="{{ basemaps_json }}" data-lat="{{ map_center.0 }}" data-lng="{{ map_center.1 }}" data-zoom="{{ map_zoom }}"
+  data-layer-url="{% url 'maps:layer' 'LAYER' %}" data-full-url="{% url 'maps:full' %}"{% if refresh_seconds %} data-refresh="{{ refresh_seconds }}"{% endif %}
+  data-default-layers="{{ default_layers|default:'parishes,wmus,sites,labels' }}"></div>
