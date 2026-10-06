@@ -28,6 +28,15 @@
   --color-accent-500: #f59e0b;
   --color-accent-600: #d97706;
   --radius-card: 0.875rem;
+  /* v0.6.1 type scale (Omar, 5 Oct 2026): 16 px body, 14 px labels, bigger headings — one place, app-wide.
+     Templates keep their text-xs/sm/base classes; the sizes behind them are larger. */
+  --text-xs: 0.875rem;    --text-xs--line-height: 1.25rem;
+  --text-sm: 1rem;        --text-sm--line-height: 1.5rem;
+  --text-base: 1.25rem;   --text-base--line-height: 1.75rem;
+  --text-lg: 1.375rem;    --text-lg--line-height: 1.875rem;
+  --text-xl: 1.5rem;      --text-xl--line-height: 2rem;
+  --text-2xl: 1.75rem;    --text-2xl--line-height: 2.25rem;
+  --text-3xl: 2rem;       --text-3xl--line-height: 2.5rem;
   --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 8px 24px -12px rgb(15 23 42 / 0.18);
   --shadow-card-dark: 0 1px 2px 0 rgb(0 0 0 / 0.5), 0 12px 32px -12px rgb(0 0 0 / 0.6);
 }
@@ -119,7 +128,7 @@ html.dark {
 
   /* Navigation tabs: original text look with a thin metallic border; the active tab is filled with the tile colour.
      Tiles: the original card look with the same border. Colours come from Admin → Site branding (--ws-tile / --ws-accent). */
-  .nav-link { @apply inline-flex h-10 w-24 items-center justify-center rounded-md px-1 text-center text-[11px] lg:w-[6.75rem] lg:px-1.5 lg:text-xs font-medium leading-tight text-slate-700 transition hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white;
+  .nav-link { @apply inline-flex h-10 w-24 items-center justify-center rounded-md px-1 text-center text-[12px] lg:w-[6.75rem] lg:px-1.5 lg:text-[13px] font-medium leading-tight text-slate-700 transition hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white;
     border: 1px solid var(--ws-accent); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(0,0,0,.25); }
   .nav-link.is-active { @apply text-white; background: var(--ws-tile); }
   .nav-link.is-active:hover { filter: brightness(1.1); }
@@ -129,7 +138,7 @@ html.dark {
   .tile { @apply rounded-(--radius-card) bg-white transition dark:bg-slate-900;
     border: 1px solid var(--ws-accent); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(0,0,0,.25), 0 0 0 1px color-mix(in srgb, var(--ws-accent) 35%, transparent); }
   a.tile:hover { filter: brightness(1.05); }
-  .page-title { @apply text-2xl font-semibold tracking-tight; }
+  .page-title { @apply text-3xl font-semibold tracking-tight; }
 
   /* Sectioned forms (templates/partials/form_section.html, form_grid.html) */
   .form-section { @apply grid gap-4 p-5 sm:p-6 lg:grid-cols-[14rem_1fr] lg:gap-8; }

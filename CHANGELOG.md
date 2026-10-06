@@ -2,6 +2,13 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.6.1] — 5 Oct 2026
+
+### Changed
+- **Layout and type scale, app-wide** (Omar, 5 Oct 2026): page content now spans the same width as the navigation bar (max-w-7xl instead of 6xl); the Tailwind v4 type scale is redefined in one place (`frontend/app.css` `@theme`) so body/table text is 16 px (was 14), labels 14 px (was 12), card titles 20 px, page titles 32 px. Navigation tabs keep fixed pixel sizes so seven equal tabs still fit. Finance export page widened to match forms.
+- **Dates show the day of the week** wherever a date is displayed (`Mon 05 Oct 2026 15:58`). Review queue gains a **Submitted** column and shows the date and time next to "waiting at this stage".
+- Application page: a draft says plainly that it has not been submitted and cannot be reviewed; a submitted application links staff straight to its review item.
+
 ## [0.6.0] — 5 Oct 2026
 
 Package 1 of the WRA stakeholder model (design doc 17): ownership by unit.

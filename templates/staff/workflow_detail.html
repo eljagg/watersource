@@ -6,7 +6,7 @@
   <div class="md:col-span-2 space-y-4">
     {% if subject.reference %}{% include "lic/_application_summary.html" with app=subject %}{% elif subject.category_version %}{% include "submissions/_summary.html" with sub=subject %}{% endif %}
     <div class="card p-5"><h2 class="mb-3 text-base">History</h2>
-      <ol class="text-sm space-y-2">{% for a in instance.actions.all %}<li><span class="text-muted">{{ a.at|date:"d M Y H:i" }}</span> · <strong>{{ a.get_action_display }}</strong> by {{ a.actor.full_name|default:"system" }}{% if a.to_stage %} → {{ a.to_stage.name }}{% endif %}{% if a.comment %}<div class="text-body pl-4">{{ a.comment|linebreaksbr }}</div>{% endif %}</li>{% endfor %}</ol></div>
+      <ol class="text-sm space-y-2">{% for a in instance.actions.all %}<li><span class="text-muted">{{ a.at|date:"D d M Y H:i" }}</span> · <strong>{{ a.get_action_display }}</strong> by {{ a.actor.full_name|default:"system" }}{% if a.to_stage %} → {{ a.to_stage.name }}{% endif %}{% if a.comment %}<div class="text-body pl-4">{{ a.comment|linebreaksbr }}</div>{% endif %}</li>{% endfor %}</ol></div>
   </div>
   <div id="panel">{% include "staff/_workflow_panel.html" %}</div>
 </div>{% endblock %}

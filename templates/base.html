@@ -86,13 +86,13 @@ document.addEventListener('DOMContentLoaded',function(){
   </nav>
 </header>
 
-<main id="main" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+<main id="main" class="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
   {% if messages %}<div class="mb-6 space-y-2">{% for m in messages %}<div class="{% if m.tags == 'error' %}alert-danger{% elif m.tags == 'success' %}alert-success{% elif m.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %}">{{ m }}</div>{% endfor %}</div>{% endif %}
   {% block content %}{% endblock %}
 </main>
 
 <footer class="border-t border-slate-200 dark:border-slate-800">
-  <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:text-slate-400">
+  <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:text-slate-400">
     <p>{% if branding.footer_text %}{{ branding.footer_text }}{% if branding.copyright %} · {% endif %}{% endif %}{{ branding.copyright|default:branding.organisation_name }}</p>
     <p>Personal data is processed under the Data Protection Act, 2020 — see the <a href="/privacy/" class="link">privacy notice</a>.</p>
   </div>
