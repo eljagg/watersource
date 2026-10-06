@@ -188,5 +188,8 @@ html.dark {
   .ds-tab-on { @apply border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300; }
 
   .form-actions { @apply sticky bottom-0 flex flex-wrap items-center justify-end gap-2 rounded-b-(--radius-card) border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-900/90; }
+  .legend-swatch { @apply mr-1 inline-block h-3 w-3 rounded-sm align-middle; }
+  .leaflet-container { @apply bg-slate-100 dark:bg-slate-800; font: inherit; }
+  .leaflet-popup-content { @apply text-sm text-slate-800; }
   .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400; }
 }

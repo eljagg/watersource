@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load static %}{% block title %}Map — {{ SITE_NAME }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+  <div><p class="eyebrow">Planning</p><h1 class="page-title">Map</h1>
+    <p class="text-body mt-1 text-sm">Parishes, hydrological basins, water management units coloured by licensed utilisation, aquifers, and monitoring sites.{% if not exact_coordinates %} Public-supply sources are shown at coarsened positions.{% endif %}</p></div>
+  <div class="flex gap-2">{% if user.is_staff_user %}<a class="btn-secondary btn-sm" href="{% url 'lic:wmu_balance' %}">WMU balance sheet</a>{% endif %}{% if can_export %}<a class="btn-secondary btn-sm" href="{% url 'maps:export' %}">GIS package</a>{% endif %}</div>
+</div>
+<div class="grid gap-4 lg:grid-cols-4">
+  <div class="card p-4 text-sm lg:col-span-1">
+    <h2 class="mb-2 text-base">Layers</h2>
+    <div id="layer-controls" class="space-y-2">
+      <label class="flex items-center gap-2"><input type="checkbox" data-layer="parishes" checked> Parishes</label>
+      <label class="flex items-center gap-2"><input type="checkbox" data-layer="basins"> Basins</label>
+      <label class="flex items-center gap-2"><input type="checkbox" data-layer="wmus" checked> Water management units</label>
+      <label class="flex items-center gap-2"><input type="checkbox" data-layer="aquifers"> Aquifers</label>
+      <label class="flex items-center gap-2"><input type="checkbox" data-layer="sites" checked> Wells, stations and springs</label>
+    </div>
+    <h2 class="mb-2 mt-5 text-base">WMU utilisation</h2>
+    <ul class="space-y-1 text-xs">
+      <li><span class="legend-swatch" style="background:#22c55e"></span> under 60 % of safe yield</li>
+      <li><span class="legend-swatch" style="background:#eab308"></span> 60–85 %</li>
+      <li><span class="legend-swatch" style="background:#f97316"></span> 85–100 %</li>
+      <li><span class="legend-swatch" style="background:#ef4444"></span> over 100 % (with pending)</li>
+      <li><span class="legend-swatch" style="background:#64748b"></span> no safe yield set</li>
+    </ul>
+    <div id="map-sources" class="text-muted mt-5 text-xs"></div>
+    <div id="map-info" class="mt-4 text-sm"></div>
+  </div>
+  <div class="card overflow-hidden lg:col-span-3"><div id="map" class="h-[70vh] min-h-[480px] w-full"
+    data-tiles="{{ tiles_url }}" data-attribution="{{ tiles_attribution }}" data-lat="{{ map_center.0 }}" data-lng="{{ map_center.1 }}" data-zoom="{{ map_zoom }}"
+    data-layer-url="{% url 'maps:layer' 'LAYER' %}"></div></div>
+</div>
+<script src="{% static 'vendor/leaflet/leaflet.js' %}" nonce="{{ request.csp_nonce }}"></script>
+<script src="{% static 'js/maps.js' %}" nonce="{{ request.csp_nonce }}"></script>
+{% endblock %}

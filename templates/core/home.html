@@ -6,6 +6,7 @@
   <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     <a class="tile block p-5" href="{% url 'workflow:queue' %}"><h2 class="text-base">Review queue</h2><p class="text-body mt-1 text-sm">Applications and submissions waiting at your stage.</p></a>
     <a class="tile block p-5" href="{% url 'lic:wmu_balance' %}"><h2 class="text-base">WMU balance</h2><p class="text-body mt-1 text-sm">Safe yield against licences and reported abstraction.</p></a>
+    <a class="tile block p-5" href="{% url 'maps:index' %}"><h2 class="text-base">Map</h2><p class="text-body mt-1 text-sm">Parishes, basins, WMUs by utilisation, aquifers and monitoring sites.</p></a>
     <a class="tile block p-5" href="{% url 'reports:index' %}"><h2 class="text-base">Dashboards</h2><p class="text-body mt-1 text-sm">Licensing, monitoring, submissions and executive views.</p></a>
     <a class="tile block p-5" href="{% url 'reports:wall' %}" target="_blank" rel="noopener"><h2 class="text-base">Wall display ↗</h2><p class="text-body mt-1 text-sm">Full-screen rotation for the operations room.</p></a>
     {% if user.is_staff %}<a class="tile block p-5" href="{% url 'admin:index' %}"><h2 class="text-base">Admin console</h2><p class="text-body mt-1 text-sm">Reference data, wells and stations, categories, workflows, users.</p></a>{% endif %}

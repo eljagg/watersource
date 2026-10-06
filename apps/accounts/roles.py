@@ -40,6 +40,8 @@ OBSERVATION_APPROVER_ROLES = [APPROVER, ADMINISTRATOR, HYDROLOGIST, HYDROGEOLOGI
 #: Roles that may see ``restricted`` records and the exact coordinates / engineering
 #: details of public-supply sources and licensee particulars (Methodology §4A, ADR-0002).
 RESTRICTED_DATA_ROLES = [APPROVER, ADMINISTRATOR, HYDROLOGIST, HYDROGEOLOGIST, REVIEWER]
+#: who may download the GIS package (exact coordinates of every site): technical staff and the GIS unit (v0.7.0)
+GIS_EXPORT_ROLES = [ADMINISTRATOR, HYDROLOGIST, HYDROGEOLOGIST, BI_ANALYST, DATA_MIGRATION]
 
 DESCRIPTIONS = {
     CLIENT: "Self-registered external user: applies for licences, submits data, sees own records and public data.",

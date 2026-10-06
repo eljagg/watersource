@@ -33,6 +33,7 @@ class CodedLookup(models.Model):
     code = models.CharField(max_length=32, unique=True)
     name = models.CharField(max_length=150)
     geom = gis.MultiPolygonField(srid=SRID, null=True, blank=True)
+    geom_source = models.CharField(max_length=120, blank=True, help_text="Where the boundary came from (WRA shapefile, geoBoundaries, demonstration stand-in).")
 
     class Meta:
         abstract = True

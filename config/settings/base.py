@@ -36,6 +36,8 @@ env = environ.Env(
     DSPACE_PASSWORD=(str, ""),
     DSPACE_COLLECTION_ID=(str, ""),
     AQUARIUS_URL=(str, ""),
+    MAP_TILES_URL=(str, "https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
+    MAP_TILES_ATTRIBUTION=(str, "&copy; OpenStreetMap contributors"),
     AQUARIUS_USER=(str, ""),
     AQUARIUS_PASSWORD=(str, ""),
     HGA_ODBC_DSN=(str, ""),
@@ -86,6 +88,7 @@ LOCAL_APPS = [
     "apps.integrations",
     "apps.api",
     "apps.reports",
+    "apps.maps",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -221,6 +224,16 @@ CSRF_COOKIE_SAMESITE = "Lax"
 # ----------------------------------------------------------------------------
 # Security headers / CSP (ToR §9: XSS, CSRF, clickjacking)
 # ----------------------------------------------------------------------------
+
+
+def _tile_host(url: str) -> str:
+    """Origin of the map-tile URL template, for the CSP img-src list (``https://tile.openstreetmap.org``)."""
+    from urllib.parse import urlsplit
+
+    parts = urlsplit(url.replace("{s}", "a"))
+    return f"{parts.scheme}://{parts.netloc}" if parts.netloc else "'self'"
+
+
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 X_FRAME_OPTIONS = "DENY"
@@ -230,7 +243,7 @@ CONTENT_SECURITY_POLICY = {
         "default-src": ("'self'",),
         "script-src": (SELF, NONCE),  # django-csp 4 sentinel: middleware replaces it with 'nonce-<random>' per request
         "style-src": ("'self'", "'unsafe-inline'"),  # Tailwind utility classes; tighten at build stage
-        "img-src": ("'self'", "data:", "blob:"),
+        "img-src": ("'self'", "data:", "blob:", _tile_host(env("MAP_TILES_URL"))),  # map tiles (OSM on staging; WRA's ArcGIS basemap on-premises)
         "font-src": ("'self'",),
         "connect-src": ("'self'",),
         "frame-ancestors": ("'none'",),
@@ -329,6 +342,12 @@ WATERSOURCE = {
         "INACTIVE_CLIENT_ACCOUNT_MONTHS": 24,
         "REJECTED_APPLICATION_YEARS": 3,
     },
+    # Maps (v0.7.0): any XYZ tile service. Staging uses OpenStreetMap; on WRA's own server point this at the
+    # ArcGIS Enterprise basemap (…/MapServer/tile/{z}/{y}/{x}) so no traffic leaves the network.
+    "MAP_TILES_URL": env("MAP_TILES_URL"),
+    "MAP_TILES_ATTRIBUTION": env("MAP_TILES_ATTRIBUTION"),
+    "MAP_CENTER": [18.11, -77.30],
+    "MAP_ZOOM": 9,
     "APPLICATION_REF_PREFIX": "WRA-LA",
     "LICENCE_NO_PREFIX": "WRA-L",
 }

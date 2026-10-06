@@ -61,16 +61,33 @@ host/database/`gis_reader`. PostGIS `geometry` tables appear directly; views in
 `bi` are added as *Query Layers* (choose `id` as the unique field, EPSG:3448).
 No ST_Geometry install is needed.
 
-## 5. Exports
+## 5. Exports and the web map (v0.7.0)
 
-GeoPackage is the primary export (no 10-character field-name limit, no 2 GB
-limit, real timestamps); shapefiles in JAD2001 are produced as well because the
-tender asks for them. Both are made with `ogr2ogr` against the `gis_reader`
-role, e.g.
+**Web map** — `/maps/` shows parishes, basins, WMUs coloured by licensed utilisation
+(from the balance sheet), aquifers and monitoring sites on a Leaflet map. Layers are
+served as GeoJSON in WGS 84 from `/maps/layers/<parishes|basins|wmus|aquifers|sites>.geojson`;
+site coordinates pass through the same public-supply masking as the API. The base map is
+any XYZ tile service: `MAP_TILES_URL` / `MAP_TILES_ATTRIBUTION` (OpenStreetMap on staging;
+on WRA's server point it at the ArcGIS Enterprise basemap, e.g.
+`https://gis.wra.gov.jm/arcgis/rest/services/Basemap/MapServer/tile/{z}/{y}/{x}`, and the
+content-security policy follows automatically).
 
-```
-ogr2ogr -f GPKG wells.gpkg "PG:service=watersource" -sql "SELECT * FROM ref_well WHERE classification = 'public'" -nln wells -a_srs EPSG:3448
-```
+**GeoPackage** — `/maps/export/` (administrator, hydrologist, hydrogeologist, BI analyst,
+data-migration roles) downloads one `.gpkg` with parishes, basins, WMUs, aquifers, wells,
+stations, springs and licences, in JAD2001 or WGS 84, built by `ogr2ogr` and cached ten
+minutes. Every download is audited (`maps.gis_export`). Open it in ArcGIS Pro/QGIS and
+export a shapefile from there if one is needed — GeoPackage is the master (shapefiles
+truncate field names).
+
+**Boundaries** — `manage.py load_boundaries`:
+
+* `--parishes/--basins/--wmus/--aquifers <file.geojson>` loads WRA's own boundaries
+  (convert a shapefile first: `ogr2ogr -f GeoJSON out.geojson in.shp`); features match on a
+  `code` property (or `name`). Any CRS; reprojected to EPSG:3448.
+* Parishes default to geoBoundaries (CC BY 4.0, `data/gis/ATTRIBUTION.md`) when empty.
+* `--demo-shapes` builds Voronoi stand-ins for basins and WMUs without a boundary, tagged
+  `geom_source = "demonstration stand-in"`; the map legend and the GeoPackage show the tag.
+  Real boundaries loaded later replace them.
 
 ## 6. Optional web services (priced extra)
 

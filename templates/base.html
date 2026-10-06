@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
 <meta name="csrf-token" content="{{ csrf_token }}">
-<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<link rel="stylesheet" href="{% static 'css/app.css' %}">{% block extra_head %}{% endblock %}
 <style nonce="{{ request.csp_nonce }}">:root{--ws-tile:{{ branding.tile_color }};--ws-accent:{{ branding.accent_color }};}</style>
 {# Tailwind v4 is compiled into app.css by `npm run build` (see README) — no CDN, CSP-clean. #}
 <script nonce="{{ request.csp_nonce }}">

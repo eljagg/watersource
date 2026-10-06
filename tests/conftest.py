@@ -47,7 +47,7 @@ def approver(db):
 
 @pytest.fixture
 def parish(db):
-    return Parish.objects.create(code="STC", name="St. Catherine")
+    return Parish.objects.get_or_create(code="STC", defaults={"name": "St. Catherine"})[0]
 
 
 @pytest.fixture

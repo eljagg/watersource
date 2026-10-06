@@ -1,0 +1,27 @@
+# Demonstration seed points for basin and WMU stand-in shapes (see ATTRIBUTION.md). layer = basin|wmu; code matches data/reference.
+layer,code,lon,lat
+basin,B01,-76.40,17.95
+basin,B02,-76.78,18.00
+basin,B03,-77.00,18.07
+basin,B04,-77.30,17.98
+basin,B05,-77.75,18.05
+basin,B06,-78.15,18.25
+basin,B07,-77.92,18.40
+basin,B08,-77.60,18.42
+basin,B09,-77.25,18.35
+basin,B10,-76.70,18.25
+wmu,W01,-76.28,17.95
+wmu,W02,-76.45,17.92
+wmu,W03,-76.58,17.98
+wmu,W04,-76.73,18.03
+wmu,W05,-77.00,18.07
+wmu,W06,-77.25,18.02
+wmu,W07,-77.42,17.90
+wmu,W08,-77.75,18.05
+wmu,W09,-78.15,18.25
+wmu,W10,-77.98,18.36
+wmu,W11,-77.86,18.46
+wmu,W12,-77.60,18.42
+wmu,W13,-77.30,18.38
+wmu,W14,-76.85,18.30
+wmu,W15,-76.55,18.22

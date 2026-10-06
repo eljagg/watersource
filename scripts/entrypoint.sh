@@ -25,6 +25,10 @@ schema_step() {
   python manage.py bootstrap_workflows
   python manage.py bootstrap_categories
   python manage.py load_reference_data
+  case "${DEMO_DATA:-0}" in
+    1|reseed) python manage.py load_boundaries --demo-shapes ;;
+    *)        python manage.py load_boundaries ;;
+  esac
   # DEMO_DATA=1: seed the demo set once (skipped while it exists, so deploys never churn demo data or accounts);
   # DEMO_DATA=reseed: rebuild it from scratch; anything else: leave the database alone.
   case "${DEMO_DATA:-0}" in

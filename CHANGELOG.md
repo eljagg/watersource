@@ -2,6 +2,21 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.7.0] — 6 Oct 2026
+
+Maps (stakeholder-model plan, "maps and ArcGIS file export").
+
+### Added
+- **Map page** `/maps/` (Home tile "Map"; link from the WMU balance sheet): Leaflet (vendored, no CDN) with parishes, basins, WMUs coloured by licensed utilisation, aquifers, and wells/stations/springs with click-through details. Public-supply sources are coarsened for anyone outside the restricted-data roles, as in the API.
+- **GeoJSON layers** `/maps/layers/<layer>.geojson` in WGS 84, simplified for the browser.
+- **GIS package** `/maps/export/`: one GeoPackage (parishes, basins, WMUs, aquifers, wells, stations, springs, licences) in JAD2001 or WGS 84, built with `ogr2ogr`, cached ten minutes, audited; technical/GIS roles only (`GIS_EXPORT_ROLES`).
+- **Boundary loader** `load_boundaries`: WRA GeoJSON files per layer; geoBoundaries parishes (CC BY 4.0) by default; `--demo-shapes` Voronoi stand-ins for basins/WMUs tagged "demonstration stand-in". `geom_source` on every boundary table. Runs on every deploy (demo shapes when `DEMO_DATA=1`/`reseed`).
+- Settings `MAP_TILES_URL` / `MAP_TILES_ATTRIBUTION` (OpenStreetMap on staging; ArcGIS Enterprise basemap on WRA's server); CSP `img-src` follows the tile host.
+
+### Notes
+- Boundaries for basins/WMUs/aquifers are placeholders until WRA supplies its shapefiles (doc 17 §7); parishes are real.
+- The admin console map widget (drawing boundaries by hand) is not included: Django's widget loads OpenLayers from a CDN, which the content-security policy blocks. Boundaries are loaded from files instead.
+
 ## [0.6.1] — 5 Oct 2026
 
 ### Changed

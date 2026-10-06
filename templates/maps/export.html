@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}GIS package — {{ SITE_NAME }}{% endblock %}{% block content %}
+<div class="mb-5"><p class="eyebrow">Computer &amp; GIS</p><h1 class="page-title">GIS package (GeoPackage)</h1>
+<p class="text-body mt-1 text-sm">One GeoPackage file that opens directly in ArcGIS Pro, ArcGIS Enterprise or QGIS. It carries the exact position of every site, so it is available to technical staff only; every download is recorded in the audit log.</p></div>
+{% if error %}<div class="alert-danger mb-4">The package could not be built: {{ error }}</div>{% endif %}
+<div class="grid gap-6 md:grid-cols-2">
+  <div class="card p-5 text-sm"><h2 class="mb-3 text-base">Layers in the package</h2><ul class="list-disc space-y-1 pl-5">{% for l in layers %}<li>{{ l }}</li>{% endfor %}</ul>
+    <p class="text-muted mt-3 text-xs">Boundaries carry a <code>geom_source</code> column — anything marked "demonstration stand-in" is a placeholder until WRA's own shapefiles are loaded.</p></div>
+  <div class="card p-5 text-sm"><h2 class="mb-3 text-base">Download</h2>
+    {% for code, label in srids.items %}<a class="btn-primary mb-2 mr-2" href="{% url 'maps:export_gpkg' %}?srid={{ code }}">Download in {{ label }}</a>{% endfor %}
+    <p class="text-muted mt-3 text-xs">Rebuilt at most every ten minutes. Add <code>&amp;refresh=1</code> to force a rebuild. Shapefile users: open the GeoPackage in QGIS or ArcGIS and export the layer you need — shapefiles truncate field names to ten characters, so the GeoPackage is the master.</p>
+    <p class="mt-3"><a class="link" href="{% url 'maps:index' %}">← Back to the map</a></p></div>
+</div>{% endblock %}
