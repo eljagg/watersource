@@ -2,6 +2,20 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.8.0] — 8 Oct 2026
+
+Package 2 of the WRA stakeholder model (design doc 17): the Super User console and data-cleansing queue.
+
+### Added
+- **Unit console** `/unit/` ("My unit" tile on Home; "My unit (Super User)" button on the Review queue). Available to each unit's Super User for their own unit, and to administrators for any unit via a selector. Four parts:
+  - **Open items** the unit owns, with days at the current stage, the stage's target turnaround (SLA days from Workflow stages) and an overdue flag.
+  - **Data-cleansing queue** (`console.CleansingIssue`): conflicts found while profiling or loading legacy data — duplicates, unmatched reference values with candidate matches, mixed types, several date formats, placeholder blanks, out-of-range values, encoding. Each is settled with one recorded decision (keep existing / use incoming / merge / map to a record / correct at source / reject / accept), a note, the decider and the date; audited as `cleansing.resolved`. This is the "adjudicate cleansing" duty in the model and the evidence for the migration run-book.
+  - **People and first-line support**: the unit's members with roles, two-factor status, last sign-in; failed sign-ins over the last 7 days; locked-out accounts with an **Unlock** button (audited as `auth.unlocked`).
+  - **Adoption sign-off** (`console.AdoptionSignoff`, Work Plan M17): five adoption measures the Super User ticks and signs, kept as partial until all are confirmed; audited as `adoption.signed`.
+- `profile_source --raise-issues [--unit RMU]` puts the profiler's findings on the owning unit's queue (unit guessed from the file name when not given); idempotent per source, column and kind.
+- Demo set: eight realistic cleansing issues across RMU, PLU and PIU, added by `DEMO_DATA=1` on the next deploy.
+- Admin console: Unit console › Data-cleansing issues and Adoption sign-offs, for oversight.
+
 ## [0.7.1] — 6 Oct 2026
 
 ### Changed

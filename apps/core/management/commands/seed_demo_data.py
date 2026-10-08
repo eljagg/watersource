@@ -161,6 +161,9 @@ class Command(BaseCommand):
         from apps.obs.models import ModelRun
 
         ModelRun.objects.filter(code__startswith="demo-").delete()
+        from apps.console.models import CleansingIssue
+
+        CleansingIssue.objects.filter(source__startswith=PREFIX).delete()
         ApprovalPeriod.objects.filter(well__in=wells).delete()
         ApprovalPeriod.objects.filter(station__in=stations).delete()
         WellWaterLevel.objects.filter(well__in=wells).delete()
@@ -227,6 +230,34 @@ class Command(BaseCommand):
                 n += 1
         return n
 
+    @staticmethod
+    def _demo_cleansing_issues():
+        """v0.8.0: a realistic cleansing queue per operating unit, as the profiler would raise from WRA's legacy files (idempotent)."""
+        from apps.accounts.models import Unit
+        from apps.console.models import CleansingIssue, IssueKind
+
+        demo = [
+            ("RMU", IssueKind.UNMATCHED, "DEMO Hydata_wells_2019.xlsx", "WELL_NAME", "Column 'WELL_NAME': 4 value(s) match no reference record (87.5% matched)",
+             {"top_unmatched": [["Bog Walk #1", 112], ["BERNARD LODGE 7A", 48], ["Innswood Well 3", 31], ["Spanish Twn Pump Stn", 9]], "candidates": ["DEMO Bog Walk 1", "DEMO Bernard Lodge 7", "DEMO Innswood 3"]}, 200),
+            ("RMU", IssueKind.DATE_FORMATS, "DEMO Hydata_wells_2019.xlsx", "DATE", "Column 'DATE' uses 3 date formats", {"formats": {"d/m/Y": 1420, "m/d/Y": 310, "d Mon Y": 44}}, 354),
+            ("RMU", IssueKind.OUT_OF_RANGE, "DEMO GroundwaterLevels_2008-2015.csv", "WL_M", "Column 'WL_M': 6 value(s) far outside the usual range", {"min": -3.2, "max": 999.0, "mean": 18.4, "outliers": 6}, 6),
+            ("RMU", IssueKind.PLACEHOLDER, "DEMO GroundwaterLevels_2008-2015.csv", "CONDUCTIVITY", "Column 'CONDUCTIVITY' uses placeholder blanks", {"tokens": {"N/A": 212, "-": 57, "999": 14}}, 283),
+            ("RMU", IssueKind.DUPLICATE, "DEMO StreamflowDaily_RioCobre.csv", "", "38 fully duplicated row(s) in DEMO StreamflowDaily_RioCobre.csv", {"duplicate_rows": 38}, 38),
+            ("PLU", IssueKind.UNMATCHED, "DEMO Licences_Register.accdb (tblLicence)", "WELL_REF", "Column 'WELL_REF': 3 value(s) match no reference record (91% matched)",
+             {"top_unmatched": [["BW-01", 5], ["IW-3", 2], ["Old Harbour Bay 2", 1]], "candidates": ["DEMO Bog Walk 1", "DEMO Innswood 3"]}, 8),
+            ("PLU", IssueKind.MIXED_TYPES, "DEMO Abstraction_Returns_2023.xlsx", "VOLUME_M3", "Column 'VOLUME_M3' mixes types", {"types": {"number": 1180, "text": 23}, "examples": ["1,250", "approx 900", "n/a", "2 300"]}, 23),
+            ("PIU", IssueKind.UNMATCHED, "DEMO WMU_SafeYields_MasterPlan.xlsx", "WMU", "Column 'WMU': 2 value(s) match no reference record (87% matched)",
+             {"top_unmatched": [["Rio Cobre (Upper)", 1], ["Rio Cobre (Lower)", 1]], "candidates": ["Rio Cobre"]}, 2),
+        ]
+        n = 0
+        for code, kind, source, column, summary, details, rows in demo:
+            unit = Unit.objects.filter(code=code).first()
+            if unit is None:
+                continue
+            _, created = CleansingIssue.objects.get_or_create(unit=unit, source=source, column=column, kind=kind, defaults={"summary": summary, "details": details, "rows_affected": rows})
+            n += int(created)
+        return n
+
     def _upgrade_existing(self):
         """Bring a demo set created by an earlier release up to the current one without rebuilding it (idempotent).
 
@@ -256,6 +287,8 @@ class Command(BaseCommand):
                 changed.append(f"aquifer {code}")
         if self._aquifer_footprints():
             changed.append("aquifer footprints")
+        if self._demo_cleansing_issues():
+            changed.append("cleansing queue")
         for lic in Licence.objects.filter(number__startswith="DEMO-L", conditions=[]):
             lic.conditions = [c.render(lic.application, lic.daily_volume_granted_m3) for c in LicenceCondition.objects.filter(is_default=True, is_active=True).filter(applies_to__in=["both", lic.water_source])]
             lic.wmu = lic.well.wmu if lic.well_id else None
@@ -345,6 +378,7 @@ class Command(BaseCommand):
                 name=f"{PREFIX} {b.name} limestone aquifer", basin=b, hydrostrat_unit=self.hsu, safe_yield_m3_d=Decimal(self.rng.randint(3, 12) * 1000),
                 notes="Demo aquifer record (Planning & Investigation Unit)."))
         self._aquifer_footprints()
+        self._demo_cleansing_issues()
         self.wells = []
         for i, (name, parish, basin, wmu, use, e, n) in enumerate(WELLS):
             owner = Party.objects.create(kind=PartyKind.OWNER, name=f"{PREFIX} Owner {i + 1}", is_organisation=i % 2 == 0)

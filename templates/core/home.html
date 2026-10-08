@@ -4,6 +4,7 @@
   <p class="eyebrow">Staff tools</p>
   <h1 class="page-title mt-1">Welcome back, {{ user.full_name }}</h1>
   <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% if user.is_super_user or user.is_superuser or user|has_role:"administrator" %}<a class="tile block p-5" href="{% url 'console:index' %}"><h2 class="text-base">My unit</h2><p class="text-body mt-1 text-sm">Super User desk: open items, data-cleansing queue, people, adoption sign-off.</p></a>{% endif %}
     <a class="tile block p-5" href="{% url 'workflow:queue' %}"><h2 class="text-base">Review queue</h2><p class="text-body mt-1 text-sm">Applications and submissions waiting at your stage.</p></a>
     <a class="tile block p-5" href="{% url 'lic:wmu_balance' %}"><h2 class="text-base">WMU balance</h2><p class="text-body mt-1 text-sm">Safe yield against licences and reported abstraction.</p></a>
     <a class="tile block p-5" href="{% url 'maps:index' %}"><h2 class="text-base">Map</h2><p class="text-body mt-1 text-sm">Parishes, basins, WMUs by utilisation, aquifers and monitoring sites.</p></a>

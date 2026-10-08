@@ -1,0 +1,60 @@
+{% extends "base.html" %}{% block title %}Unit console — {{ unit.name }} — {{ SITE_NAME }}{% endblock %}{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div><p class="eyebrow">Super User</p><h1 class="page-title">{{ unit.name }}</h1>
+    <p class="text-body mt-1 text-sm">{{ unit.responsibilities }}</p></div>
+  {% if units.count > 1 %}<form method="get" class="flex items-center gap-2 text-sm"><label for="unit-select">Unit</label><select id="unit-select" name="unit" class="w-auto">{% for u in units %}<option value="{{ u.code }}"{% if u.pk == unit.pk %} selected{% endif %}>{{ u.name }}</option>{% endfor %}</select><button class="btn-secondary btn-sm">Open</button></form>{% endif %}
+</div>
+
+<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <a class="tile block p-5" href="#items"><h2 class="text-base">Open items</h2><p class="mt-1 text-3xl font-semibold">{{ items|length }}</p><p class="text-body text-sm">{{ overdue }} past their target turnaround</p></a>
+  <a class="tile block p-5" href="#cleansing"><h2 class="text-base">Cleansing queue</h2><p class="mt-1 text-3xl font-semibold">{{ open_issues|length }}</p><p class="text-body text-sm">waiting for a decision</p></a>
+  <a class="tile block p-5" href="#support"><h2 class="text-base">People</h2><p class="mt-1 text-3xl font-semibold">{{ support.people|length }}</p><p class="text-body text-sm">{{ support.locked|length }} locked out · {{ support.failures|length }} failed sign-ins (7 days)</p></a>
+  <a class="tile block p-5" href="#adoption"><h2 class="text-base">Adoption</h2><p class="mt-1 text-3xl font-semibold">{% if signoff %}{% if signoff.complete %}Signed{% else %}Partial{% endif %}{% else %}—{% endif %}</p><p class="text-body text-sm">{% if signoff %}{{ signoff.signed_by.full_name }} · {{ signoff.signed_at|date:"D d M Y" }}{% else %}not yet signed off{% endif %}</p></a>
+</div>
+
+<section id="items" class="card mb-6 p-5"><h2 class="mb-3 text-base">Open items owned by {{ unit.name }}</h2>
+{% if items %}<table class="table-card"><thead><tr><th>Item</th><th>Stage</th><th>At this stage</th><th>Target</th><th>Status</th></tr></thead><tbody>
+{% for r in items %}<tr class="row{% if r.overdue %} row-danger{% endif %}"><td><a class="link" href="{% url 'workflow:detail' r.instance.pk %}">{{ r.instance.summary }}</a></td><td>{{ r.instance.current_stage.name }}</td><td>{{ r.age_days }} day(s) · since {{ r.instance.stage_entered_at|date:"D d M Y" }}</td><td>{% if r.sla_days %}{{ r.sla_days }} days{% else %}—{% endif %}</td><td>{% if r.waiting %}Waiting on submitter{% elif r.overdue %}<strong>Overdue</strong>{% else %}In progress{% endif %}</td></tr>{% endfor %}
+</tbody></table>{% else %}<p class="text-muted text-sm">Nothing is open at this unit's stages.</p>{% endif %}
+<p class="text-muted mt-3 text-xs">Target turnaround comes from each workflow stage's SLA (admin console › Workflow stages). Items are those the unit owns under the stakeholder model.</p></section>
+
+<section id="cleansing" class="card mb-6 p-5"><h2 class="mb-1 text-base">Data-cleansing queue</h2>
+<p class="text-body mb-4 text-sm">Conflicts found while profiling or loading the unit's legacy data. Each needs one decision from the unit's Super User; the decision is recorded with your name and the date and goes into the migration run-book.</p>
+{% if open_issues %}<div class="space-y-4">{% for i in open_issues %}
+<div class="rounded-lg border border-slate-200 p-4 dark:border-slate-800"><div class="flex flex-wrap items-start justify-between gap-2">
+  <div><p class="font-semibold">{{ i.summary }}</p><p class="text-muted text-xs">{{ i.get_kind_display }} · {{ i.source }}{% if i.column %} · column <code>{{ i.column }}</code>{% endif %}{% if i.rows_affected %} · {{ i.rows_affected }} row(s){% endif %} · raised {{ i.created_at|date:"D d M Y" }}</p>
+    {% if i.details.top_unmatched %}<p class="mt-2 text-sm">Unmatched values: {% for v, n in i.details.top_unmatched %}<code>{{ v }}</code> ({{ n }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    {% if i.details.candidates %}<p class="mt-1 text-sm">Possible matches: {% for c in i.details.candidates %}<code>{{ c }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    {% if i.details.examples %}<p class="mt-1 text-sm">Examples: {% for e in i.details.examples %}<code>{{ e }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    {% if i.details.tokens %}<p class="mt-1 text-sm">Placeholders seen: {% for t, n in i.details.tokens.items %}<code>{{ t }}</code> ({{ n }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    {% if i.details.formats %}<p class="mt-1 text-sm">Formats: {% for f, n in i.details.formats.items %}<code>{{ f }}</code> ({{ n }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    {% if i.details.outliers %}<p class="mt-1 text-sm">Range {{ i.details.min }} – {{ i.details.max }}, mean {{ i.details.mean|floatformat:2 }}, {{ i.details.outliers }} outlier(s).</p>{% endif %}
+  </div>
+  <form method="post" action="{% url 'console:resolve' i.pk %}" class="w-full space-y-2 text-sm lg:w-96">{% csrf_token %}
+    <label class="block space-y-1">Decision<select name="decision" required><option value="">Choose…</option>{% for v, l in decisions %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></label>
+    <label class="block space-y-1">Maps to (for "Map")<input name="target" placeholder="e.g. well DEMO Bog Walk 1"></label>
+    <label class="block space-y-1">Note<input name="note" placeholder="Why, and anything the migration team must do"></label>
+    <button class="btn-primary btn-sm">Record decision</button>
+  </form></div></div>{% endfor %}</div>
+{% else %}<p class="text-muted text-sm">The queue is empty — nothing is waiting for a decision.</p>{% endif %}
+{% if resolved_issues %}<h3 class="mb-2 mt-6 text-base">Recent decisions</h3><table class="table-card"><thead><tr><th>Issue</th><th>Decision</th><th>By</th><th>When</th></tr></thead><tbody>
+{% for i in resolved_issues %}<tr class="row"><td>{{ i.summary }}</td><td>{{ i.get_decision_display }}{% if i.decision_target %} → {{ i.decision_target }}{% endif %}{% if i.decision_note %}<div class="text-muted text-xs">{{ i.decision_note }}</div>{% endif %}</td><td>{{ i.decided_by.full_name|default:"—" }}</td><td>{{ i.decided_at|date:"D d M Y H:i" }}</td></tr>{% endfor %}
+</tbody></table>{% endif %}</section>
+
+<section id="support" class="card mb-6 p-5"><h2 class="mb-3 text-base">People and first-line support</h2>
+<table class="table-card"><thead><tr><th>Name</th><th>Roles</th><th>Two-factor</th><th>Last sign-in</th><th>Status</th></tr></thead><tbody>
+{% for p in support.people %}<tr class="row{% if p.locked %} row-danger{% endif %}"><td>{{ p.user.full_name }}<div class="text-muted text-xs">{{ p.user.email }}{% if p.user.is_super_user %} · Super User{% endif %}</div></td><td>{{ p.roles|default:"—" }}</td><td>{% if p.mfa %}Enrolled{% elif p.mfa_required %}<strong>Not yet enrolled</strong> (required){% else %}Not required{% endif %}</td><td>{{ p.user.last_login|date:"D d M Y H:i"|default:"never" }}</td>
+<td>{% if p.locked %}<form method="post" action="{% url 'console:unlock' p.user.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="unit" value="{{ unit.code }}"><span class="mr-2"><strong>Locked out</strong></span><button class="btn-warning btn-sm">Unlock</button></form>{% else %}OK{% endif %}</td></tr>{% endfor %}
+</tbody></table>
+{% if support.failures %}<h3 class="mb-2 mt-5 text-base">Failed sign-ins, last 7 days</h3><table class="table-card"><thead><tr><th>Account</th><th>When</th><th>From</th><th>Locked?</th></tr></thead><tbody>
+{% for f in support.failures %}<tr class="row"><td>{{ f.username }}</td><td>{{ f.attempt_time|date:"D d M Y H:i" }}</td><td>{{ f.ip_address }}</td><td>{% if f.locked_out %}Yes{% else %}No{% endif %}</td></tr>{% endfor %}</tbody></table>{% endif %}
+<p class="text-muted mt-3 text-xs">Accounts lock after {{ settings_failure_limit|default:"5" }} failed attempts and unlock by themselves after the cool-off; "Unlock" clears it at once. Password resets and new accounts are done in the admin console by an administrator.</p></section>
+
+<section id="adoption" class="card p-5"><h2 class="mb-1 text-base">Adoption sign-off (Work Plan M17)</h2>
+<p class="text-body mb-4 text-sm">The Super User confirms the unit has adopted the system. Tick what is true today; a partial sign-off is kept and can be completed later. Each sign-off is recorded in the audit log.</p>
+{% if signoff %}<div class="{% if signoff.complete %}alert-success{% else %}alert-warning{% endif %} mb-4 text-sm">Current: {% if signoff.complete %}fully signed off{% else %}partial{% endif %} by {{ signoff.signed_by.full_name }} on {{ signoff.signed_at|date:"D d M Y H:i" }}.{% if signoff.statement %} “{{ signoff.statement }}”{% endif %}</div>{% endif %}
+{% if can_sign %}<form method="post" action="{% url 'console:signoff' %}" class="space-y-2 text-sm">{% csrf_token %}<input type="hidden" name="unit" value="{{ unit.code }}">
+{% for code, label in measures %}<label class="flex items-start gap-2"><input type="checkbox" name="m_{{ code }}" class="mt-1"{% if signoff and signoff.measures|get_item:code %} checked{% endif %}> <span>{{ label }}</span></label>{% endfor %}
+<label class="block space-y-1 pt-2">Statement (optional)<textarea name="statement" rows="2" placeholder="e.g. All eight RMU staff trained 12–14 March; groundwater levels and quality migrated and reconciled."></textarea></label>
+<button class="btn-primary btn-sm">Record sign-off</button></form>{% else %}<p class="text-muted text-sm">Only this unit's Super User can sign off.</p>{% endif %}</section>
+{% endblock %}

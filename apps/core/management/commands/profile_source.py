@@ -29,6 +29,8 @@ class Command(BaseCommand):
         parser.add_argument("--out", default="data_quality_assessment", help="Output path without extension")
         parser.add_argument("--title", default="Data Quality Assessment Report (Milestone 3)")
         parser.add_argument("--no-reference", action="store_true", help="Skip matching against WaterSource reference tables")
+        parser.add_argument("--raise-issues", action="store_true", help="Also put each finding on the owning unit's data-cleansing queue (unit console)")
+        parser.add_argument("--unit", help="Unit code for --raise-issues (RMU, PLU, PIU); guessed from the file name when omitted")
 
     def handle(self, *args, **opts):
         """Run the profiler and write both outputs."""
@@ -46,5 +48,18 @@ class Command(BaseCommand):
         out.parent.mkdir(parents=True, exist_ok=True)
         out.with_suffix(".md").write_text(render_markdown(profiles, opts["title"]), encoding="utf-8")
         out.with_suffix(".json").write_text(json.dumps(to_json(profiles), indent=2, default=str), encoding="utf-8")
+        if opts["raise_issues"]:
+            from apps.accounts.models import Unit
+            from apps.console.services import issues_from_profile, unit_for_source
+
+            raised = 0
+            for prof in profiles:
+                unit = Unit.objects.filter(code=opts["unit"]).first() if opts["unit"] else unit_for_source(prof.path)
+                if unit is None:
+                    raise CommandError(f"Unknown unit {opts['unit']!r}")
+                made = issues_from_profile(prof, unit)
+                raised += len(made)
+                self.stdout.write(f"  {len(made)} issue(s) queued for {unit.name}")
+            self.stdout.write(f"{raised} issue(s) on the cleansing queue")
         total_issues = sum(len(p.issues) for p in profiles)
         self.stdout.write(self.style.SUCCESS(f"{len(profiles)} file(s), {sum(p.rows for p in profiles):,} rows, {total_issues} finding(s) → {out.with_suffix('.md')} and {out.with_suffix('.json')}"))

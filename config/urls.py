@@ -16,6 +16,7 @@ urlpatterns = [
     path("", include("apps.reports.urls", namespace="reports")),
     path("exports/", include("apps.integrations.urls", namespace="exports")),
     path("maps/", include("apps.maps.urls", namespace="maps")),
+    path("unit/", include("apps.console.urls", namespace="console")),
     path("api/v1/", include("apps.api.urls", namespace="api")),
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="api-schema"), name="api-docs"),
