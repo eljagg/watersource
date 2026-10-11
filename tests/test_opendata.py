@@ -56,6 +56,9 @@ def test_groundwater_monthly_only_counts_public_approved(client, well):
     assert len(rows) == 1 and rows[0]["readings"] == 1 and rows[0]["mean_level_m"] == 10.5
     html = client.get("/open-data/groundwater-levels-monthly/").content.decode()
     assert "1 row(s)" in html and "10.5" in html
+    # in-app table filters and paginates
+    assert "No rows match" in client.get("/open-data/groundwater-levels-monthly/?q=zzz").content.decode()
+    assert well.name in client.get(f"/open-data/groundwater-levels-monthly/?q={well.name.split()[0]}").content.decode()
 
 
 @pytest.mark.django_db
@@ -84,9 +87,12 @@ def test_documents_publish_withdraw_and_count_downloads(client):
     html = client.get("/open-data/").content.decode()
     assert "Bulletin 1" in html
     r = client.get(f"/open-data/documents/{doc.pk}/")
-    assert r.status_code == 200 and r["Content-Disposition"].endswith('filename="bulletin.pdf"')
+    assert r.status_code == 200 and r["Content-Disposition"].startswith("inline") and r["Content-Type"] == "application/pdf"  # PDFs open in the browser
+    assert "Content-Security-Policy" not in r  # exempt so the browser's PDF viewer is not restricted
+    r = client.get(f"/open-data/documents/{doc.pk}/?download=1")
+    assert r["Content-Disposition"].startswith("attachment")
     doc.refresh_from_db()
-    assert doc.downloads == 1
+    assert doc.downloads == 2
     doc.is_published = False
     doc.save()
     assert "Bulletin 1" not in client.get("/open-data/").content.decode()

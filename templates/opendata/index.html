@@ -1,20 +1,21 @@
 {% extends "base.html" %}{% block title %}Open data and publications — {{ SITE_NAME }}{% endblock %}{% block content %}
 <div class="mb-6"><p class="eyebrow">Public repository</p><h1 class="page-title">Open data and publications</h1>
-<p class="text-body mt-1 max-w-3xl text-sm">Approved water-resources data and published documents from the Water Resources Authority, free to download and reuse with attribution. Only records approved for public release appear here; positions of public-supply sources are rounded to a 1 km grid and no personal details are included.</p></div>
+<p class="text-body mt-1 max-w-3xl text-sm">Approved water-resources data and published documents from the Water Resources Authority, free to download and reuse with attribution. Only records approved for public release appear here; positions of public-supply sources are rounded to a 1 km grid and no personal details are included.</p>
+<p class="mt-3 text-sm"><a class="link" href="#datasets">{{ datasets|length }} datasets</a> · <a class="link" href="#publications">{{ document_count }} publication{{ document_count|pluralize }}</a> · <a class="link" href="#developers">For developers</a> · <a class="link" href="#terms">Terms of use</a></p></div>
 
-<h2 class="mb-3 text-lg">Datasets</h2>
+<h2 id="datasets" class="mb-3 text-lg">Datasets</h2>
 <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-{% for d in datasets %}<a class="tile block p-5" href="{% url 'opendata:dataset' d.slug %}"><h3 class="text-base">{{ d.title }}</h3><p class="text-body mt-1 text-sm">{{ d.description|truncatewords:28 }}</p><p class="text-muted mt-2 text-xs">{{ d.owner }} · CSV{% if d.spatial %} · GeoJSON{% endif %}</p></a>{% endfor %}
+{% for d in datasets %}<a class="tile block p-5" href="{% url 'opendata:dataset' d.slug %}"><h3 class="text-base">{{ d.title }}</h3><p class="text-body mt-1 text-sm">{{ d.description|truncatewords:28 }}</p><p class="text-muted mt-2 text-xs">{{ d.owner }} · CSV{% if d.spatial %} · GeoJSON{% endif %}</p><p class="link mt-2 text-sm">View the data →</p></a>{% endfor %}
 </div>
 
-<h2 class="mb-3 text-lg">Publications</h2>
+<h2 id="publications" class="mb-3 text-lg">Publications</h2>
 {% if documents_by_category %}{% for label, docs in documents_by_category %}
 <div class="card mb-4 p-5"><h3 class="mb-2 text-base">{{ label }}</h3><table class="table-card"><thead><tr><th>Title</th><th>Published</th><th>Type</th><th></th></tr></thead><tbody>
-{% for doc in docs %}<tr class="row"><td>{{ doc.title }}{% if doc.summary %}<div class="text-muted text-sm">{{ doc.summary }}</div>{% endif %}</td><td>{{ doc.published_on|date:"D d M Y" }}</td><td>{{ doc.extension }}{% if doc.size_bytes %} · {{ doc.size_bytes|filesizeformat }}{% endif %}</td><td><a class="btn-secondary btn-sm" href="{% url 'opendata:document' doc.pk %}">Download</a></td></tr>{% endfor %}
+{% for doc in docs %}<tr class="row"><td>{{ doc.title }}{% if doc.summary %}<div class="text-muted text-sm">{{ doc.summary }}</div>{% endif %}</td><td>{{ doc.published_on|date:"D d M Y" }}</td><td>{{ doc.extension }}{% if doc.size_bytes %} · {{ doc.size_bytes|filesizeformat }}{% endif %}</td><td class="whitespace-nowrap">{% if doc.extension == "PDF" %}<a class="btn-primary btn-sm" href="{% url 'opendata:document' doc.pk %}" target="_blank" rel="noopener">View</a> {% endif %}<a class="btn-secondary btn-sm" href="{% url 'opendata:document' doc.pk %}?download=1">Download</a></td></tr>{% endfor %}
 </tbody></table></div>{% endfor %}{% else %}<p class="text-muted mb-6 text-sm">No documents have been published yet.</p>{% endif %}
 
 <div class="grid gap-4 md:grid-cols-2">
-  <div class="card p-5 text-sm"><h2 class="mb-2 text-base">For developers</h2><p class="text-body">Every dataset has a stable CSV address (and GeoJSON where it is spatial), for example <code>/open-data/monitoring-sites.csv</code>. Map layers are at <code>/maps/layers/&lt;parishes|basins|wmus|aquifers|sites&gt;.geojson</code>. The full programming interface, with authentication for non-public data, is documented at <a class="link" href="/api/docs/">API documentation</a>.</p></div>
-  <div class="card p-5 text-sm"><h2 class="mb-2 text-base">Terms of use</h2><p class="text-body">You may copy, publish, adapt and combine this data for any purpose, provided you attribute it to the Water Resources Authority of Jamaica and the date you obtained it, and do not suggest WRA endorses your use. The data is provided as is; WRA does not warrant its completeness or fitness for any purpose. Personal data is processed under the Data Protection Act, 2020 and is never released here.</p></div>
+  <div id="developers" class="card p-5 text-sm"><h2 class="mb-2 text-base">For developers</h2><p class="text-body">Every dataset has a stable CSV address (and GeoJSON where it is spatial), for example <code>/open-data/monitoring-sites.csv</code>. Map layers are at <code>/maps/layers/&lt;parishes|basins|wmus|aquifers|sites&gt;.geojson</code>. The full programming interface, with authentication for non-public data, is documented at <a class="link" href="/api/docs/">API documentation</a>.</p></div>
+  <div id="terms" class="card p-5 text-sm"><h2 class="mb-2 text-base">Terms of use</h2><p class="text-body">You may copy, publish, adapt and combine this data for any purpose, provided you attribute it to the Water Resources Authority of Jamaica and the date you obtained it, and do not suggest WRA endorses your use. The data is provided as is; WRA does not warrant its completeness or fitness for any purpose. Personal data is processed under the Data Protection Act, 2020 and is never released here.</p></div>
 </div>
 {% endblock %}

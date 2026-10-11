@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import csv
-import itertools
 
+from csp.decorators import csp_exempt
+from django.core.paginator import Paginator
 from django.db.models import F
 from django.http import FileResponse, Http404, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
@@ -14,7 +15,7 @@ from django.views.decorators.http import require_GET
 from .datasets import DATASETS
 from .models import DocumentCategory, PublishedDocument
 
-PREVIEW_ROWS = 15
+PAGE_ROWS = 50
 
 
 def _documents():
@@ -36,9 +37,15 @@ def dataset(request, slug):
     ds = DATASETS.get(slug)
     if ds is None:
         raise Http404
-    rows = list(itertools.islice(ds.rows(), PREVIEW_ROWS))
-    return render(request, "opendata/dataset.html", {"ds": ds, "rows": rows, "count": ds.count(), "updated": ds.updated(),
-                                                     "related": [d for d in DATASETS.values() if d is not ds]})
+    q = request.GET.get("q", "").strip()
+    all_rows = list(ds.rows())
+    if q:
+        needle = q.lower()
+        all_rows = [r for r in all_rows if any(needle in str(v).lower() for v in r.values() if v is not None)]
+    paginator = Paginator(all_rows, PAGE_ROWS)
+    page = paginator.get_page(request.GET.get("page"))
+    return render(request, "opendata/dataset.html", {"ds": ds, "page": page, "q": q, "count": len(all_rows), "total": ds.count() if q else len(all_rows),
+                                                     "updated": ds.updated(), "related": [d for d in DATASETS.values() if d is not ds]})
 
 
 class _Echo:
@@ -83,9 +90,12 @@ def dataset_geojson(request, slug):
 
 
 @require_GET
+@csp_exempt()
 def document(request, pk, name=None):
-    """Download a published document (counts downloads; nothing unpublished is served)."""
+    """Open a published document: PDFs show in the browser, anything else (or ``?download=1``) downloads. Nothing unpublished is served."""
     doc = get_object_or_404(_documents(), pk=pk)
     PublishedDocument.objects.filter(pk=doc.pk).update(downloads=F("downloads") + 1)
     filename = doc.original_name or f"{slugify(doc.title)}.{doc.extension.lower()}"
-    return FileResponse(doc.file.open("rb"), as_attachment=True, filename=filename)
+    inline = doc.extension == "PDF" and request.GET.get("download") != "1"
+    resp = FileResponse(doc.file.open("rb"), as_attachment=not inline, filename=filename, content_type="application/pdf" if doc.extension == "PDF" else None)
+    return resp

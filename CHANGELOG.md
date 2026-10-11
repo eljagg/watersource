@@ -2,6 +2,13 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.9.1] — 11 Oct 2026
+
+### Changed
+- Open data: each dataset page now shows the **whole dataset in the browser** — a filter box and 50 rows per page with Previous/Next — instead of a 15-row preview; CSV/GeoJSON downloads unchanged.
+- Publications: PDFs **open in the browser** (View button, new tab) as well as downloading (Download button); the document view is exempt from the content-security policy so the browser's PDF viewer works.
+- Catalogue page: quick links at the top (datasets · publications · for developers · terms), "View the data →" on every dataset tile.
+
 ## [0.9.0] — 11 Oct 2026
 
 Package 3 of the WRA stakeholder model (design doc 17): the public repository and open-data views.
