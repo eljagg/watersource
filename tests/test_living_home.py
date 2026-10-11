@@ -66,3 +66,19 @@ def test_last_viewed_records_pages_and_shows_latest_five(reviewer):
     assert 'href="/open-data/wmu-balance/"' in html and "Open data › WMU balance" in html
     anon = Client().get("/").content.decode()
     assert "Last viewed" not in anon
+
+
+# --- v0.10.1 "← Back" beside the breadcrumbs ---------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_back_link_returns_inside_the_app_or_home(client):
+    html = client.get("/maps/").content.decode()
+    assert '<a class="back-link" href="/">← Back</a>' in html  # arrived from outside: Home
+    html = client.get("/maps/", HTTP_REFERER="http://testserver/open-data/monitoring-sites/?q=bog").content.decode()
+    assert '<a class="back-link" href="/open-data/monitoring-sites/?q=bog">← Back</a>' in html
+    html = client.get("/maps/", HTTP_REFERER="https://evil.example/open-data/").content.decode()
+    assert 'class="back-link" href="/"' in html  # another site never becomes a Back target
+    html = client.get("/maps/", HTTP_REFERER="http://testserver/maps/").content.decode()
+    assert 'class="back-link" href="/"' in html  # a reload does not point at itself
+    assert "back-link" not in client.get("/").content.decode()

@@ -5,10 +5,21 @@ from .branding import SiteBranding
 
 
 def breadcrumbs(request):
-    """Breadcrumbs derived from the URL (``apps.core.breadcrumbs``)."""
+    """Breadcrumbs derived from the URL (``apps.core.breadcrumbs``) and the "← Back" target (v0.10.1).
+
+    Back goes to the page the person came from when that page is inside
+    WaterSource (same host, a different address); from a bookmark or an
+    outside link it goes to Home.
+    """
+    from urllib.parse import urlsplit
+
     from .breadcrumbs import build
 
-    return {"breadcrumbs": build(request.path)}
+    back = "/"
+    ref = urlsplit(request.META.get("HTTP_REFERER", ""))
+    if ref.netloc == request.get_host() and ref.path and ref.path != request.path:
+        back = ref.path + (f"?{ref.query}" if ref.query else "")
+    return {"breadcrumbs": build(request.path), "back_url": back}
 
 
 def site(request):

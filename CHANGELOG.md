@@ -2,6 +2,11 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.10.1] — 11 Oct 2026
+
+### Added
+- **"← Back" beside the breadcrumbs** on every page except Home (Omar, option A): returns to the page the person came from when that page is inside WaterSource; from a bookmark or an outside link it goes to Home. Breadcrumbs unchanged.
+
 ## [0.10.0] — 11 Oct 2026
 
 ### Added

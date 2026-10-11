@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded',function(){
 </header>
 
 <main id="main" class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
-  {% if breadcrumbs %}<nav class="breadcrumbs mb-5" aria-label="Breadcrumb"><ol>{% for c in breadcrumbs %}<li>{% if c.last %}<span aria-current="page">{% block crumb_title %}{{ c.label }}{% endblock %}</span>{% elif c.url %}<a href="{{ c.url }}">{{ c.label }}</a>{% else %}<span>{{ c.label }}</span>{% endif %}</li>{% endfor %}</ol></nav>{% endif %}
+  {% if breadcrumbs %}<nav class="breadcrumbs mb-5" aria-label="Breadcrumb"><a class="back-link" href="{{ back_url }}">← Back</a><ol>{% for c in breadcrumbs %}<li>{% if c.last %}<span aria-current="page">{% block crumb_title %}{{ c.label }}{% endblock %}</span>{% elif c.url %}<a href="{{ c.url }}">{{ c.label }}</a>{% else %}<span>{{ c.label }}</span>{% endif %}</li>{% endfor %}</ol></nav>{% endif %}
   {% if messages %}<div class="mb-6 space-y-2">{% for m in messages %}<div class="{% if m.tags == 'error' %}alert-danger{% elif m.tags == 'success' %}alert-success{% elif m.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %}">{{ m }}</div>{% endfor %}</div>{% endif %}
   {% block content %}{% endblock %}
 </main>
