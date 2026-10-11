@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded',function(){
 <footer class="border-t border-slate-200 dark:border-slate-800">
   <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:text-slate-400">
     <p>{% if branding.footer_text %}{{ branding.footer_text }}{% if branding.copyright %} · {% endif %}{% endif %}{{ branding.copyright|default:branding.organisation_name }}</p>
-    <p>Personal data is processed under the Data Protection Act, 2020 — see the <a href="/privacy/" class="link">privacy notice</a>.</p>
+    <p><a href="{% url 'opendata:index' %}" class="link">Open data and publications</a> · Personal data is processed under the Data Protection Act, 2020 — see the <a href="/privacy/" class="link">privacy notice</a>.</p>
   </div>
 </footer>
 </body>

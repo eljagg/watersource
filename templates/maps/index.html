@@ -4,7 +4,7 @@
 <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
   <div><p class="eyebrow">Planning</p><h1 class="page-title">Map</h1>
     <p class="text-body mt-1 text-sm">Parishes, hydrological basins, water management units coloured by licensed utilisation, aquifers, and monitoring sites. Hover for names, click for figures.{% if not exact_coordinates %} Public-supply sources are shown at coarsened positions.{% endif %}</p></div>
-  <div class="flex flex-wrap gap-2"><a class="btn-secondary btn-sm" href="{% url 'maps:full' %}" target="_blank" rel="noopener">Full screen (TV) ↗</a>{% if user.is_staff_user %}<a class="btn-secondary btn-sm" href="{% url 'lic:wmu_balance' %}">WMU balance sheet</a>{% endif %}{% if can_export %}<a class="btn-secondary btn-sm" href="{% url 'maps:export' %}">GIS package (download)</a>{% endif %}</div>
+  <div class="flex flex-wrap gap-2"><a class="btn-secondary btn-sm" href="{% url 'opendata:index' %}">Open data</a><a class="btn-secondary btn-sm" href="{% url 'maps:full' %}" target="_blank" rel="noopener">Full screen (TV) ↗</a>{% if user.is_staff_user %}<a class="btn-secondary btn-sm" href="{% url 'lic:wmu_balance' %}">WMU balance sheet</a>{% endif %}{% if can_export %}<a class="btn-secondary btn-sm" href="{% url 'maps:export' %}">GIS package (download)</a>{% endif %}</div>
 </div>
 <div class="grid gap-4 xl:grid-cols-5">
   <div class="card p-4 text-sm xl:col-span-1">

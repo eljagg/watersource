@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block title %}{{ ds.title }} — open data — {{ SITE_NAME }}{% endblock %}{% block content %}
+<p class="mb-3 text-sm"><a class="link" href="{% url 'opendata:index' %}">← Open data and publications</a></p>
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div><p class="eyebrow">Open data · {{ ds.owner }}</p><h1 class="page-title">{{ ds.title }}</h1><p class="text-body mt-1 max-w-3xl text-sm">{{ ds.description }}</p>
+    <p class="text-muted mt-2 text-xs">{{ count }} row(s){% if updated %} · newest record {{ updated|date:"D d M Y" }}{% endif %} · updated as records are approved</p></div>
+  <div class="flex flex-wrap gap-2"><a class="btn-primary btn-sm" href="{% url 'opendata:dataset_csv' ds.slug %}">Download CSV</a>{% if ds.spatial %}<a class="btn-secondary btn-sm" href="{% url 'opendata:dataset_geojson' ds.slug %}">Download GeoJSON</a><a class="btn-secondary btn-sm" href="{% url 'maps:index' %}">See on the map</a>{% endif %}</div>
+</div>
+<div class="grid gap-6 lg:grid-cols-4">
+  <div class="card p-5 text-sm lg:col-span-1"><h2 class="mb-2 text-base">Fields</h2><dl class="space-y-2">{% for f in ds.fields %}<div><dt><code>{{ f.name }}</code></dt><dd class="text-body">{{ f.description }}</dd></div>{% endfor %}</dl></div>
+  <div class="card overflow-x-auto lg:col-span-3"><h2 class="px-5 pt-5 text-base">Preview (first {{ rows|length }} rows)</h2>
+  {% if rows %}<table class="table-card mt-3"><thead><tr>{% for f in ds.fields %}<th>{{ f.name }}</th>{% endfor %}</tr></thead><tbody>
+  {% for r in rows %}<tr class="row">{% for f in ds.fields %}<td>{{ r|get_item:f.name|default_if_none:"" }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>{% else %}<p class="text-muted p-5 text-sm">No approved public records yet.</p>{% endif %}</div>
+</div>
+<p class="text-muted mt-6 text-xs">Other datasets: {% for d in related %}<a class="link" href="{% url 'opendata:dataset' d.slug %}">{{ d.title|truncatewords:5 }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+{% endblock %}
