@@ -11,9 +11,23 @@ from .branding import SiteBranding
 from .models import Notification
 
 
+def greeting_context(user) -> dict:
+    """Personal greeting for Home (v0.10.0): time-of-day word in Jamaica time, today's date, the queue and the last pages opened."""
+    if not user.is_authenticated:
+        return {}
+    now = timezone.localtime()
+    word = "Good morning" if now.hour < 12 else "Good afternoon" if now.hour < 17 else "Good evening"
+    ctx = {"greeting": word, "first_name": (user.full_name or user.email).split()[0], "today": now, "recent_views": list(user.recent_views.all()[:5]), "waiting": None}
+    if getattr(user, "is_staff_user", False):
+        from apps.workflow.engine import queue_for
+
+        ctx["waiting"] = queue_for(user).count()
+    return ctx
+
+
 def home(request):
     """Landing page."""
-    return render(request, "core/home.html")
+    return render(request, "core/home.html", greeting_context(request.user))
 
 
 def healthz(request):

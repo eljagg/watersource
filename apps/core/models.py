@@ -267,4 +267,36 @@ class Notification(TimeStampedModel):
         return self.title
 
 
+class RecentView(models.Model):
+    """A page a signed-in person opened (v0.10.0), so Home can show "what you looked at last".
+
+    One row per person and address, refreshed on every visit and kept to
+    :data:`KEEP` rows per person. Only the address and a readable label are
+    stored — nothing about what was on the page — and only the person
+    themselves ever sees the list.
+    """
+
+    KEEP = 8
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recent_views")
+    path = models.CharField(max_length=255)
+    label = models.CharField(max_length=200)
+    at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-at"]
+        constraints = [models.UniqueConstraint(fields=["user", "path"], name="recentview_user_path")]
+
+    def __str__(self):
+        return f"{self.user_id} {self.path}"
+
+    @classmethod
+    def remember(cls, user, path: str, label: str) -> None:
+        """Record (or refresh) a visit and drop the oldest beyond :data:`KEEP`."""
+        cls.objects.update_or_create(user=user, path=path, defaults={"label": label[:200], "at": timezone.now()})
+        stale = cls.objects.filter(user=user).values_list("pk", flat=True)[cls.KEEP:]
+        if stale:
+            cls.objects.filter(pk__in=list(stale)).delete()
+
+
 from .branding import SiteBranding  # noqa: E402,F401  (registered with the core app; see branding.py)

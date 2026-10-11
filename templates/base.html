@@ -11,7 +11,7 @@
 {# Tailwind v4 is compiled into app.css by `npm run build` (see README) — no CDN, CSP-clean. #}
 <script nonce="{{ request.csp_nonce }}">
 /* Apply the saved theme before first paint so there is no flash. Stored choice wins; otherwise follow the OS. */
-(function(){try{var t=localStorage.getItem('ws-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})();
+(function(){try{var t=localStorage.getItem('ws-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}if(localStorage.getItem('ws-motion')==='still'){document.documentElement.classList.add('still');}}catch(e){}})();
 </script>
 <script src="{% static 'js/htmx.min.js' %}" defer nonce="{{ request.csp_nonce }}"></script>
 <script nonce="{{ request.csp_nonce }}">
@@ -21,12 +21,18 @@ document.addEventListener('DOMContentLoaded',function(){
   function paint(){var d=root.classList.contains('dark');document.querySelectorAll('[data-theme-toggle]').forEach(function(b){b.setAttribute('aria-pressed',d?'true':'false');b.title=d?'Switch to light mode':'Switch to dark mode';});}
   document.querySelectorAll('[data-theme-toggle]').forEach(function(b){b.addEventListener('click',function(){root.classList.toggle('dark');try{localStorage.setItem('ws-theme',root.classList.contains('dark')?'dark':'light');}catch(e){}paint();});});
   paint();
+  /* v0.10.0 water background: footer pause control (WCAG 2.2.2), remembered per browser; paused while the tab is hidden */
+  function paintMotion(){var st=root.classList.contains('still');document.querySelectorAll('[data-motion-toggle]').forEach(function(b){b.setAttribute('aria-pressed',st?'true':'false');b.textContent=st?'Resume water':'Pause water';});}
+  document.querySelectorAll('[data-motion-toggle]').forEach(function(b){b.addEventListener('click',function(){root.classList.toggle('still');try{localStorage.setItem('ws-motion',root.classList.contains('still')?'still':'moving');}catch(e){}paintMotion();});});
+  paintMotion();
+  document.addEventListener('visibilitychange',function(){root.classList.toggle('ws-hidden',document.hidden);});
   var mb=document.getElementById('menu-btn'),mn=document.getElementById('mobile-nav');
   if(mb&&mn){mb.addEventListener('click',function(){var open=mn.classList.toggle('hidden');mb.setAttribute('aria-expanded',open?'false':'true');});}
 });
 </script>
 </head>
 <body class="flex min-h-full flex-col">
+<div class="water" aria-hidden="true"><div class="sky"></div><div class="glint"></div><div class="wave w1"><svg viewBox="0 0 1200 200" preserveAspectRatio="none" fill="currentColor"><path d="M0,100 C150,160 300,40 450,100 C600,160 750,40 900,100 C1050,160 1200,40 1200,100 L1200,200 L0,200 Z"/></svg></div><div class="wave w2"><svg viewBox="0 0 1200 200" preserveAspectRatio="none" fill="currentColor"><path d="M0,100 C150,160 300,40 450,100 C600,160 750,40 900,100 C1050,160 1200,40 1200,100 L1200,200 L0,200 Z"/></svg></div><div class="wave w3"><svg viewBox="0 0 1200 200" preserveAspectRatio="none" fill="currentColor"><path d="M0,100 C150,160 300,40 450,100 C600,160 750,40 900,100 C1050,160 1200,40 1200,100 L1200,200 L0,200 Z"/></svg></div></div>
 <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-3 focus:py-2 focus:shadow dark:focus:bg-slate-900">Skip to content</a>
 
 <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:border-slate-800 dark:bg-slate-950/80">
@@ -50,7 +56,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <a href="{% url 'maps:index' %}" class="nav-link {% active_tab '/maps/' %}">Map</a>
       {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link {% active_tab '/workflow/' %}">Review queue</a><a href="{% url 'reports:index' %}" class="nav-link {% active_tab '/dashboards/' %}">Dashboards</a>{% endif %}
       {% if user.is_authenticated and user.is_staff %}<a href="{% url 'admin:index' %}" class="nav-link {% active_tab '/admin/' %}">Admin console</a>{% endif %}
-      <a href="/api/docs/" class="nav-link {% active_tab '/api/' %}">API</a>
+      <a href="{% url 'opendata:index' %}" class="nav-link {% active_tab '/open-data/' %}">Open data</a>
     </nav>
 
     <div class="ml-auto flex items-center gap-1.5">
@@ -83,7 +89,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <a href="{% url 'maps:index' %}" class="nav-link-m {% active_tab '/maps/' %}">Map</a>
     {% if user.is_authenticated and user.is_staff_user %}<a href="{% url 'workflow:queue' %}" class="nav-link-m {% active_tab '/workflow/' %}">Review queue</a><a href="{% url 'reports:index' %}" class="nav-link-m {% active_tab '/dashboards/' %}">Dashboards</a><a href="{% url 'reports:wall' %}" class="nav-link-m">Wall display</a>{% endif %}
     {% if user.is_authenticated and user.is_staff %}<a href="{% url 'admin:index' %}" class="nav-link-m {% active_tab '/admin/' %}">Admin console</a>{% endif %}
-    <a href="/api/docs/" class="nav-link-m {% active_tab '/api/' %}">API</a>
+    <a href="{% url 'opendata:index' %}" class="nav-link-m {% active_tab '/open-data/' %}">Open data</a>
     {% if user.is_authenticated %}<a href="{% url 'accounts:profile' %}" class="nav-link-m">{{ user.full_name }}</a>{% endif %}
   </nav>
 </header>
@@ -97,7 +103,7 @@ document.addEventListener('DOMContentLoaded',function(){
 <footer class="border-t border-slate-200 dark:border-slate-800">
   <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:text-slate-400">
     <p>{% if branding.footer_text %}{{ branding.footer_text }}{% if branding.copyright %} · {% endif %}{% endif %}{{ branding.copyright|default:branding.organisation_name }}</p>
-    <p><a href="{% url 'opendata:index' %}" class="link">Open data and publications</a> · Personal data is processed under the Data Protection Act, 2020 — see the <a href="/privacy/" class="link">privacy notice</a>.</p>
+    <p><a href="{% url 'opendata:index' %}" class="link">Open data and publications</a> · Personal data is processed under the Data Protection Act, 2020 — see the <a href="/privacy/" class="link">privacy notice</a>. <button type="button" data-motion-toggle class="link bg-transparent p-0 text-xs" aria-pressed="false">Pause water</button></p>
   </div>
 </footer>
 </body>

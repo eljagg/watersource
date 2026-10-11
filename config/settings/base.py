@@ -109,6 +109,7 @@ MIDDLEWARE = [
     "apps.accounts.middleware.PasswordPolicyMiddleware",
     "apps.accounts.middleware.MFAEnforcementMiddleware",
     "apps.core.middleware.CurrentUserMiddleware",
+    "apps.core.middleware.RecentViewMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "csp.middleware.CSPMiddleware",

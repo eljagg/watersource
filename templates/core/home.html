@@ -1,8 +1,24 @@
 {% extends "base.html" %}{% block content %}
+{% if user.is_authenticated %}
+<section class="mb-8" id="welcome">
+  <p class="eyebrow">{{ today|date:"l j F Y" }}</p>
+  <h1 class="page-title mt-1">{{ greeting }}, {{ first_name }}.</h1>
+  <p class="text-body mt-2 text-sm">
+    {% if waiting is not None %}{% if waiting %}<a class="link" href="{% url 'workflow:queue' %}">{{ waiting }} item{{ waiting|pluralize }} waiting on you</a> in the review queue.{% else %}Nothing is waiting on you in the review queue.{% endif %}{% else %}Your applications and data submissions are below.{% endif %}
+  </p>
+  {% if recent_views %}
+  <div class="tile mt-4 p-4 text-sm">
+    <h2 class="text-base">Last viewed</h2>
+    <ul class="mt-2 grid gap-1 sm:grid-cols-2 lg:grid-cols-3" id="recent-views">
+      {% for v in recent_views %}<li><a class="link" href="{{ v.path }}">{{ v.label }}</a> <span class="text-muted">· {% with v.at|timesince as ago %}{% if ago == "0 minutes" %}just now{% else %}{{ ago }} ago{% endif %}{% endwith %}</span></li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
 {% if user.is_authenticated and user.is_staff_user %}
 <section class="mb-8">
   <p class="eyebrow">Staff tools</p>
-  <h1 class="page-title mt-1">Welcome back, {{ user.full_name }}</h1>
   <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {% if user.is_super_user or user.is_superuser or user|has_role:"administrator" %}<a class="tile block p-5" href="{% url 'console:index' %}"><h2 class="text-base">My unit</h2><p class="text-body mt-1 text-sm">Super User desk: open items, data-cleansing queue, people, adoption sign-off.</p></a>{% endif %}
     <a class="tile block p-5" href="{% url 'workflow:queue' %}"><h2 class="text-base">Review queue</h2><p class="text-body mt-1 text-sm">Applications and submissions waiting at your stage.</p></a>

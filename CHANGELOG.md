@@ -2,6 +2,17 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.10.0] — 11 Oct 2026
+
+### Added
+- **Living water background** on every page (Omar's picks from the animated options): "Living Light" by day — pale aqua with two slow wave bands and a drifting glint of light — and "Gentle Swell" in dark mode — three deep-blue wave bands. The existing sun/moon switch in the header chooses between them (follows the device setting until a choice is made, remembered per browser). Motion is on `transform`/`opacity` only, 14–36-second cycles; still for anyone whose device asks for reduced motion, paused while the tab is hidden, and a **"Pause water" control in the footer** (WCAG 2.2.2) that is remembered per browser.
+- **Glass surfaces**: header, tiles and cards are now translucent with a 12 px blur over the water; tables, forms and dashboard tiles stay opaque for readability. Opaque fallback where the browser cannot blur.
+- **Personal welcome on Home** for signed-in people: "Good morning, Omar." (time of day in Jamaica time) with the weekday and date, a sentence saying how many items are waiting in their review queue (staff), and a **"Last viewed"** list of the last five pages they opened — kept to eight per person, refreshed on each visit, only ever shown to that person. Visitors who are not signed in see none of this.
+
+### Changed
+- Navigation (option B): the **API** tab is now **Open data**; the API documentation stays one click away from the Open data page ("For developers") and from the API docs tile on Home.
+- Breadcrumb for the WMU balance dataset reads "WMU balance".
+
 ## [0.9.2] — 11 Oct 2026
 
 ### Added

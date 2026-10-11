@@ -206,3 +206,33 @@ html.dark {
   .ws-tip { @apply text-sm; }
   .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400; }
 }
+
+/* ---------- v0.10.0 Living water background (Omar, 11 Oct 2026): "Living Light" by day, "Gentle Swell" in dark mode ----------
+   Two or three wave bands and (by day) a drifting glint of light, animated on transform/opacity only, 14–36 s cycles.
+   Still when the device asks for reduced motion, when the footer "Pause water" control is used (html.still), or while the
+   tab is hidden (html.ws-hidden). Glass (translucent + blur) is used on the header, tiles and cards only — never on tables or forms. */
+.water { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.water > * { position: absolute; }
+.water .sky { inset: 0; background: linear-gradient(180deg, #f3fbff 0%, #dcefFa 55%, #c3e3f4 100%); }
+html.dark .water .sky { background: linear-gradient(180deg, #0b3a66 0%, #06233f 55%, #031529 100%); }
+.water .glint { left: 55%; top: -10vh; width: 40vw; height: 40vw; border-radius: 50%; background: #7dd3fc; filter: blur(70px); opacity: .45; animation: ws-float 36s ease-in-out infinite; will-change: transform; }
+html.dark .water .glint { display: none; }
+.water .wave { left: 0; bottom: 0; width: 200%; height: 40%; will-change: transform; }
+.water .wave svg { display: block; width: 100%; height: 100%; }
+.water .w1 { color: #9fd6f2; opacity: .6; bottom: 5%; animation: ws-drift 27s linear infinite; }
+.water .w2 { color: #7cc4ea; opacity: .5; animation: ws-driftback 20s linear infinite; }
+.water .w3 { display: none; color: #07305a; opacity: .7; animation: ws-drift 14s linear infinite; }
+html.dark .water .wave { height: 46%; }
+html.dark .water .w1 { color: #0e4f86; opacity: .55; bottom: 6%; }
+html.dark .water .w2 { color: #0b3f6e; opacity: .45; bottom: 2%; }
+html.dark .water .w3 { display: block; }
+@keyframes ws-drift { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes ws-driftback { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+@keyframes ws-float { 0% { transform: translate(0, 0) scale(1); } 33% { transform: translate(40px, -30px) scale(1.08); } 66% { transform: translate(-30px, 25px) scale(.96); } 100% { transform: translate(0, 0) scale(1); } }
+html.still .water * { animation: none !important; }
+html.ws-hidden .water * { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .water * { animation: none !important; } }
+/* glass surfaces: colours stay those of the theme, just translucent; opaque fallback where blur is unsupported */
+.tile, .card { background-color: rgb(255 255 255 / .78); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+html.dark .tile, html.dark .card { background-color: rgb(15 23 42 / .64); }
+@supports not (backdrop-filter: blur(1px)) { .tile, .card { background-color: #fff; } html.dark .tile, html.dark .card { background-color: #0f172a; } }

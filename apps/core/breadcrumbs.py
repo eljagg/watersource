@@ -11,7 +11,7 @@ from __future__ import annotations
 LABELS = {
     "licensing": "Licensing", "applications": "Applications", "new": "New application", "licences": "Licences", "balance": "WMU balance", "assessment": "Technical assessment",
     "submissions": "Data submissions", "csv": "CSV upload", "form": "Form", "workflow": "Review queue", "queue": None, "maps": "Map", "full": "Full screen",
-    "export": "GIS package",
+    "export": "GIS package", "wmu-balance": "WMU balance",
     "layers": "Layers", "open-data": "Open data", "documents": "Publications", "unit": "My unit", "issues": "Cleansing queue", "members": "People", "adoption": "Adoption",
     "dashboards": "Dashboards", "wall": "Wall display", "exports": "Exports", "finance": "Finance export", "accounts": "Account", "profile": "Profile", "login": "Sign in",
     "register": "Register", "mfa": "Two-factor sign-in", "setup": "Set up", "verify": "Verify", "backup-codes": "Backup codes", "reset": "Reset", "privacy": "Privacy notice",
