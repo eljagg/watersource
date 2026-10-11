@@ -188,6 +188,10 @@ html.dark {
   .ds-tab-on { @apply border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300; }
 
   .form-actions { @apply sticky bottom-0 flex flex-wrap items-center justify-end gap-2 rounded-b-(--radius-card) border-t border-slate-200 bg-white/90 px-5 py-3 backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-900/90; }
+  .breadcrumbs ol { @apply flex flex-wrap items-center gap-1 text-sm text-slate-500 dark:text-slate-400; }
+  .breadcrumbs li + li::before { content: "›"; @apply mx-1 text-slate-400 dark:text-slate-600; }
+  .breadcrumbs a { @apply text-slate-700 hover:text-brand-600 hover:underline dark:text-slate-300 dark:hover:text-brand-400; }
+  .breadcrumbs [aria-current] { @apply font-medium text-slate-900 dark:text-white; }
   .legend-swatch { @apply mr-1 inline-block h-3 w-3 rounded-sm align-middle; }
   .legend-dot { @apply mr-1 inline-block h-3 w-3 rounded-full border-2 align-middle; }
   .leaflet-container { @apply bg-slate-100 dark:bg-slate-800; font: inherit; }

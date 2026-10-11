@@ -239,7 +239,7 @@ def test_panel_actions_report_outcome_and_return_to_queue(client, reviewer, hydr
     wf = _advance_to_assessment(application, reviewer)
     _verified_login(client, hydrologist)
     html = client.get(f"/workflow/{wf.pk}/").content.decode()
-    assert "Back to review queue" in html and 'name="comment" rows="3" required' in html
+    assert "Review queue</a>" in html and 'name="comment" rows="3" required' in html
     # no comment → stays on the item with the reason shown
     r = client.post(f"/workflow/{wf.pk}/act/", {"action": "request_info", "comment": ""}, follow=True)
     assert r.redirect_chain[-1][0].endswith(f"/workflow/{wf.pk}/") and "Tell the submitter what is needed" in r.content.decode()

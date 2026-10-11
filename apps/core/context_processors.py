@@ -4,6 +4,13 @@ from django.conf import settings
 from .branding import SiteBranding
 
 
+def breadcrumbs(request):
+    """Breadcrumbs derived from the URL (``apps.core.breadcrumbs``)."""
+    from .breadcrumbs import build
+
+    return {"breadcrumbs": build(request.path)}
+
+
 def site(request):
     """Add ``branding``, ``SITE_NAME``, ``SITE_URL`` and ``unread_notifications`` to every template."""
     unread = 0

@@ -2,6 +2,11 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.9.2] — 11 Oct 2026
+
+### Added
+- **Breadcrumbs on every page** except Home (`Home › Open data › Monitoring sites`), built from the address with readable labels; item pages show their reference or title as the last crumb (application reference, licence number, workflow item, dataset title, unit name). Replaces the ad-hoc "← Back to …" links.
+
 ## [0.9.1] — 11 Oct 2026
 
 ### Changed

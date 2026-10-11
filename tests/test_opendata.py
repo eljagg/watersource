@@ -107,3 +107,20 @@ def test_demo_seed_publishes_three_documents():
     assert docs.count() == 3 and all(d.file.storage.exists(d.file.name) and d.file.read(5) == b"%PDF-" for d in docs)
     call_command("seed_demo_data", force=True, if_missing=True, verbosity=0)
     assert PublishedDocument.objects.filter(title__startswith="DEMO").count() == 3
+
+
+# --- v0.9.2 breadcrumbs ------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_breadcrumbs_on_every_page_but_home(client):
+    from apps.core.breadcrumbs import build
+
+    assert build("/") == []
+    crumbs = build("/open-data/monitoring-sites/")
+    assert [c["label"] for c in crumbs] == ["Home", "Open data", "Monitoring sites"] and crumbs[1]["url"] == "/open-data/" and crumbs[-1]["last"]
+    assert [c["label"] for c in build("/licensing/applications/WRA-LA-2026-000036/")] == ["Home", "Licensing", "Applications", "WRA-LA-2026-000036"]
+    assert [c["label"] for c in build("/workflow/queue/")] == ["Home", "Review queue"]
+    html = client.get("/open-data/monitoring-sites/").content.decode()
+    assert 'aria-label="Breadcrumb"' in html and 'href="/open-data/">Open data</a>' in html and "Monitoring sites — wells, streamflow stations" in html
+    assert 'aria-label="Breadcrumb"' not in client.get("/").content.decode()

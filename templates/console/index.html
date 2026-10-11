@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% block title %}Unit console — {{ unit.name }} — {{ SITE_NAME }}{% endblock %}{% block content %}
+{% extends "base.html" %}{% block title %}Unit console — {{ unit.name }} — {{ SITE_NAME }}{% endblock %}{% block crumb_title %}{{ unit.name }}{% endblock %}{% block content %}
 <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
   <div><p class="eyebrow">Super User</p><h1 class="page-title">{{ unit.name }}</h1>
     <p class="text-body mt-1 text-sm">{{ unit.responsibilities }}</p></div>

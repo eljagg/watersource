@@ -1,5 +1,4 @@
-{% extends "base.html" %}{% block title %}{{ ds.title }} — open data — {{ SITE_NAME }}{% endblock %}{% block content %}
-<p class="mb-3 text-sm"><a class="link" href="{% url 'opendata:index' %}">← Open data and publications</a></p>
+{% extends "base.html" %}{% block title %}{{ ds.title }} — open data — {{ SITE_NAME }}{% endblock %}{% block crumb_title %}{{ ds.title|truncatechars:50 }}{% endblock %}{% block content %}
 <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
   <div><p class="eyebrow">Open data · {{ ds.owner }}</p><h1 class="page-title">{{ ds.title }}</h1><p class="text-body mt-1 max-w-3xl text-sm">{{ ds.description }}</p>
     <p class="text-muted mt-2 text-xs">{{ total }} row(s){% if updated %} · newest record {{ updated|date:"D d M Y" }}{% endif %} · updated as records are approved</p></div>
