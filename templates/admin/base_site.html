@@ -10,4 +10,15 @@
   #user-tools strong { font-size: 1rem; }
   .breadcrumbs { font-size: 0.95rem; }
   #header { padding: 12px 40px; }
+  /* v0.11.3: use the full window everywhere in the admin console (Omar, 12 Oct 2026) */
+  #container, #content, #main { max-width: none; }
+  #content { padding: 20px 40px; }
+  .change-form #content-main { max-width: none; }
+  form .aligned p.help, form .aligned div.help { max-width: 70em; }
+  .form-row input[type=text], .form-row input[type=email], .form-row input[type=url], .form-row input[type=number], .form-row input[type=password],
+  .form-row textarea, .form-row select, .vTextField, .vLargeTextField, .vURLField { width: 100%; max-width: 70em; box-sizing: border-box; }
+  .form-row input[type=number], .vIntegerField, .vDateField, .vTimeField { max-width: 14em; }
+  #changelist table { font-size: .95rem; }
+  #changelist .results { overflow-x: auto; }
+  .module h2, .module caption, .inline-group h2 { font-size: .95rem; }
 </style>{% endblock %}

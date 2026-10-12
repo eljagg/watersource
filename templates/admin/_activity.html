@@ -13,38 +13,38 @@
   <h3>Signed in now <small>active = used the system in the last {{ idle_minutes }} minutes</small></h3>
   {% if online %}
   <table class="ws-table">
-    <thead><tr><th>Person</th><th>Unit / roles</th><th>Where</th><th>Signed in</th><th>Last activity</th></tr></thead>
+    <thead><tr><th class="nowrap">Person</th><th class="nowrap">Unit / roles</th><th class="nowrap">Where</th><th class="nowrap">Signed in</th><th class="grow">Last activity</th></tr></thead>
     <tbody>{% for o in online %}
-    <tr><td><strong>{{ o.name }}</strong><br><span class="ws-dim">{{ o.email }}</span></td>
-        <td>{{ o.unit }}{% if o.roles %}<br><span class="ws-dim">{{ o.roles }}</span>{% endif %}</td>
-        <td>{{ o.ip|default:"—" }}<br><span class="ws-dim">{{ o.browser }}</span></td>
-        <td>{{ o.signed_in|date:"D j M H:i" }}</td>
-        <td><span class="ws-dot ws-dot-{{ o.status }}"></span>{{ o.active_ago }}{% if o.status == "idle" %}<br><span class="ws-dim">idle — session will expire</span>{% endif %}</td></tr>
+    <tr><td class="nowrap"><strong>{{ o.name }}</strong><br><span class="ws-dim">{{ o.email }}</span></td>
+        <td class="nowrap">{{ o.unit }}{% if o.roles %}<br><span class="ws-dim">{{ o.roles }}</span>{% endif %}</td>
+        <td class="nowrap">{{ o.ip|default:"—" }}<br><span class="ws-dim">{{ o.browser }}</span></td>
+        <td class="nowrap">{{ o.signed_in|date:"D j M Y H:i" }}</td>
+        <td class="grow"><span class="ws-dot ws-dot-{{ o.status }}"></span>{{ o.active_ago }}{% if o.status == "idle" %} <span class="ws-dim">· idle — session will expire</span>{% endif %}</td></tr>
     {% endfor %}</tbody>
   </table>
   {% else %}<p class="ws-dim">Nobody else is signed in.</p>{% endif %}
 
   {% if locked %}
   <h3>Locked out <small>after {{ locked|length }} account(s) reached the failure limit</small></h3>
-  <table class="ws-table"><thead><tr><th>Account</th><th>Failures</th><th>From</th><th>When</th></tr></thead>
-    <tbody>{% for l in locked %}<tr><td>{{ l.email }}</td><td>{{ l.failures }}</td><td>{{ l.ip|default:"—" }}</td><td>{{ l.ago }}</td></tr>{% endfor %}</tbody></table>
+  <table class="ws-table"><thead><tr><th class="nowrap">Account</th><th class="nowrap">Failures</th><th class="nowrap">From</th><th class="grow">When</th></tr></thead>
+    <tbody>{% for l in locked %}<tr><td class="nowrap">{{ l.email }}</td><td class="nowrap">{{ l.failures }}</td><td class="nowrap">{{ l.ip|default:"—" }}</td><td class="grow">{{ l.ago }}</td></tr>{% endfor %}</tbody></table>
   <p class="ws-dim">Unlock from My unit → People, or Axes → Access attempts.</p>
   {% endif %}
 
   <h3>Recent sign-ins <small>last 7 days</small></h3>
   <table class="ws-table">
-    <thead><tr><th>Person</th><th>From</th><th>When</th><th>Signed out</th></tr></thead>
+    <thead><tr><th class="nowrap">Person</th><th class="nowrap">From</th><th class="nowrap">Browser</th><th class="nowrap">Signed in</th><th class="nowrap">Ago</th><th class="grow">Signed out</th></tr></thead>
     <tbody>{% for s in signins %}
-    <tr><td><strong>{{ s.name }}</strong><br><span class="ws-dim">{{ s.email }}</span></td><td>{{ s.ip|default:"—" }}<br><span class="ws-dim">{{ s.browser }}</span></td>
-        <td>{{ s.at|date:"D j M H:i" }}<br><span class="ws-dim">{{ s.ago }}</span></td><td>{% if s.out %}{{ s.out|date:"D j M H:i" }}{% elif s.expired %}<span class="ws-dim">session expired</span>{% else %}<span class="ws-dim">still signed in</span>{% endif %}</td></tr>
-    {% empty %}<tr><td colspan="4" class="ws-dim">No sign-ins recorded yet.</td></tr>{% endfor %}</tbody>
+    <tr><td class="nowrap"><strong>{{ s.name }}</strong> <span class="ws-dim">{{ s.email }}</span></td><td class="nowrap">{{ s.ip|default:"—" }}</td><td class="nowrap">{{ s.browser }}</td>
+        <td class="nowrap">{{ s.at|date:"D j M Y H:i" }}</td><td class="nowrap">{{ s.ago }}</td><td class="grow">{% if s.out %}{{ s.out|date:"D j M Y H:i" }}{% elif s.expired %}<span class="ws-dim">session expired</span>{% else %}<span class="ws-dim">still signed in</span>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="6" class="ws-dim">No sign-ins recorded yet.</td></tr>{% endfor %}</tbody>
   </table>
 
   <h3>Latest audit entries <small><a href="/admin/core/auditlog/">full audit trail</a></small></h3>
   <table class="ws-table">
-    <thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead>
+    <thead><tr><th class="nowrap">When</th><th class="nowrap">Ago</th><th class="nowrap">Who</th><th class="nowrap">Action</th><th class="grow">Details</th></tr></thead>
     <tbody>{% for a in audit %}
-    <tr><td>{{ a.at|date:"D j M H:i" }}<br><span class="ws-dim">{{ a.ago }}</span></td><td>{{ a.actor }}</td><td>{{ a.action|short_action }}{% if a.summary %}<br><span class="ws-dim">{{ a.summary|truncatechars:90 }}</span>{% endif %}</td></tr>
-    {% empty %}<tr><td colspan="3" class="ws-dim">Nothing yet.</td></tr>{% endfor %}</tbody>
+    <tr><td class="nowrap">{{ a.at|date:"D j M Y H:i" }}</td><td class="nowrap">{{ a.ago }}</td><td class="nowrap">{{ a.actor }}</td><td class="nowrap">{{ a.action|short_action }}</td><td class="grow"><span class="ws-dim">{{ a.summary|truncatechars:160 }}</span></td></tr>
+    {% empty %}<tr><td colspan="5" class="ws-dim">Nothing yet.</td></tr>{% endfor %}</tbody>
   </table>
 </div>

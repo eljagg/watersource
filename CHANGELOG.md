@@ -2,6 +2,11 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.11.3] — 12 Oct 2026
+
+### Changed
+- **Admin console uses the full window** (Omar, 12 Oct): Django's 600-pixel dashboard cap and 300-pixel right margin removed; the app list sits in a fixed 460-pixel column and the Activity panel takes the rest. Count tiles in one row; "Signed in now", "Recent sign-ins" and "Latest audit entries" columns no longer wrap (name and email on one line, browser in its own column, full dates). Change lists and edit forms also use the full width, with wider text fields.
+
 ## [0.11.2] — 12 Oct 2026
 
 ### Fixed

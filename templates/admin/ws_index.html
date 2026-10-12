@@ -1,9 +1,12 @@
 {% extends "admin/index.html" %}{% load admin_extra %}
 {% comment %}v0.11.1: the admin home shows who is signed in, recent sign-ins, lock-outs and the latest audit entries beside the app list (Omar, 12 Oct 2026).{% endcomment %}
 {% block extrastyle %}{{ block.super }}<style nonce="{{ request.csp_nonce }}">
-  .dashboard #content { display: flex; gap: 32px; align-items: flex-start; }
-  .dashboard #content-main { float: none; width: 44%; flex: 0 0 44%; }
-  .dashboard #content-related { float: none; width: auto; flex: 1 1 auto; margin: 0; }
+  /* Django caps the dashboard at 600 px; use the whole window: app list in a fixed column, Activity takes the rest */
+  .dashboard #content, #content.colMS { display: flex; flex-wrap: wrap; gap: 0 32px; align-items: flex-start; width: auto; max-width: none; margin-right: 0; }
+  .dashboard #content > h1 { flex: 0 0 100%; margin-bottom: 16px; }
+  .dashboard #content-main, .colMS #content-main { float: none; width: 460px; flex: 0 0 460px; margin-right: 0; }
+  .dashboard #content-related, .colMS #content-related { float: none; position: static; width: auto; flex: 1 1 auto; margin: 0; min-width: 0; }
+  #content-related .module, #content-related .module h2, #content-related .module h3 { margin-right: 0; }
   #content-related .module { padding: 0; background: transparent; border: 0; }
   .ws-admin-panel h2 { margin: 0 0 12px; font-size: 1.25rem; font-weight: 600; }
   .ws-admin-panel h3 { margin: 22px 0 8px; font-size: 1rem; font-weight: 600; }
@@ -13,12 +16,15 @@
   .ws-stat strong { display: block; font-size: 1.6rem; font-weight: 600; line-height: 1.1; }
   .ws-stat span { font-size: .8rem; color: var(--body-quiet-color); }
   .ws-stat-warn { border-color: #dc2626; }
-  .ws-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .ws-table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  /* Django's dashboard CSS gives every th width:100%; these beat it: fixed columns hug their content, the last column takes the rest */
+  .dashboard .module .ws-table td.nowrap, .dashboard .module .ws-table th.nowrap { white-space: nowrap; width: 1%; }
+  .dashboard .module .ws-table td.grow, .dashboard .module .ws-table th.grow { white-space: normal; width: auto; }
   .ws-table th { text-align: left; font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--body-quiet-color); padding: 6px 8px; border-bottom: 1px solid var(--hairline-color); background: transparent; }
   .ws-table td { padding: 8px; border-bottom: 1px solid var(--hairline-color); vertical-align: top; }
   .ws-dim { color: var(--body-quiet-color); font-size: .8rem; }
   .ws-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; background: #16a34a; }
   .ws-dot-idle { background: #f59e0b; }
-  @media (max-width: 1100px) { .dashboard #content { display: block; } .dashboard #content-main { width: auto; } }
+  @media (max-width: 1100px) { .dashboard #content { display: block; } .dashboard #content-main { width: auto; } .ws-table td.nowrap { white-space: normal; } }
 </style>{% endblock %}
 {% block sidebar %}<div id="content-related"><div class="module">{% admin_activity %}</div></div>{% endblock %}
