@@ -97,3 +97,30 @@ def test_default_basemap_is_esri_topographic_and_hillshade_offered(client):
     html = client.get("/maps/").content.decode()
     assert html.index("Topographic") < html.index("Streets") and "World_Topo_Map" in html and "World_Hillshade" in html
     assert "data-hillshade=" in html
+
+
+# --- v0.11.1 -------------------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_boundary_sources_list_one_entry_per_source(tmp_path, client):
+    call_command("load_reference_data", verbosity=0)
+    _write(tmp_path)
+    call_command("load_wra_layers", from_dir=str(tmp_path), layers="wmus", verbosity=0)
+    gj = client.get("/maps/layers/wmus.geojson").json()
+    assert gj["sources"] == [wra_arcgis.SOURCE]  # not "(WMU 18)", "(WMU 9)", … one line per unit
+
+
+@pytest.mark.django_db
+def test_admin_home_shows_activity_panel(reviewer):
+    from django.test import Client
+
+    reviewer.is_staff = True
+    reviewer.save()
+    c = Client()
+    r = c.post("/accounts/login/", {"username": reviewer.email, "password": "Str0ng-Passw0rd!x"})  # a real sign-in so axes records it
+    assert r.status_code in (200, 302)
+    c.force_login(reviewer)
+    html = c.get("/admin/").content.decode()
+    assert "Signed in now" in html and "Recent sign-ins" in html and "Latest audit entries" in html and "staff accounts" in html
+    assert "Recent actions" not in html

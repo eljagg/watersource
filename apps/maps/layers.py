@@ -8,6 +8,7 @@ exactly as in the API and the exports. Licensee particulars never appear.
 from __future__ import annotations
 
 import json
+import re
 
 from django.contrib.gis.geos import Point
 
@@ -38,7 +39,7 @@ def _boundary_layer(qs, props):
     for o in qs:
         if o.geom is None:
             continue
-        sources.add(o.geom_source or "unknown")
+        sources.add(re.sub(r"\s*\([^)]*\)$", "", o.geom_source or "unknown"))  # one entry per source, not per feature
         feats.append({"type": "Feature", "id": o.code, "geometry": _geom_json(o.geom), "properties": props(o)})
     return _fc(feats, sources=sorted(sources))
 

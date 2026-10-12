@@ -2,6 +2,16 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.11.1] — 12 Oct 2026
+
+### Added
+- **Admin console home: Activity panel** replacing Django's "Recent actions" (Omar, 12 Oct): counts (staff and client accounts, signed in now, sign-ins in 24 h, locked out, items in review, WRA layers and when last fetched); **Signed in now** — person, unit and roles, IP address and browser, sign-in time, last activity with an active/idle dot (active = used the system within the idle limit); **Locked out** accounts with failure count and where from; **Recent sign-ins** for the last 7 days; **Latest audit entries**. Wider two-column layout.
+
+### Fixed
+- Map: "Boundary sources" showed one line per WMU ("… (WMU 1) · … (WMU 2) …"); now one entry per source.
+- Map: WRA gauging stations drew as squares; now the intended small red diamonds.
+- Home: "Last viewed" times read "18 hours, 59 minutes ago"; now one unit ("19 hours ago", "just now").
+
 ## [0.11.0] — 11 Oct 2026
 
 Map packages A and B (map research, 11 Oct): WRA's real GIS instead of stand-ins, and a basemap without the maritime line.

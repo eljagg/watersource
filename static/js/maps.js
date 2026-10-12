@@ -133,7 +133,7 @@
     if (name === "sites") {
       opts.pointToLayer = function (f, latlng) { var s = markerStyle[f.properties.kind] || markerStyle.well; return L.circleMarker(latlng, Object.assign({ weight: 2, fillOpacity: 0.95 }, s)); };
     } else if (name === "gauges") {
-      opts.pointToLayer = function (f, latlng) { return L.marker(latlng, { icon: L.divIcon({ className: "ws-gauge", html: "", iconSize: [12, 12], iconAnchor: [6, 6] }) }); };
+      opts.pointToLayer = function (f, latlng) { return L.marker(latlng, { icon: L.divIcon({ className: "ws-gauge-wrap", html: "<span class='ws-gauge'></span>", iconSize: [10, 10], iconAnchor: [5, 5] }) }); };
     } else { opts.style = styles[name]; }
     if (layers[name]) { switcher.removeLayer(layers[name]); map.removeLayer(layers[name]); }
     layers[name] = L.geoJSON(gj, opts);

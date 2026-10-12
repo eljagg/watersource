@@ -150,3 +150,6 @@ class SiteBrandingAdmin(admin.ModelAdmin):
         """Record who changed the branding."""
         super().save_model(request, obj, form, change)
         audit.log("branding.changed", obj, actor=request.user, summary=f"{obj.product_name} / {obj.organisation_name}")
+
+# v0.11.1: admin home with the activity panel (templates/admin/ws_index.html extends the stock index)
+admin.site.index_template = "admin/ws_index.html"

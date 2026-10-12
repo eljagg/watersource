@@ -62,7 +62,7 @@ def test_last_viewed_records_pages_and_shows_latest_five(reviewer):
     assert RecentView.objects.filter(user=reviewer).count() == RecentView.KEEP  # oldest dropped
     assert not RecentView.objects.filter(user=reviewer, path="/maps/").exists()  # /maps/ was the oldest visit
     html = c.get("/").content.decode()
-    assert "Last viewed" in html and html.count("<li>") - html.count("<li>", 0, html.find('id="recent-views"')) >= 5
+    assert "Last viewed" in html and html.count("just now") >= 5
     assert 'href="/open-data/wmu-balance/"' in html and "Open data › WMU balance" in html
     anon = Client().get("/").content.decode()
     assert "Last viewed" not in anon

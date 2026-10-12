@@ -41,3 +41,11 @@ def active_tab(context, *prefixes):
 def has_role(user, name):
     """``{% if user|has_role:"finance" %}`` — role (group) membership check for templates."""
     return bool(getattr(user, "is_authenticated", False)) and user.has_role(name)
+
+
+@register.filter
+def ago(dt):
+    """'3 hours ago', 'just now' — one unit, for the Last viewed list (v0.11.1)."""
+    from .admin_extra import _ago
+
+    return _ago(dt) if dt else ""

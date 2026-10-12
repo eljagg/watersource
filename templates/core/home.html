@@ -10,7 +10,7 @@
   <div class="tile mt-4 p-4 text-sm">
     <h2 class="text-base">Last viewed</h2>
     <ul class="mt-2 grid gap-1 sm:grid-cols-2 lg:grid-cols-3" id="recent-views">
-      {% for v in recent_views %}<li><a class="link" href="{{ v.path }}">{{ v.label }}</a> <span class="text-muted">· {% with v.at|timesince as ago %}{% if ago == "0 minutes" %}just now{% else %}{{ ago }} ago{% endif %}{% endwith %}</span></li>{% endfor %}
+      {% for v in recent_views %}<li><a class="link" href="{{ v.path }}">{{ v.label }}</a> <span class="text-muted">· {{ v.at|ago }}</span></li>{% endfor %}
     </ul>
   </div>
   {% endif %}
