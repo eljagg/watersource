@@ -11,6 +11,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
@@ -53,7 +54,14 @@ def layer(request, layer):
     fn = layers.LAYERS.get(layer)
     if fn is None:
         raise Http404
-    data = fn(request.user)
+    if layer in layers.PUBLIC_CACHED:  # same for every viewer; rivers alone are thousands of features
+        key = f"maps.layer.{layer}"
+        data = cache.get(key)
+        if data is None:
+            data = fn(request.user)
+            cache.set(key, data, 3600)
+    else:
+        data = fn(request.user)
     resp = JsonResponse(data)
     resp["Content-Type"] = "application/geo+json"
     resp["Cache-Control"] = "private, max-age=60"

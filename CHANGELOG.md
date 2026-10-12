@@ -2,6 +2,15 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.11.2] — 12 Oct 2026
+
+### Fixed
+- **Deploy stalled ("Application failed to respond")**: v0.11.0 fetched WRA's layers inside the start-up schema step, and the rivers layer (thousands of features, written one row at a time) kept the web server from starting within Railway's 120-second health check. Now the WRA fetch runs **in the background after the server is up**, a layer fetched successfully within the last 7 days is **skipped**, features are written in bulk, and the pre-deploy step no longer fetches at all. `manage.py load_wra_layers --max-age-days 0` forces a refresh; `WRA_LAYERS=0` turns the fetch off.
+- WRA layers served to the map are cached for an hour (cleared when a layer is reloaded).
+
+### Added
+- Admin console → Maps and GIS → **WRA layer syncs**: when each layer was last fetched, how many features, and any failure message. The admin Activity panel's "WRA layers" tile reads from it.
+
 ## [0.11.1] — 12 Oct 2026
 
 ### Added

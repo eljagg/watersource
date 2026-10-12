@@ -5,7 +5,7 @@ import pytest
 from django.core.management import call_command
 
 from apps.maps import wra_arcgis
-from apps.maps.models import WraFeature
+from apps.maps.models import WraFeature, WraSync
 from apps.ref.models import WMU, Basin
 
 SQ = [[[-77.0, 18.0], [-76.9, 18.0], [-76.9, 18.1], [-77.0, 18.1], [-77.0, 18.0]]]
@@ -53,6 +53,7 @@ def test_load_wra_layers_from_files_matches_reference_rows(tmp_path, client):
     assert WraFeature.objects.filter(layer="gauges").count() == 1 and WraFeature.objects.filter(layer="hydrostrat").count() == 2
     g = WraFeature.objects.get(layer="gauges")
     assert g.feature_id == "B21" and g.name == "Hope River at Gordon Town" and "Shape__Length" not in g.props and g.geom.srid == 3448
+    assert WraSync.objects.get(layer="gauges").ok and WraSync.objects.get(layer="gauges").count == 1
     # running again refreshes rather than duplicates; a feature WRA dropped disappears
     (tmp_path / "hydrostrat.geojson").write_text(json.dumps(_fc([{"type": "Feature", "properties": {"OBJECTID": 5, "HYDRO_STRA": "Alluvium Aquifer"}, "geometry": {"type": "Polygon", "coordinates": SQ}}])))
     call_command("load_wra_layers", from_dir=str(tmp_path), layers="hydrostrat", verbosity=0)
@@ -124,3 +125,41 @@ def test_admin_home_shows_activity_panel(reviewer):
     html = c.get("/admin/").content.decode()
     assert "Signed in now" in html and "Recent sign-ins" in html and "Latest audit entries" in html and "staff accounts" in html
     assert "Recent actions" not in html
+
+
+# --- v0.11.2: never delay the start --------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_fresh_layers_are_skipped_and_failures_recorded(tmp_path, monkeypatch):
+    calls = []
+
+    def fake_fetch(service, timeout=60, opener=None):
+        calls.append(service)
+        raise TimeoutError("ArcGIS slow")
+
+    monkeypatch.setattr(wra_arcgis, "fetch", fake_fetch)
+    call_command("load_wra_layers", layers="rivers", verbosity=0)
+    s = WraSync.objects.get(layer="rivers")
+    assert not s.ok and "TimeoutError" in s.message and calls == [wra_arcgis.SERVICES["rivers"][0]]
+    # a layer fetched successfully within the last 7 days is not fetched again at the next deploy
+    WraSync.objects.filter(layer="rivers").update(ok=True, count=4200)
+    call_command("load_wra_layers", layers="rivers", verbosity=0)
+    assert len(calls) == 1
+    call_command("load_wra_layers", layers="rivers", max_age_days=0, verbosity=0)  # forced refresh tries again
+    assert len(calls) == 2
+
+
+@pytest.mark.django_db
+def test_wra_layers_served_from_cache(tmp_path, client):
+    from django.core.cache import cache
+
+    cache.clear()
+    _write(tmp_path)
+    call_command("load_wra_layers", from_dir=str(tmp_path), layers="gauges", verbosity=0)
+    assert len(client.get("/maps/layers/gauges.geojson").json()["features"]) == 1
+    WraFeature.objects.filter(layer="gauges").delete()
+    assert len(client.get("/maps/layers/gauges.geojson").json()["features"]) == 1  # cached for an hour …
+    call_command("load_wra_layers", from_dir=str(tmp_path), layers="gauges", verbosity=0)  # … and cleared by a load
+    cache.delete("maps.layer.gauges")
+    assert len(client.get("/maps/layers/gauges.geojson").json()["features"]) == 1

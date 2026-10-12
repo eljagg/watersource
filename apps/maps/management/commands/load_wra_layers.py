@@ -20,15 +20,17 @@ from __future__ import annotations
 import json
 import re
 import urllib.error
+from datetime import timedelta
 from pathlib import Path
 
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon
+from django.core.cache import cache
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
 from apps.maps import wra_arcgis
-from apps.maps.models import WraFeature, WraLayer
+from apps.maps.models import WraFeature, WraLayer, WraSync
 from apps.ref.models import SRID, WMU, Basin
 
 #: WRA's WMU names → the names in data/reference/wmus.csv where they differ
@@ -70,6 +72,7 @@ class Command(BaseCommand):
         parser.add_argument("--from-dir", help="Directory of <layer>.geojson files instead of the network (as saved by --save-dir).")
         parser.add_argument("--save-dir", help="Also save each fetched layer as <layer>.geojson here.")
         parser.add_argument("--timeout", type=int, default=90)
+        parser.add_argument("--max-age-days", type=int, default=7, help="Skip a layer fetched successfully within this many days (0 = always fetch).")
 
     def handle(self, *args, **opts):
         """Fetch each requested layer and load it; never raise on network trouble."""
@@ -78,11 +81,16 @@ class Command(BaseCommand):
         if unknown:
             self.stderr.write(f"unknown layer(s): {', '.join(unknown)}")
             return
+        fresh = {s.layer: s for s in WraSync.objects.filter(ok=True, fetched_at__gte=timezone.now() - timedelta(days=opts["max_age_days"]))} if opts["max_age_days"] else {}
         for name in wanted:
+            if name in fresh and not opts.get("from_dir"):
+                self.stdout.write(f"{name:10s} up to date ({fresh[name].count} features, fetched {fresh[name].fetched_at:%d %b %H:%M}); skipped")
+                continue
             try:
                 feats = self._features(name, opts)
             except (urllib.error.URLError, TimeoutError, OSError, RuntimeError, ValueError) as exc:
                 self.stderr.write(f"{name:10s} not loaded — {exc.__class__.__name__}: {exc}")
+                WraSync.objects.update_or_create(layer=name, defaults={"fetched_at": timezone.now(), "ok": False, "message": f"{exc.__class__.__name__}: {exc}"[:300]})
                 continue
             if opts.get("save_dir"):
                 out = Path(opts["save_dir"])
@@ -91,6 +99,8 @@ class Command(BaseCommand):
             loader = getattr(self, f"_load_{name}", None) or (lambda f, n=name: self._load_features(n, f))
             with transaction.atomic():
                 msg = loader(feats)
+                WraSync.objects.update_or_create(layer=name, defaults={"fetched_at": timezone.now(), "count": len(feats), "ok": True, "message": msg[:300]})
+            cache.delete(f"maps.layer.{name}")
             self.stdout.write(f"{name:10s} {msg}")
 
     # -- fetching ------------------------------------------------------------------------------
@@ -163,7 +173,7 @@ class Command(BaseCommand):
         _, name_fields, id_fields = wra_arcgis.SERVICES[layer]
         now = timezone.now()
         seen = set()
-        n = 0
+        rows = []
         for i, f in enumerate(feats):
             props = f.get("properties") or {}
             geom = _geom(f)
@@ -173,9 +183,10 @@ class Command(BaseCommand):
             if fid in seen:
                 fid = f"{fid}-{i}"
             seen.add(fid)
-            WraFeature.objects.update_or_create(layer=layer, feature_id=fid[:64], defaults={
-                "name": wra_arcgis.pick(props, name_fields)[:200], "props": {k: v for k, v in props.items() if v is not None and not k.lower().startswith("shape__")},
-                "geom": geom, "source": wra_arcgis.SOURCE, "fetched_at": now})
-            n += 1
-        gone = WraFeature.objects.filter(layer=layer, fetched_at__lt=now).delete()[0]
-        return f"{n} {WraLayer(layer).label.lower()} loaded ({gone} stale removed)"
+            rows.append(WraFeature(layer=layer, feature_id=fid[:64], name=wra_arcgis.pick(props, name_fields)[:200],
+                                   props={k: v for k, v in props.items() if v is not None and not k.lower().startswith("shape__")}, geom=geom, source=wra_arcgis.SOURCE, fetched_at=now))
+        if not rows:
+            return f"0 {WraLayer(layer).label.lower()} — nothing loaded, existing features kept"
+        gone = WraFeature.objects.filter(layer=layer).delete()[0]
+        WraFeature.objects.bulk_create(rows, batch_size=500)
+        return f"{len(rows)} {WraLayer(layer).label.lower()} loaded ({gone} replaced)"

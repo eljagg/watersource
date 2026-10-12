@@ -150,3 +150,5 @@ def hydrostrat():
 
 LAYERS = {"parishes": lambda user: parishes(), "basins": lambda user: basins(), "wmus": lambda user: wmus(), "aquifers": lambda user: aquifers(), "sites": sites,
           "rivers": lambda user: rivers(), "gauges": lambda user: gauges(), "subwmus": lambda user: subwmus(), "hydrostrat": lambda user: hydrostrat()}
+#: layers identical for every viewer, cached server-side for an hour (cleared by load_wra_layers / load_boundaries)
+PUBLIC_CACHED = {"rivers", "gauges", "subwmus", "hydrostrat", "parishes"}

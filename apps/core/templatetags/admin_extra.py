@@ -79,10 +79,10 @@ def admin_activity():
               "open_items": WorkflowInstance.objects.filter(state=InstanceState.IN_PROGRESS).count(),
               "signins_24h": AccessLog.objects.filter(attempt_time__gte=now - timedelta(hours=24)).count()}
     try:
-        from apps.maps.models import WraFeature
+        from apps.maps.models import WraSync
 
-        wra = WraFeature.objects.aggregate(n=Max("fetched_at"))["n"]
-        counts["wra_layers"] = WraFeature.objects.values("layer").distinct().count()
+        wra = WraSync.objects.filter(ok=True).aggregate(n=Max("fetched_at"))["n"]
+        counts["wra_layers"] = WraSync.objects.filter(ok=True).count()
         counts["wra_fetched"] = _ago(wra) if wra else "never"
     except Exception:  # pragma: no cover - table missing during migration
         counts["wra_layers"], counts["wra_fetched"] = 0, "never"

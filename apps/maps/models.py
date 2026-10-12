@@ -39,3 +39,19 @@ class WraFeature(models.Model):
 
     def __str__(self):
         return f"{self.get_layer_display()}: {self.name or self.feature_id}"
+
+
+class WraSync(models.Model):
+    """When each WRA layer was last fetched, how many features, and whether it worked (v0.11.2)."""
+
+    layer = models.CharField(max_length=20, unique=True)
+    fetched_at = models.DateTimeField(default=timezone.now)
+    count = models.IntegerField(default=0)
+    ok = models.BooleanField(default=True)
+    message = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = "WRA layer sync"
+
+    def __str__(self):
+        return f"{self.layer} {self.fetched_at:%Y-%m-%d %H:%M} ({'ok' if self.ok else 'failed'})"
