@@ -13,6 +13,7 @@ from django.contrib.gis.geos import Point
 
 from apps.core.restrict import can_see_restricted, mask_site
 from apps.lic.services import wmu_balance
+from apps.maps.models import WraFeature
 from apps.ref.models import SRID, WMU, Aquifer, Basin, Parish, Spring, StreamflowStation, Well
 
 EXPORT_SRID = 4326
@@ -106,4 +107,45 @@ def sites(user):
     return _fc(feats, exact_coordinates=can_see_restricted(user))
 
 
-LAYERS = {"parishes": lambda user: parishes(), "basins": lambda user: basins(), "wmus": lambda user: wmus(), "aquifers": lambda user: aquifers(), "sites": sites}
+# -- WRA reference layers (v0.11.0, apps.maps.models.WraFeature) ------------------------------------
+HYDROSTRAT_CLASSES = ("Limestone Aquifer", "Limestone Aquiclude", "Alluvium Aquifer", "Alluvium Aquiclude", "Coastal Aquifer", "Coastal Aquiclude", "Basal Aquiclude",
+                      "Swamp/Marsh/Mangrove", "Water Body")
+
+
+def _wra_layer(layer, props, simplify=SIMPLIFY_M):
+    feats = []
+    source = None
+    for o in WraFeature.objects.filter(layer=layer):
+        g = o.geom.simplify(simplify, preserve_topology=True) if simplify and o.geom.geom_type != "Point" else o.geom.clone()
+        g.transform(EXPORT_SRID)
+        source = o.source
+        feats.append({"type": "Feature", "id": o.feature_id, "geometry": json.loads(g.json), "properties": {"name": o.name, "source": o.source, **props(o)}})
+    return _fc(feats, sources=[source] if source else [])
+
+
+def rivers():
+    """WRA rivers and waterways (digitised from the 1:50,000 sheets)."""
+    return _wra_layer("rivers", lambda o: {}, simplify=25)
+
+
+def gauges():
+    """WRA stream gauging stations with their station code, WMU and drainage area."""
+    def props(o):
+        p = {k.lower(): v for k, v in o.props.items()}
+        return {"code": o.feature_id, "wmu": p.get("wmu"), "basin": p.get("hydrobasin"), "state": p.get("state"), "type": p.get("type"),
+                "drainage_km2": p.get("dr_area_km"), "elevation_m": p.get("elevatn_m"), "established": p.get("date_est")}
+    return _wra_layer("gauges", props, simplify=0)
+
+
+def subwmus():
+    """WRA sub-WMUs."""
+    return _wra_layer("subwmus", lambda o: {})
+
+
+def hydrostrat():
+    """WRA hydrostratigraphy 2018: aquifer and aquiclude units."""
+    return _wra_layer("hydrostrat", lambda o: {"unit": o.name or "Unclassified"})
+
+
+LAYERS = {"parishes": lambda user: parishes(), "basins": lambda user: basins(), "wmus": lambda user: wmus(), "aquifers": lambda user: aquifers(), "sites": sites,
+          "rivers": lambda user: rivers(), "gauges": lambda user: gauges(), "subwmus": lambda user: subwmus(), "hydrostrat": lambda user: hydrostrat()}

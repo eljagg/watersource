@@ -89,6 +89,25 @@ truncate field names).
   `geom_source = "demonstration stand-in"`; the map legend and the GeoPackage show the tag.
   Real boundaries loaded later replace them.
 
+**WRA's published GIS** — `manage.py load_wra_layers` (v0.11.0, runs at every deploy):
+
+* Source: the Government of Jamaica ArcGIS Online organisation
+  (`https://services6.arcgis.com/3R3y1KXaPJ9BFnsU/arcgis/rest/services`, WRA account
+  `wrajamaica_GOJ`; the `Water_Resources` service is copyright WRA under NEPA's account).
+  Layers: `Hydrologic_Basins/0`, `Watershed_Management_Units/0`,
+  `Ground_and_Surface_Water_Monitoring_Network__Jamaica_WFL1/5` (sub-WMUs),
+  `Rivers_and_Streams_in_Jamaica_WFL1/2`, `Water_Resources/0` (gauging stations),
+  `Water_Resources/5` (Hydrostratigraphy 2018). Fetched as GeoJSON in WGS 84 in pages of
+  1,000 and stored in EPSG:3448.
+* Basins and WMUs update `ref_basin` / `ref_wmu` by name (aliases for Wagwater, Rio Bueno,
+  Martha Brae); WMUs WRA lists that we do not have are created. `geom_source` records
+  "WRA, Government of Jamaica ArcGIS Online (WMU n)". Everything else goes to
+  `maps_wrafeature` (layer, feature_id, name, props, geom).
+* Terms: WRA's service text says no data is to be shared or edited without WRA's permission;
+  the layers are public-read and this is WRA's own system. Keep the attribution; obtain
+  written confirmation before go-live. `WRA_LAYERS=0` turns the deploy-time load off;
+  `--from-dir` loads files saved with `--save-dir`.
+
 ## 6. Optional web services (priced extra)
 
 `pg_featureserv` (OGC API – Features) and `pg_tileserv` (vector tiles) from

@@ -25,6 +25,8 @@ schema_step() {
   python manage.py bootstrap_workflows
   python manage.py bootstrap_categories
   python manage.py load_reference_data
+  # WRA's real boundaries and reference layers from the Government of Jamaica ArcGIS Online (skipped with WRA_LAYERS=0; never fails the start)
+  if [ "${WRA_LAYERS:-1}" = "1" ]; then python manage.py load_wra_layers || true; fi
   case "${DEMO_DATA:-0}" in
     1|reseed) python manage.py load_boundaries --demo-shapes ;;
     *)        python manage.py load_boundaries ;;

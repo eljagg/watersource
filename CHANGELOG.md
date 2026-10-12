@@ -2,6 +2,21 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.11.0] — 11 Oct 2026
+
+Map packages A and B (map research, 11 Oct): WRA's real GIS instead of stand-ins, and a basemap without the maritime line.
+
+### Added
+- **`manage.py load_wra_layers`** — copies WRA's published layers from the Government of Jamaica ArcGIS Online (`services6.arcgis.com/3R3y1KXaPJ9BFnsU`, account `wrajamaica_GOJ`) into the database: the **10 hydrological basins** and **26 watershed management units** (matched to our reference rows by name; boundaries replace the demonstration stand-ins), plus **rivers and waterways**, **stream gauging stations**, **sub-WMUs** and the **2018 hydrostratigraphy** (aquifer/aquiclude units) as `maps.WraFeature` rows. Runs at every deploy before the stand-ins are built (`WRA_LAYERS=0` skips it); network trouble is reported and never stops the start. `--from-dir` loads saved GeoJSON files offline; `--save-dir` keeps copies. A boundary WRA hands us as a file (`load_boundaries --wmus file`) is never overwritten by the online copy.
+- Map: four new layers when loaded — **Rivers (WRA)**, **Gauging stations (WRA)** with station code, WMU, drainage area and elevation, **Sub-WMUs (WRA)** and **Hydrostratigraphy (WRA 2018)** coloured by unit with its own legend — and a **Hillshade (relief)** overlay in the layers button. GIS package gains `wra_rivers`, `wra_gauges`, `wra_subwmus`, `wra_hydrostratigraphy` tables. Admin console → Maps and GIS → WRA features.
+- Reference data: `wmus.csv` now carries WRA's full list of 26 WMUs (11 added: South Negril-Orange River, Lucea River, Rio Nuevo, Oracabessa - Pagee River, Pencar - Buff Bay River, Spanish River, Swift River, Drivers River, Gut - Alligator Hole, Deans Valley River, New Savannah River) with demonstration seed points so every WMU has a shape even offline.
+
+### Changed
+- **Default basemap is Esri World Topographic** (no maritime-boundary line, matches WRA's own ArcGIS products, free with attribution); OpenStreetMap stays as "Streets" and OpenTopoMap as "Terrain". Settings `MAP_ESRI_TOPO_URL`, `MAP_HILLSHADE_URL`; CSP image sources follow them.
+
+### Terms
+- WRA's service text: "No data is to be shared or edited without permission from the Water Resources Authority." The layers are public-read and this is WRA's own system; every feature carries the attribution "WRA, Government of Jamaica ArcGIS Online". Written confirmation from WRA is recommended before go-live.
+
 ## [0.10.1] — 11 Oct 2026
 
 ### Added

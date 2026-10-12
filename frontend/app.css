@@ -206,6 +206,8 @@ html.dark {
   .ws-label-basin { @apply text-[15px] text-sky-800; }
   .ws-label-wmu { @apply text-[12px] text-slate-900; }
   .ws-tip { @apply text-sm; }
+  .ws-gauge { @apply border-2 border-white bg-rose-600; transform: rotate(45deg); box-shadow: 0 0 0 1px #9f1239; }
+  .ws-gauge-swatch { @apply border border-white bg-rose-600; transform: rotate(45deg); }
   .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400; }
 }
 

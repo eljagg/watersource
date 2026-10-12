@@ -40,6 +40,8 @@ env = environ.Env(
     MAP_TILES_ATTRIBUTION=(str, "&copy; OpenStreetMap contributors"),
     MAP_TOPO_URL=(str, "https://tile.opentopomap.org/{z}/{x}/{y}.png"),
     MAP_SATELLITE_URL=(str, "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"),
+    MAP_ESRI_TOPO_URL=(str, "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"),
+    MAP_HILLSHADE_URL=(str, "https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"),
     AQUARIUS_USER=(str, ""),
     AQUARIUS_PASSWORD=(str, ""),
     HGA_ODBC_DSN=(str, ""),
@@ -249,7 +251,7 @@ CONTENT_SECURITY_POLICY = {
         "default-src": ("'self'",),
         "script-src": (SELF, NONCE),  # django-csp 4 sentinel: middleware replaces it with 'nonce-<random>' per request
         "style-src": ("'self'", "'unsafe-inline'"),  # Tailwind utility classes; tighten at build stage
-        "img-src": ("'self'", "data:", "blob:", *{_tile_host(env(k)) for k in ("MAP_TILES_URL", "MAP_TOPO_URL", "MAP_SATELLITE_URL") if env(k)}),  # map tiles
+        "img-src": ("'self'", "data:", "blob:", *{_tile_host(env(k)) for k in ("MAP_TILES_URL", "MAP_TOPO_URL", "MAP_SATELLITE_URL", "MAP_ESRI_TOPO_URL", "MAP_HILLSHADE_URL") if env(k)}),  # map tiles
         "font-src": ("'self'",),
         "connect-src": ("'self'",),
         "frame-ancestors": ("'none'",),
@@ -353,9 +355,13 @@ WATERSOURCE = {
     "MAP_TILES_URL": env("MAP_TILES_URL"),
     "MAP_TILES_ATTRIBUTION": env("MAP_TILES_ATTRIBUTION"),
     # Optional extra base maps (empty string disables): topographic (OpenTopoMap, CC BY-SA) and satellite imagery (Esri World Imagery).
+    "MAP_HILLSHADE_URL": env("MAP_HILLSHADE_URL"),
+    # v0.11.0: Esri's topographic map is the default (no maritime boundary line, matches WRA's own ArcGIS products);
+    # OpenStreetMap stays as a choice but is not the default — its tile policy excludes heavy production use.
     "MAP_BASEMAPS": [b for b in (
+        {"name": "Topographic", "url": env("MAP_ESRI_TOPO_URL"), "attribution": "Basemap &copy; Esri, HERE, Garmin, FAO, NOAA, USGS"},
         {"name": "Streets", "url": env("MAP_TILES_URL"), "attribution": env("MAP_TILES_ATTRIBUTION")},
-        {"name": "Topographic", "url": env("MAP_TOPO_URL"), "attribution": "&copy; OpenStreetMap contributors, SRTM · &copy; OpenTopoMap (CC BY-SA)"},
+        {"name": "Terrain", "url": env("MAP_TOPO_URL"), "attribution": "&copy; OpenStreetMap contributors, SRTM · &copy; OpenTopoMap (CC BY-SA)"},
         {"name": "Satellite", "url": env("MAP_SATELLITE_URL"), "attribution": "Imagery &copy; Esri, Maxar, Earthstar Geographics and the GIS user community"},
     ) if b["url"]],
     "MAP_CENTER": [18.11, -77.30],

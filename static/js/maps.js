@@ -17,6 +17,7 @@
     if (i === 0) basemaps[b.name].addTo(map);
   });
   var overlays = {};
+  if (el.dataset.hillshade) { overlays["Hillshade (relief)"] = L.tileLayer(el.dataset.hillshade, { opacity: 0.35, maxZoom: 16, attribution: "Hillshade &copy; Esri" }); }
   var switcher = L.control.layers(basemaps, overlays, { position: "topright", collapsed: true }).addTo(map);
   L.control.scale({ metric: true, imperial: false, position: "bottomleft" }).addTo(map);
 
@@ -52,8 +53,13 @@
     parishes: function () { return { color: "#cbd5e1", weight: 1.5, fill: false, dashArray: "5 4" }; },
     basins: function () { return { color: "#0ea5e9", weight: 3.5, fill: false }; },
     wmus: function (f) { return { color: "#0f172a", weight: 1, fillColor: colour(f.properties), fillOpacity: 0.4 }; },
-    aquifers: function () { return { color: "#a855f7", weight: 2, dashArray: "2 4", fillColor: "#a855f7", fillOpacity: 0.18 }; }
+    aquifers: function () { return { color: "#a855f7", weight: 2, dashArray: "2 4", fillColor: "#a855f7", fillOpacity: 0.18 }; },
+    rivers: function () { return { color: "#2563eb", weight: 1.4, opacity: 0.9 }; },
+    subwmus: function () { return { color: "#475569", weight: 0.8, dashArray: "3 3", fill: false }; },
+    hydrostrat: function (f) { var c = hydroColour[f.properties.unit] || "#94a3b8"; return { color: c, weight: 0.6, fillColor: c, fillOpacity: 0.45 }; }
   };
+  var hydroColour = { "Limestone Aquifer": "#0ea5e9", "Limestone Aquiclude": "#7dd3fc", "Alluvium Aquifer": "#f59e0b", "Alluvium Aquiclude": "#fde68a",
+    "Coastal Aquifer": "#14b8a6", "Coastal Aquiclude": "#99f6e4", "Basal Aquiclude": "#a8a29e", "Swamp/Marsh/Mangrove": "#65a30d", "Water Body": "#1d4ed8" };
   var hover = { weight: 4, color: "#ffffff" };
   var popups = {
     parishes: function (p) { return "<strong>" + esc(p.name) + "</strong><br>Parish<br><span class='text-muted'>" + esc(p.source) + "</span>"; },
@@ -66,6 +72,14 @@
         "<br><span class='text-muted'>" + esc(p.source) + "</span>";
     },
     aquifers: function (p) { return "<strong>" + esc(p.name) + "</strong><br>" + esc(p.type) + " aquifer · " + esc(p.basin) + "<br>Safe yield: " + fmt(p.safe_yield_m3_d) + " m³/day<br><span class='text-muted'>" + esc(p.source) + "</span>"; },
+    rivers: function (p) { return "<strong>" + esc(p.name || "Unnamed waterway") + "</strong><br>River / waterway<br><span class='text-muted'>" + esc(p.source) + "</span>"; },
+    subwmus: function (p) { return "<strong>" + esc(p.name || "Sub-WMU") + "</strong><br>Sub-WMU<br><span class='text-muted'>" + esc(p.source) + "</span>"; },
+    hydrostrat: function (p) { return "<strong>" + esc(p.unit) + "</strong><br>Hydrostratigraphy 2018<br><span class='text-muted'>" + esc(p.source) + "</span>"; },
+    gauges: function (p) {
+      return "<strong>" + esc(p.name || p.code) + "</strong> (" + esc(p.code) + ")<br>WRA gauging station" + (p.type ? " · " + esc(p.type) : "") + (p.state ? " · " + esc(p.state) : "") +
+        "<br>" + esc(p.wmu || "") + (p.basin ? " · " + esc(p.basin) : "") + (p.drainage_km2 ? "<br>Drainage area: " + fmt(p.drainage_km2) + " km²" : "") +
+        (p.elevation_m ? " · " + fmt(p.elevation_m) + " m" : "") + "<br><span class='text-muted'>" + esc(p.source) + "</span>";
+    },
     sites: function (p) {
       var kind = { well: "Well", station: "Streamflow station", spring: "Spring" }[p.kind] || p.kind;
       return "<strong>" + esc(p.name) + "</strong><br>" + kind + (p.use ? " · " + esc(p.use) : "") + (p.river ? " · " + esc(p.river) : "") +
@@ -76,8 +90,10 @@
   var markerStyle = { well: { radius: 6, color: "#1d4ed8", fillColor: "#3b82f6" }, station: { radius: 7, color: "#047857", fillColor: "#10b981" }, spring: { radius: 6, color: "#b45309", fillColor: "#f59e0b" } };
   var labelLayers = { parishes: "ws-label-parish", basins: "ws-label-basin", wmus: "ws-label-wmu" };
   var labelMinZoom = { parishes: 9.5, basins: 0, wmus: 10 }; // avoid a pile-up of names when the whole island is in view
-  var names = { parishes: "Parishes", basins: "Basins", wmus: "Water management units", aquifers: "Aquifers", sites: "Wells, stations and springs" };
-  var order = ["aquifers", "wmus", "parishes", "basins", "sites"]; // draw order, bottom to top
+  var names = { parishes: "Parishes", basins: "Basins", wmus: "Water management units", aquifers: "Aquifers", sites: "Wells, stations and springs",
+    hydrostrat: "Hydrostratigraphy (WRA 2018)", subwmus: "Sub-WMUs", rivers: "Rivers (WRA)", gauges: "Gauging stations (WRA)" };
+  var order = ["hydrostrat", "aquifers", "wmus", "subwmus", "parishes", "basins", "rivers", "gauges", "sites"]; // draw order, bottom to top
+  var pointLayers = { sites: true, gauges: true };
 
   // layers ---------------------------------------------------------------------------------
   var layers = {}, data = {}, labelsOn = defaults.indexOf("labels") >= 0, labels = L.layerGroup();
@@ -105,7 +121,7 @@
       onEachFeature: function (f, l) {
         l.bindPopup(popups[name](f.properties));
         l.on("click", function () { if (info) info.innerHTML = popups[name](f.properties); });
-        if (name !== "sites") {
+        if (!pointLayers[name]) {
           l.on("mouseover", function () { l.setStyle(hover); l.bringToFront(); });
           l.on("mouseout", function () { layers[name].resetStyle(l); restack(); });
           l.bindTooltip(f.properties.name, { sticky: true, className: "ws-tip" });
@@ -116,6 +132,8 @@
     };
     if (name === "sites") {
       opts.pointToLayer = function (f, latlng) { var s = markerStyle[f.properties.kind] || markerStyle.well; return L.circleMarker(latlng, Object.assign({ weight: 2, fillOpacity: 0.95 }, s)); };
+    } else if (name === "gauges") {
+      opts.pointToLayer = function (f, latlng) { return L.marker(latlng, { icon: L.divIcon({ className: "ws-gauge", html: "", iconSize: [12, 12], iconAnchor: [6, 6] }) }); };
     } else { opts.style = styles[name]; }
     if (layers[name]) { switcher.removeLayer(layers[name]); map.removeLayer(layers[name]); }
     layers[name] = L.geoJSON(gj, opts);

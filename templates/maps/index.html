@@ -15,6 +15,10 @@
       <label class="flex items-center gap-2"><input type="checkbox" data-layer="wmus"> Water management units</label>
       <label class="flex items-center gap-2"><input type="checkbox" data-layer="aquifers"> Aquifers</label>
       <label class="flex items-center gap-2"><input type="checkbox" data-layer="sites"> Wells, stations and springs</label>
+      {% if "rivers" in wra_layers %}<label class="flex items-center gap-2"><input type="checkbox" data-layer="rivers"> Rivers (WRA)</label>{% endif %}
+      {% if "gauges" in wra_layers %}<label class="flex items-center gap-2"><input type="checkbox" data-layer="gauges"> Gauging stations (WRA)</label>{% endif %}
+      {% if "subwmus" in wra_layers %}<label class="flex items-center gap-2"><input type="checkbox" data-layer="subwmus"> Sub-WMUs (WRA)</label>{% endif %}
+      {% if "hydrostrat" in wra_layers %}<label class="flex items-center gap-2"><input type="checkbox" data-layer="hydrostrat"> Hydrostratigraphy (WRA 2018)</label>{% endif %}
       <label class="flex items-center gap-2"><input type="checkbox" data-layer="labels"> Names on the map</label>
     </div>
     <h2 class="mb-2 mt-5 text-base">WMU utilisation</h2>
@@ -31,7 +35,18 @@
       <li><span class="legend-dot" style="background:#10b981;border-color:#047857"></span> Streamflow station</li>
       <li><span class="legend-dot" style="background:#f59e0b;border-color:#b45309"></span> Spring</li>
       <li><span class="legend-swatch" style="background:#0ea5e9"></span> Basin outline · <span class="legend-swatch" style="background:#a855f7"></span> Aquifer</li>
+      {% if "gauges" in wra_layers %}<li><span class="legend-swatch ws-gauge-swatch"></span> WRA gauging station · <span class="legend-swatch" style="background:#2563eb"></span> River</li>{% endif %}
     </ul>
+    {% if "hydrostrat" in wra_layers %}
+    <h2 class="mb-2 mt-5 text-base">Hydrostratigraphy</h2>
+    <ul class="space-y-1 text-xs">
+      <li><span class="legend-swatch" style="background:#0ea5e9"></span> Limestone aquifer · <span class="legend-swatch" style="background:#7dd3fc"></span> aquiclude</li>
+      <li><span class="legend-swatch" style="background:#f59e0b"></span> Alluvium aquifer · <span class="legend-swatch" style="background:#fde68a"></span> aquiclude</li>
+      <li><span class="legend-swatch" style="background:#14b8a6"></span> Coastal aquifer · <span class="legend-swatch" style="background:#99f6e4"></span> aquiclude</li>
+      <li><span class="legend-swatch" style="background:#a8a29e"></span> Basal aquiclude · <span class="legend-swatch" style="background:#65a30d"></span> swamp/marsh · <span class="legend-swatch" style="background:#1d4ed8"></span> water body</li>
+    </ul>
+    {% endif %}
+    <p class="text-muted mt-3 text-xs">Relief: open the layers button on the map and tick "Hillshade".</p>
     <div id="map-sources" class="text-muted mt-5 text-xs"></div>
     <div id="map-info" class="mt-4 text-sm"></div>
   </div>

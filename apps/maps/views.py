@@ -27,8 +27,11 @@ def _map_context(request, **extra):
     ws = settings.WATERSOURCE
     import json
 
+    from apps.maps.models import WraFeature
+
     return {"tiles_url": ws["MAP_TILES_URL"], "tiles_attribution": ws["MAP_TILES_ATTRIBUTION"], "map_center": ws["MAP_CENTER"], "map_zoom": ws["MAP_ZOOM"],
-            "basemaps_json": json.dumps(ws["MAP_BASEMAPS"]),
+            "basemaps_json": json.dumps(ws["MAP_BASEMAPS"]), "hillshade_url": ws["MAP_HILLSHADE_URL"],
+            "wra_layers": sorted(set(WraFeature.objects.values_list("layer", flat=True))),
             "exact_coordinates": can_see_restricted(request.user), "can_export": _export_allowed(request.user), **extra}
 
 
@@ -72,6 +75,11 @@ GPKG_LAYERS = {
     "stations": "SELECT s.id, s.name, s.is_public_supply, s.easting, s.northing, s.elevation_m, p.name AS parish, r.name AS river, s.classification, s.location AS geom "
                 "FROM ref_streamflowstation s LEFT JOIN ref_parish p ON p.id = s.parish_id LEFT JOIN ref_river r ON r.id = s.river_id WHERE s.location IS NOT NULL AND s.is_active",
     "springs": "SELECT s.id, s.name, p.name AS parish, s.location AS geom FROM ref_spring s LEFT JOIN ref_parish p ON p.id = s.parish_id WHERE s.location IS NOT NULL",
+    "wra_rivers": "SELECT feature_id, name, source, geom FROM maps_wrafeature WHERE layer = 'rivers'",
+    "wra_gauges": "SELECT feature_id AS station_code, name, props->>'WMU' AS wmu, props->>'HYDROBASIN' AS basin, props->>'STATE' AS state, props->>'TYPE' AS type, "
+                  "props->>'DR_AREA_KM' AS drainage_km2, props->>'ELEVATN_M' AS elevation_m, source, geom FROM maps_wrafeature WHERE layer = 'gauges'",
+    "wra_subwmus": "SELECT feature_id, name, source, geom FROM maps_wrafeature WHERE layer = 'subwmus'",
+    "wra_hydrostratigraphy": "SELECT feature_id, name AS unit, source, geom FROM maps_wrafeature WHERE layer = 'hydrostrat'",
     "licences": "SELECT l.number, l.status, l.daily_volume_granted_m3, l.issued_on, l.expires_on, m.name AS wmu, w.name AS well, w.location AS geom "
                 "FROM lic_licence l LEFT JOIN ref_wmu m ON m.id = l.wmu_id LEFT JOIN ref_well w ON w.id = l.well_id WHERE w.location IS NOT NULL",
 }

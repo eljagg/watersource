@@ -19,7 +19,7 @@ def boundaries(db):
 def test_boundaries_loaded_and_demo_shapes_tagged(boundaries):
     assert Parish.objects.filter(geom__isnull=False).count() == 14
     assert Parish.objects.get(code="STC").geom_source.startswith("geoBoundaries")
-    assert Basin.objects.filter(geom__isnull=False).count() == 10 and WMU.objects.filter(geom__isnull=False).count() == 15
+    assert Basin.objects.filter(geom__isnull=False).count() == 10 and WMU.objects.filter(geom__isnull=False).count() == 26
     assert WMU.objects.get(code="W05").geom_source == "demonstration stand-in"
     # the Rio Cobre WMU stand-in sits inside its basin, and the basin inside the island
     w, b = WMU.objects.get(code="W05"), Basin.objects.get(code="B03")
@@ -37,7 +37,7 @@ def test_layers_and_masking(client, boundaries, well, reviewer):
     r = client.get("/maps/layers/wmus.geojson")
     assert r.status_code == 200 and r["Content-Type"] == "application/geo+json"
     js = r.json()
-    assert js["type"] == "FeatureCollection" and len(js["features"]) == 15
+    assert js["type"] == "FeatureCollection" and len(js["features"]) == 26
     props = js["features"][0]["properties"]
     assert {"code", "name", "utilisation_pct", "safe_yield", "source"} <= set(props)
     g = js["features"][0]["geometry"]
