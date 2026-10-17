@@ -11,6 +11,7 @@ import json
 import re
 
 from django.contrib.gis.geos import Point
+from django.db import models
 
 from apps.core.restrict import can_see_restricted, mask_site
 from apps.lic.services import wmu_balance
@@ -148,7 +149,57 @@ def hydrostrat():
     return _wra_layer("hydrostrat", lambda o: {"unit": o.name or "Unclassified"})
 
 
+def floodplains():
+    """100-year floodplains from WRA's flood studies (Upper Morass, Coleburn Gully, Hope River, Rio Cobre, Rio Grande, Rio Minho)."""
+    return _wra_layer("floodplains", lambda o: {"study": o.props.get("study"), "rp": o.props.get("RP"), "area_km2": o.props.get("Area_km2") or o.props.get("AreaSqKm")},
+                      simplify=20)
+
+
+def melissa():
+    """Areas WRA mapped as flooded after Hurricane Melissa."""
+    def props(o):
+        p = {k.lower(): v for k, v in o.props.items()}
+        return {"parish": p.get("parish"), "wmu": p.get("wmu"), "captured": p.get("captured"), "flood_type": p.get("flood_type"), "area_km2": p.get("area_sq_km"),
+                "remarks": p.get("remarks") or p.get("descr")}
+    return _wra_layer("melissa", props, simplify=20)
+
+
+def wmu_detail(wmu, user) -> dict:
+    """Everything the map's WMU panel shows (v0.12.0): balance figures, a 12-month reported-abstraction series, site counts and (staff) licences."""
+    from datetime import datetime, time, timedelta
+
+    from django.db.models import Sum
+    from django.db.models.functions import TruncMonth
+    from django.utils import timezone
+
+    from apps.lic.models import Licence, LicenceStatus
+    from apps.obs.models import AbstractionRecord
+
+    b = wmu_balance(wmu)
+    since = timezone.make_aware(datetime.combine((timezone.localdate().replace(day=1) - timedelta(days=365)).replace(day=1), time.min))
+    monthly = (AbstractionRecord.objects.filter(approval_state="approved", period_start__gte=since)
+               .filter(models.Q(licence__wmu=wmu) | models.Q(licence__wmu__isnull=True, well__wmu=wmu))
+               .annotate(m=TruncMonth("period_start")).values("m").annotate(v=Sum("abstraction_volume_m3")).order_by("m"))
+    series = [{"month": r["m"].strftime("%Y-%m"), "m3": float(r["v"] or 0)} for r in monthly]
+    out = {"code": wmu.code, "name": wmu.name, "basin": wmu.basin.name if wmu.basin_id else None, "source": wmu.geom_source,
+           "safe_yield": float(b["safe_yield"]) if b["safe_yield"] is not None else None, "safe_yield_source": wmu.safe_yield_source,
+           "allocated": float(b["allocated"]), "pending": float(b["pending"]), "reported_avg": float(b["reported_avg"]) if b["reported_avg"] is not None else None,
+           "headroom": float(b["headroom"]) if b["headroom"] is not None else None, "licences": b["licences"],
+           "utilisation_pct": b["utilisation_pct"], "utilisation_with_pending_pct": b["utilisation_with_pending_pct"],
+           "wells": Well.objects.filter(wmu=wmu, is_abandoned=False).count(), "stations": StreamflowStation.objects.filter(wmu=wmu, is_active=True).count(),
+           "gauges": WraFeature.objects.filter(layer="gauges", geom__within=wmu.geom).count() if wmu.geom is not None else 0,
+           "subwmus": list(WraFeature.objects.filter(layer="subwmus", geom__intersects=wmu.geom).values_list("name", flat=True)[:12]) if wmu.geom is not None else [],
+           "abstraction_monthly": series, "licence_list": []}
+    if getattr(user, "is_authenticated", False) and getattr(user, "is_staff_user", False):
+        in_wmu = models.Q(wmu=wmu) | models.Q(wmu__isnull=True, well__wmu=wmu)
+        out["licence_list"] = [{"number": lic.number, "volume": float(lic.daily_volume_granted_m3 or 0), "expires": lic.expires_on.isoformat() if lic.expires_on else None,
+                                "url": f"/licensing/licences/{lic.pk}/"}
+                               for lic in Licence.objects.filter(in_wmu, status=LicenceStatus.ACTIVE).order_by("-daily_volume_granted_m3")[:8]]
+    return out
+
+
 LAYERS = {"parishes": lambda user: parishes(), "basins": lambda user: basins(), "wmus": lambda user: wmus(), "aquifers": lambda user: aquifers(), "sites": sites,
-          "rivers": lambda user: rivers(), "gauges": lambda user: gauges(), "subwmus": lambda user: subwmus(), "hydrostrat": lambda user: hydrostrat()}
+          "rivers": lambda user: rivers(), "gauges": lambda user: gauges(), "subwmus": lambda user: subwmus(), "hydrostrat": lambda user: hydrostrat(),
+          "floodplains": lambda user: floodplains(), "melissa": lambda user: melissa()}
 #: layers identical for every viewer, cached server-side for an hour (cleared by load_wra_layers / load_boundaries)
-PUBLIC_CACHED = {"rivers", "gauges", "subwmus", "hydrostrat", "parishes"}
+PUBLIC_CACHED = {"rivers", "gauges", "subwmus", "hydrostrat", "parishes", "floodplains", "melissa"}

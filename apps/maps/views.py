@@ -68,6 +68,20 @@ def layer(request, layer):
     return resp
 
 
+@require_GET
+def wmu_detail(request, code):
+    """Figures for the map's WMU panel (v0.12.0); licence numbers only for staff."""
+    from apps.ref.models import WMU
+
+    try:
+        wmu = WMU.objects.select_related("basin").get(code=code)
+    except WMU.DoesNotExist as exc:
+        raise Http404 from exc
+    resp = JsonResponse(layers.wmu_detail(wmu, request.user))
+    resp["Cache-Control"] = "private, max-age=60"
+    return resp
+
+
 # -- GeoPackage export ---------------------------------------------------------------------
 
 #: layer name → SQL (storage SRID; ogr2ogr reprojects to the requested SRID)
@@ -88,6 +102,9 @@ GPKG_LAYERS = {
                   "props->>'DR_AREA_KM' AS drainage_km2, props->>'ELEVATN_M' AS elevation_m, source, geom FROM maps_wrafeature WHERE layer = 'gauges'",
     "wra_subwmus": "SELECT feature_id, name, source, geom FROM maps_wrafeature WHERE layer = 'subwmus'",
     "wra_hydrostratigraphy": "SELECT feature_id, name AS unit, source, geom FROM maps_wrafeature WHERE layer = 'hydrostrat'",
+    "wra_floodplains": "SELECT feature_id, name AS study, props->>'RP' AS return_period, source, geom FROM maps_wrafeature WHERE layer = 'floodplains'",
+    "wra_melissa_flooded": "SELECT feature_id, name AS location, props->>'Parish' AS parish, props->>'WMU' AS wmu, props->>'Captured' AS captured, "
+                           "props->>'Flood_Type' AS flood_type, props->>'Area_Sq_km' AS area_km2, source, geom FROM maps_wrafeature WHERE layer = 'melissa'",
     "licences": "SELECT l.number, l.status, l.daily_volume_granted_m3, l.issued_on, l.expires_on, m.name AS wmu, w.name AS well, w.location AS geom "
                 "FROM lic_licence l LEFT JOIN ref_wmu m ON m.id = l.wmu_id LEFT JOIN ref_well w ON w.id = l.well_id WHERE w.location IS NOT NULL",
 }

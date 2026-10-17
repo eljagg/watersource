@@ -163,3 +163,62 @@ def test_wra_layers_served_from_cache(tmp_path, client):
     call_command("load_wra_layers", from_dir=str(tmp_path), layers="gauges", verbosity=0)  # … and cleared by a load
     cache.delete("maps.layer.gauges")
     assert len(client.get("/maps/layers/gauges.geojson").json()["features"]) == 1
+
+
+# --- v0.12.0 package C: search, WMU panel, flood layers, shareable link ---------------------------
+
+
+def test_floodplains_merge_six_studies_with_a_study_property():
+    def opener(url, timeout):
+        layer = url.split("FeatureServer/")[1].split("/")[0]
+        return json.dumps({"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"FID": 1, "Area_km2": 2.5}, "geometry": {"type": "Polygon", "coordinates": SQ}}]
+                           if layer in ("8", "13", "14", "19", "25", "30") else []})
+
+    feats = wra_arcgis.fetch_layer("floodplains", opener=opener)
+    assert len(feats) == 6 and {f["properties"]["study"] for f in feats} == {"Upper Morass", "Coleburn Gully", "Hope River", "Rio Cobre", "Rio Grande (Fellowship)", "Rio Minho"}
+    assert feats[0]["properties"]["RP"] == "100 yr" and len({f["properties"]["FID"] for f in feats}) == 6  # ids unique across studies
+
+
+@pytest.mark.django_db
+def test_flood_layers_load_and_show_on_the_map(tmp_path, client):
+    (tmp_path / "floodplains.geojson").write_text(json.dumps(_fc([{"type": "Feature", "properties": {"FID": "Rio Cobre-1", "study": "Rio Cobre", "RP": "100 yr", "Area_km2": 12.4}, "geometry": {"type": "Polygon", "coordinates": SQ}}])))
+    (tmp_path / "melissa.geojson").write_text(json.dumps(_fc([{"type": "Feature", "properties": {"FID": 7, "LOCATION": "Bog Walk", "Parish": "St. Catherine", "WMU": "Rio Cobre", "Flood_Type": "Riverine", "Area_Sq_km": 0.8}, "geometry": {"type": "Polygon", "coordinates": SQ2}}])))
+    call_command("load_wra_layers", from_dir=str(tmp_path), layers="floodplains,melissa", verbosity=0)
+    fp = client.get("/maps/layers/floodplains.geojson").json()
+    assert fp["features"][0]["properties"] == {"name": "Rio Cobre", "source": wra_arcgis.SOURCE, "study": "Rio Cobre", "rp": "100 yr", "area_km2": 12.4}
+    me = client.get("/maps/layers/melissa.geojson").json()
+    assert me["features"][0]["properties"]["name"] == "Bog Walk" and me["features"][0]["properties"]["flood_type"] == "Riverine"
+    html = client.get("/maps/").content.decode()
+    assert 'data-layer="floodplains"' in html and 'data-layer="melissa"' in html
+
+
+@pytest.mark.django_db
+def test_wmu_panel_figures_and_staff_only_licences(client, reviewer, client_user, party, parish, well):
+    from decimal import Decimal
+
+    from django.test import Client
+    from django.utils import timezone
+
+    from apps.lic.models import ApplicationStatus, Licence, LicenceApplication
+    from apps.ref.models import WMU
+
+    call_command("load_reference_data", verbosity=0)
+    wmu = WMU.objects.get(name="Hope River")
+    wmu.safe_yield_m3_d = Decimal("10000")
+    wmu.save()
+    well.wmu = wmu
+    well.save()
+    app = LicenceApplication.objects.create(applicant_user=client_user, applicant=party, applicant_name="Jane Brown", applicant_address="x", applicant_email="j@example.com",
+                                            applicant_phone="1", parish=parish, water_source="well", source_name="w", well=well, wmu=wmu, daily_volume_requested_m3=Decimal("1500"),
+                                            purpose="Irrigation", status=ApplicationStatus.SUBMITTED, submitted_at=timezone.now())
+    lic = Licence.issue(app, Decimal("1500"), 1, reviewer, conditions=[])
+    d = client.get("/maps/wmu/W04.json").json()  # anonymous: figures, no licence numbers
+    assert d["name"] == "Hope River" and d["safe_yield"] == 10000 and d["allocated"] == 1500 and d["utilisation_pct"] == 15.0 and d["licences"] == 1
+    assert d["wells"] == 1 and d["licence_list"] == [] and "abstraction_monthly" in d
+    c = Client()
+    c.force_login(reviewer)
+    d = c.get("/maps/wmu/W04.json").json()
+    assert d["licence_list"][0]["number"] == lic.number and d["licence_list"][0]["volume"] == 1500
+    assert client.get("/maps/wmu/NOPE.json").status_code == 404
+    html = client.get("/maps/").content.decode()
+    assert 'id="map-search"' in html and 'id="map-share"' in html and 'data-wmu-url="/maps/wmu/CODE.json"' in html

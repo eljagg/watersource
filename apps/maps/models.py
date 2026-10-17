@@ -19,6 +19,8 @@ class WraLayer(models.TextChoices):
     GAUGES = "gauges", "Stream gauging stations"
     SUBWMUS = "subwmus", "Sub-WMUs"
     HYDROSTRAT = "hydrostrat", "Hydrostratigraphy 2018"
+    FLOODPLAINS = "floodplains", "100-year floodplains (studies)"
+    MELISSA = "melissa", "Hurricane Melissa flooded areas"
 
 
 class WraFeature(models.Model):

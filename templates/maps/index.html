@@ -8,7 +8,11 @@
 </div>
 <div class="grid gap-4 xl:grid-cols-5">
   <div class="card p-4 text-sm xl:col-span-1">
-    <h2 class="mb-2 text-base">Layers</h2>
+    <label for="map-search" class="mb-1 block text-base font-semibold">Find on the map</label>
+    <div class="relative"><input id="map-search" type="search" autocomplete="off" placeholder="WMU, basin, parish, well, station…" aria-label="Find a place on the map">
+      <ul id="map-search-results" class="map-search-results" hidden></ul></div>
+    <div id="map-panel" class="map-panel" hidden></div>
+    <h2 class="mb-2 mt-4 text-base">Layers</h2>
     <div id="layer-controls" class="space-y-2">
       <label class="flex items-center gap-2"><input type="checkbox" data-layer="parishes"> Parishes</label>
       <label class="flex items-center gap-2"><input type="checkbox" data-layer="basins"> Basins</label>
@@ -19,6 +23,8 @@
       {% if "gauges" in wra_layers %}<label class="flex items-center gap-2"><input type="checkbox" data-layer="gauges"> Gauging stations (WRA)</label>{% endif %}
       {% if "subwmus" in wra_layers %}<label class="flex items-center gap-2"><input type="checkbox" data-layer="subwmus"> Sub-WMUs (WRA)</label>{% endif %}
       {% if "hydrostrat" in wra_layers %}<label class="flex items-center gap-2"><input type="checkbox" data-layer="hydrostrat"> Hydrostratigraphy (WRA 2018)</label>{% endif %}
+      {% if "floodplains" in wra_layers %}<label class="flex items-center gap-2"><input type="checkbox" data-layer="floodplains"> 100-year floodplains (WRA studies)</label>{% endif %}
+      {% if "melissa" in wra_layers %}<label class="flex items-center gap-2"><input type="checkbox" data-layer="melissa"> Hurricane Melissa flooded areas (WRA)</label>{% endif %}
       <label class="flex items-center gap-2"><input type="checkbox" data-layer="labels"> Names on the map</label>
     </div>
     <h2 class="mb-2 mt-5 text-base">WMU utilisation</h2>
@@ -36,6 +42,7 @@
       <li><span class="legend-dot" style="background:#f59e0b;border-color:#b45309"></span> Spring</li>
       <li><span class="legend-swatch" style="background:#0ea5e9"></span> Basin outline · <span class="legend-swatch" style="background:#a855f7"></span> Aquifer</li>
       {% if "gauges" in wra_layers %}<li><span class="legend-swatch ws-gauge-swatch"></span> WRA gauging station · <span class="legend-swatch" style="background:#2563eb"></span> River</li>{% endif %}
+      {% if "floodplains" in wra_layers %}<li><span class="legend-swatch" style="background:#6366f1"></span> 100-year floodplain · <span class="legend-swatch" style="background:#be123c"></span> Melissa flooded area</li>{% endif %}
     </ul>
     {% if "hydrostrat" in wra_layers %}
     <h2 class="mb-2 mt-5 text-base">Hydrostratigraphy</h2>
@@ -47,6 +54,7 @@
     </ul>
     {% endif %}
     <p class="text-muted mt-3 text-xs">Relief: open the layers button on the map and tick "Hillshade".</p>
+    <p class="mt-4"><button type="button" id="map-share" class="btn-secondary btn-sm">Copy link to this view</button> <span id="map-share-msg" class="text-muted text-xs"></span></p>
     <div id="map-sources" class="text-muted mt-5 text-xs"></div>
     <div id="map-info" class="mt-4 text-sm"></div>
   </div>

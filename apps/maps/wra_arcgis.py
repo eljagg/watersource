@@ -22,6 +22,8 @@ PAGE = 1000
 USER_AGENT = "WaterSource/0.11 (Water Resources Authority licensing and data system)"
 
 #: our layer → (service path, name fields in order of preference, id fields in order of preference)
+FLOODS = "Flood_Risk_and_Flood_Events_Map_WFL1/FeatureServer"
+
 SERVICES = {
     "basins": ("Hydrologic_Basins/FeatureServer/0", ("Hydrobasin",), ("BasinNo", "FID")),
     "wmus": ("Watershed_Management_Units/FeatureServer/0", ("Wmu_Name",), ("Wmu_No", "FID")),
@@ -29,6 +31,15 @@ SERVICES = {
     "rivers": ("Rivers_and_Streams_in_Jamaica_WFL1/FeatureServer/2", ("NAME", "Name", "RIVER", "River"), ("OBJECTID", "FID")),
     "gauges": ("Water_Resources/FeatureServer/0", ("STATION", "Station", "NAME", "Name", "STN_NAME", "NEWSTNCODE"), ("NEWSTNCODE", "OBJECTID", "FID")),
     "hydrostrat": ("Water_Resources/FeatureServer/5", ("HYDRO_STRA",), ("OBJECTID", "FID")),
+    # v0.12.0 flood layers from WRA's Flood Risk and Flood Events map: the six 100-year study floodplains in one layer, and the
+    # Hurricane Melissa flooded areas. The island-wide return-period grids (60,000+ polygons each) are deliberately left out.
+    "floodplains": (FLOODS + "/8", ("study",), ("FID",)),
+    "melissa": (FLOODS + "/38", ("LOCATION",), ("FID",)),
+}
+#: layers assembled from several service layers: our layer → [(service layer, study name)]
+MULTI = {
+    "floodplains": [(FLOODS + "/8", "Upper Morass"), (FLOODS + "/13", "Coleburn Gully"), (FLOODS + "/14", "Hope River"), (FLOODS + "/19", "Rio Cobre"),
+                    (FLOODS + "/25", "Rio Grande (Fellowship)"), (FLOODS + "/30", "Rio Minho")],
 }
 
 
@@ -36,6 +47,21 @@ def query_url(service: str, offset: int = 0, page: int = PAGE) -> str:
     """The paged GeoJSON query for one service layer."""
     q = {"where": "1=1", "outFields": "*", "outSR": "4326", "f": "geojson", "geometryPrecision": "5", "resultOffset": str(offset), "resultRecordCount": str(page)}
     return f"{ORG}/{service}/query?{urllib.parse.urlencode(q)}"
+
+
+def fetch_layer(name: str, timeout: int = 60, opener=None) -> list[dict]:
+    """All features of our layer ``name``: one service layer, or several merged with a ``study`` property (:data:`MULTI`)."""
+    if name in MULTI:
+        feats = []
+        for service, study in MULTI[name]:
+            for i, f in enumerate(fetch(service, timeout, opener)):
+                props = dict(f.get("properties") or {})
+                props["study"] = study
+                props["RP"] = props.get("RP") or "100 yr"
+                props["FID"] = f"{study}-{props.get('FID', i)}"
+                feats.append({**f, "properties": props})
+        return feats
+    return fetch(SERVICES[name][0], timeout, opener)
 
 
 def fetch(service: str, timeout: int = 60, opener=None) -> list[dict]:

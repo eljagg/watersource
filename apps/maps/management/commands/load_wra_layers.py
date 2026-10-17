@@ -100,7 +100,10 @@ class Command(BaseCommand):
             with transaction.atomic():
                 msg = loader(feats)
                 WraSync.objects.update_or_create(layer=name, defaults={"fetched_at": timezone.now(), "count": len(feats), "ok": True, "message": msg[:300]})
-            cache.delete(f"maps.layer.{name}")
+            try:
+                cache.delete(f"maps.layer.{name}")
+            except Exception as exc:  # cache down: the layer still loaded; the old copy expires within the hour
+                self.stderr.write(f"{name:10s} cache not cleared — {exc.__class__.__name__}")
             self.stdout.write(f"{name:10s} {msg}")
 
     # -- fetching ------------------------------------------------------------------------------
@@ -110,8 +113,7 @@ class Command(BaseCommand):
             if not path.exists():
                 raise FileNotFoundError(f"{path} not found")
             return json.loads(path.read_text(encoding="utf-8")).get("features", [])
-        service = wra_arcgis.SERVICES[name][0]
-        return wra_arcgis.fetch(service, timeout=opts["timeout"])
+        return wra_arcgis.fetch_layer(name, timeout=opts["timeout"])
 
     # -- basins and WMUs: into the reference tables -----------------------------------------------
     def _load_basins(self, feats):

@@ -207,6 +207,21 @@ html.dark {
   .ws-label-wmu { @apply text-[12px] text-slate-900; }
   .ws-tip { @apply text-sm; }
   .ws-gauge-wrap { background: transparent; border: 0; }
+  /* v0.12.0 map search and WMU panel */
+  .map-search-results { @apply absolute left-0 right-0 z-[1000] mt-1 max-h-72 overflow-auto rounded-lg border border-slate-300 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900; }
+  .map-search-results li { @apply cursor-pointer px-3 py-1.5 text-sm hover:bg-brand-50 dark:hover:bg-slate-800; }
+  .map-search-results li.is-active { @apply bg-brand-50 dark:bg-slate-800; }
+  .map-search-results .kind { @apply ml-1 text-xs text-slate-500 dark:text-slate-400; }
+  .map-panel { @apply mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/60; }
+  .map-panel h3 { @apply text-base font-semibold; }
+  .map-panel dl { @apply mt-2 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 items-baseline; }
+  .map-panel dt { @apply text-xs text-slate-500 dark:text-slate-400; }
+  .map-panel dd { @apply whitespace-nowrap text-right font-medium tabular-nums; }
+  .map-bar { @apply mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700; }
+  .map-bar span { @apply block h-full; }
+  .map-spark { @apply mt-2 block h-14 w-full; }
+  .map-panel ul.lics { @apply mt-1 space-y-0.5 text-xs; }
+  .map-panel .close { @apply float-right text-lg leading-none text-slate-500 hover:text-slate-900 dark:hover:text-white; }
   .ws-gauge { @apply block h-[10px] w-[10px] border border-white bg-rose-600; transform: rotate(45deg); box-shadow: 0 0 0 1px #9f1239; }
   .ws-gauge-swatch { @apply border border-white bg-rose-600; transform: rotate(45deg); }
   .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400; }

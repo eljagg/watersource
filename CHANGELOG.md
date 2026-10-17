@@ -2,6 +2,19 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.12.0] — 17 Oct 2026
+
+Map package C (map research, 11 Oct).
+
+### Added
+- **Find on the map** — a search box above the layers: type part of a WMU, basin, parish, sub-WMU, well, station, spring, river or gauging-station name (whatever layers are loaded), pick a result with the mouse or arrow keys, and the map zooms there and opens its popup.
+- **WMU panel** — clicking a WMU (or finding one) opens a panel in the sidebar: utilisation bar, safe yield, licensed, pending, headroom, reported abstraction (12-month average), active licences, wells and stations (and WRA gauges within it), sub-WMUs, a 12-month **reported-abstraction chart**, and for staff the largest active licences with links. New endpoint `/maps/wmu/<code>.json`.
+- **Flood layers from WRA's Flood Risk and Flood Events map**: *100-year floodplains (WRA studies)* — Upper Morass, Coleburn Gully, Hope River, Rio Cobre, Rio Grande (Fellowship) and Rio Minho merged into one layer with a "study" property — and *Hurricane Melissa flooded areas* (location, parish, WMU, flood type, area, remarks). Both in the GIS package (`wra_floodplains`, `wra_melissa_flooded`). The island-wide return-period grids (60,000+ polygons each) are deliberately not loaded.
+- **Copy link to this view** — the address bar now follows the map (`#map=zoom/lat/lng&layers=…&base=…`); the button copies it, and opening such a link restores the view, layers and basemap.
+
+### Fixed
+- `load_wra_layers` no longer aborts when the cache cannot be reached after a layer loads.
+
 ## [0.11.3] — 12 Oct 2026
 
 ### Changed
