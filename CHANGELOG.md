@@ -2,6 +2,11 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.13.1] — 17 Oct 2026
+
+### Fixed
+- `/workflow/` answered "Not Found"; it now goes to the Review queue (`/workflow/queue/`).
+
 ## [0.13.0] — 17 Oct 2026
 
 Package 4 of the WRA stakeholder model (design doc 17): the executive view for the governance layer.

@@ -113,3 +113,9 @@ def test_executive_figures_come_from_live_data(reviewer, client_user, party, par
     assert "Licences issued this year" in html and "900 m³/day granted" in html
     assert "Hope River" in html and "90.0 %" in html  # over 85 % table
     assert "Backlog by branch" in html and "Adoption by unit" in html and "Data quality" in html
+
+
+@pytest.mark.django_db
+def test_workflow_root_redirects_to_the_queue(client):
+    r = client.get("/workflow/")
+    assert r.status_code == 302 and r["Location"] == "/workflow/queue/"
