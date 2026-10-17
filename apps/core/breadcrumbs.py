@@ -15,7 +15,7 @@ LABELS = {
     "layers": "Layers", "open-data": "Open data", "documents": "Publications", "unit": "My unit", "issues": "Cleansing queue", "members": "People", "adoption": "Adoption",
     "dashboards": "Dashboards", "wall": "Wall display", "exports": "Exports", "finance": "Finance export", "accounts": "Account", "profile": "Profile", "login": "Sign in",
     "register": "Register", "mfa": "Two-factor sign-in", "setup": "Set up", "verify": "Verify", "backup-codes": "Backup codes", "reset": "Reset", "privacy": "Privacy notice",
-    "notifications": "Notifications", "api": "API", "docs": "Documentation", "admin": "Admin console",
+    "notifications": "Notifications", "executive": "Executive view", "milestones": "Milestones", "api": "API", "docs": "Documentation", "admin": "Admin console",
 }
 #: segments that have no page of their own: shown as text, not linked
 UNLINKED = {"licensing", "exports", "accounts", "api", "layers", "issues", "members", "documents"}

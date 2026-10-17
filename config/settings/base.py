@@ -93,6 +93,7 @@ LOCAL_APPS = [
     "apps.api",
     "apps.reports",
     "apps.maps",
+    "apps.governance",
     "apps.console",
     "apps.opendata",
 ]

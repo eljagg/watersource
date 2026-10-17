@@ -1,0 +1,93 @@
+{% extends "base.html" %}{% block title %}Executive view — {{ SITE_NAME }}{% endblock %}{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div><p class="eyebrow">Governance</p><h1 class="page-title">Executive view</h1>
+    <p class="text-body mt-1 text-sm">For the Managing Director and the ICT Manager: where licensing and water allocation stand, what each branch is holding, how clean the data arriving is, and the contract milestone log.{% if can_decide %} You are the approver of record: milestone decisions you make here are recorded on the Steering Committee's behalf and written to the audit trail.{% endif %}</p></div>
+  <div class="flex flex-wrap gap-2"><a class="btn-secondary btn-sm" href="{% url 'reports:index' %}">Dashboards</a><a class="btn-secondary btn-sm" href="{% url 'lic:wmu_balance' %}">WMU balance sheet</a><a class="btn-secondary btn-sm" href="{% url 'maps:index' %}">Map</a></div>
+</div>
+
+{# ---- headline tiles ---- #}
+<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <a class="tile block p-5" href="{% url 'lic:licence_list' %}"><h2 class="text-base">Licences issued this year</h2><p class="mt-1 text-3xl font-semibold">{{ licences.issued_year }}</p><p class="text-body text-sm">{{ licences.issued_year_volume|floatformat:0 }} m³/day granted · {{ licences.active }} active in all</p></a>
+  <a class="tile block p-5" href="{% url 'workflow:queue' %}"><h2 class="text-base">Applications in progress</h2><p class="mt-1 text-3xl font-semibold">{{ licences.in_progress }}</p><p class="text-body text-sm">Last 90 days: {{ licences.granted_90 }} granted · {{ licences.refused_90 }} refused · {{ licences.expiring_90 }} licences expire within 90 days</p></a>
+  <a class="tile block p-5" href="{% url 'lic:wmu_balance' %}"><h2 class="text-base">WMUs over 85 % of safe yield</h2><p class="mt-1 text-3xl font-semibold">{{ wmu.bands.b85_100|add:wmu.bands.over_100 }} <span class="text-base font-medium text-muted">of {{ wmu.total }}</span></p><p class="text-body text-sm">{{ wmu.bands.over_100 }} over 100 % counting pending · {{ wmu.bands.no_yield }} without a safe yield</p></a>
+  <a class="tile block p-5" href="#milestones"><h2 class="text-base">Milestones accepted</h2><p class="mt-1 text-3xl font-semibold">{{ ms.counts.accepted }} <span class="text-base font-medium text-muted">of {{ ms.total }}</span></p><p class="text-body text-sm">{% if ms.next %}Next: {{ ms.next.code }} {{ ms.next.title }}{% if ms.next.due_date %} · due {{ ms.next.due_date|date:"D j M Y" }}{% elif ms.next.due_week %} · week {{ ms.next.due_week }}{% endif %}{% else %}All milestones accepted{% endif %}</p></a>
+</div>
+
+<div class="grid gap-5 lg:grid-cols-2">
+  {# ---- WMU utilisation ---- #}
+  <section class="card p-5">
+    <h2 class="text-base">Water allocation by WMU</h2>
+    <p class="text-body mt-1 text-sm">Licensed abstraction (plus pending applications) against each unit's safe yield.</p>
+    <div class="mt-3 flex h-4 w-full overflow-hidden rounded-full" title="Share of WMUs in each band">
+      {% if wmu.total %}{% widthratio wmu.bands.under_60 wmu.total 100 as p1 %}{% widthratio wmu.bands.b60_85 wmu.total 100 as p2 %}{% widthratio wmu.bands.b85_100 wmu.total 100 as p3 %}{% widthratio wmu.bands.over_100 wmu.total 100 as p4 %}{% widthratio wmu.bands.no_yield wmu.total 100 as p5 %}
+      <span style="width:{{ p1 }}%;background:#22c55e"></span><span style="width:{{ p2 }}%;background:#eab308"></span><span style="width:{{ p3 }}%;background:#f97316"></span><span style="width:{{ p4 }}%;background:#ef4444"></span><span style="width:{{ p5 }}%;background:#64748b"></span>{% endif %}
+    </div>
+    <ul class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      <li><span class="legend-swatch" style="background:#22c55e"></span>{{ wmu.bands.under_60 }} under 60 %</li><li><span class="legend-swatch" style="background:#eab308"></span>{{ wmu.bands.b60_85 }} at 60–85 %</li>
+      <li><span class="legend-swatch" style="background:#f97316"></span>{{ wmu.bands.b85_100 }} at 85–100 %</li><li><span class="legend-swatch" style="background:#ef4444"></span>{{ wmu.bands.over_100 }} over 100 %</li><li><span class="legend-swatch" style="background:#64748b"></span>{{ wmu.bands.no_yield }} no safe yield</li>
+    </ul>
+    {% if wmu.hot %}
+    <table class="mt-4 w-full text-sm"><thead class="thead"><tr><th class="px-2 py-1">WMU</th><th class="px-2 py-1">Basin</th><th class="px-2 py-1 text-right">Utilisation</th><th class="px-2 py-1 text-right">Licences</th></tr></thead>
+      <tbody>{% for h in wmu.hot %}<tr class="row"><td class="px-2 py-1"><a class="link" href="{% url 'maps:index' %}#map=10/18.1/-77.3&layers=wmus,labels">{{ h.name }}</a></td><td class="px-2 py-1">{{ h.basin }}</td><td class="px-2 py-1 text-right {% if h.pct > 100 %}text-danger{% else %}text-warn{% endif %}">{{ h.pct }} %</td><td class="px-2 py-1 text-right">{{ h.licences }}</td></tr>{% endfor %}</tbody></table>
+    {% else %}<p class="text-muted mt-3 text-sm">No WMU is above 85 % of its safe yield.</p>{% endif %}
+  </section>
+
+  {# ---- backlog by branch ---- #}
+  <section class="card p-5">
+    <h2 class="text-base">Backlog by branch</h2>
+    <p class="text-body mt-1 text-sm">Items waiting at a stage each operating branch owns; "past target" means older than the stage's turnaround.</p>
+    <table class="mt-3 w-full text-sm"><thead class="thead"><tr><th class="px-2 py-1">Branch</th><th class="px-2 py-1 text-right">Open</th><th class="px-2 py-1 text-right">Past target</th><th class="px-2 py-1 text-right">Waiting on applicant</th><th class="px-2 py-1 text-right">Oldest</th></tr></thead>
+      <tbody>{% for r in backlog %}<tr class="row{% if r.overdue %} row-warn{% endif %}"><td class="px-2 py-1">{{ r.unit.name }}</td><td class="px-2 py-1 text-right">{{ r.open }}</td><td class="px-2 py-1 text-right{% if r.overdue %} text-danger font-semibold{% endif %}">{{ r.overdue }}</td><td class="px-2 py-1 text-right">{{ r.waiting }}</td><td class="px-2 py-1 text-right">{% if r.open %}{{ r.oldest_days }} day{{ r.oldest_days|pluralize }}{% else %}—{% endif %}</td></tr>{% endfor %}</tbody></table>
+  </section>
+
+  {# ---- data quality ---- #}
+  <section class="card p-5">
+    <h2 class="text-base">Data quality</h2>
+    <p class="text-body mt-1 text-sm">Share of submitted rows flagged by validation or the anomaly checks, last 30 days against the 30 before; and the data-cleansing queue.</p>
+    <div class="mt-3 grid grid-cols-2 gap-4">
+      <div><p class="text-muted text-xs uppercase tracking-wide">Last 30 days</p><p class="text-2xl font-semibold">{% if quality.recent.pct is not None %}{{ quality.recent.pct }} %{% else %}—{% endif %}</p><p class="text-body text-sm">{{ quality.recent.flagged }} of {{ quality.recent.rows }} rows · {{ quality.recent.submissions }} submission{{ quality.recent.submissions|pluralize }}</p></div>
+      <div><p class="text-muted text-xs uppercase tracking-wide">30 days before</p><p class="text-2xl font-semibold">{% if quality.before.pct is not None %}{{ quality.before.pct }} %{% else %}—{% endif %}</p><p class="text-body text-sm">{{ quality.before.flagged }} of {{ quality.before.rows }} rows · {{ quality.before.submissions }} submission{{ quality.before.submissions|pluralize }}</p></div>
+    </div>
+    <p class="mt-2 text-sm">{% if quality.direction == "better" %}<span class="text-emerald-700 dark:text-emerald-400">Improving</span> — a smaller share of rows is being flagged.{% elif quality.direction == "worse" %}<span class="text-warn">Worsening</span> — a larger share of rows is being flagged.{% elif quality.direction == "same" %}Unchanged.{% else %}Not enough submissions yet to show a trend.{% endif %}</p>
+    <p class="text-body mt-3 text-sm">Cleansing queue: <strong>{{ quality.issues_open }}</strong> open · {{ quality.issues_resolved }} resolved in all · {{ quality.issues_resolved_30 }} resolved in the last 30 days.</p>
+  </section>
+
+  {# ---- adoption ---- #}
+  <section class="card p-5">
+    <h2 class="text-base">Adoption by unit <span class="text-muted text-sm font-normal">(Work Plan M17)</span></h2>
+    <p class="text-body mt-1 text-sm">Each unit's Super User signs off when the unit is working in the system.</p>
+    <table class="mt-3 w-full text-sm"><thead class="thead"><tr><th class="px-2 py-1">Unit</th><th class="px-2 py-1">Status</th><th class="px-2 py-1">Signed by</th><th class="px-2 py-1">When</th></tr></thead>
+      <tbody>{% for a in adoption %}<tr class="row"><td class="px-2 py-1">{{ a.unit.name }}</td><td class="px-2 py-1">{% if a.signoff %}{% if a.signoff.complete %}<span class="badge badge-neutral">Signed</span>{% else %}<span class="badge badge-neutral">Partial · {{ a.met }}/{{ a.of }}</span>{% endif %}{% else %}<span class="text-muted">Not yet</span>{% endif %}</td><td class="px-2 py-1">{% if a.signoff %}{{ a.signoff.signed_by.full_name }}{% else %}—{% endif %}</td><td class="px-2 py-1">{% if a.signoff %}{{ a.signoff.signed_at|date:"D j M Y" }}{% else %}—{% endif %}</td></tr>{% endfor %}</tbody></table>
+  </section>
+</div>
+
+{# ---- milestone log ---- #}
+<section id="milestones" class="card mt-6 p-5">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div><h2 class="text-base">Milestone acceptance log</h2>
+      <p class="text-body mt-1 text-sm">The contract's payment milestones (M1–M9) and the adoption milestone (M17). {% if can_decide %}Record delivery, then accept or return each one.{% else %}Decisions are recorded by the ICT Manager as approver of record.{% endif %} Titles, dates and payment shares are maintained in the admin console.</p></div>
+    <p class="text-sm">{{ ms.counts.accepted }} accepted · {{ ms.counts.delivered }} awaiting acceptance · {{ ms.counts.returned }} returned · {{ ms.counts.planned }} planned</p>
+  </div>
+  <div class="table-card mt-4 overflow-x-auto">
+  <table class="w-full text-sm"><thead class="thead"><tr><th class="px-3 py-2">Milestone</th><th class="px-3 py-2">Due</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Delivered</th><th class="px-3 py-2">Decision</th>{% if can_decide %}<th class="px-3 py-2">Action</th>{% endif %}</tr></thead>
+    <tbody>{% for m in ms.milestones %}
+    <tr class="row{% if m.is_overdue %} row-warn{% endif %}" id="milestone-{{ m.code }}">
+      <td class="px-3 py-2 align-top"><strong>{{ m.code }}</strong> {{ m.title }}{% if m.description %}<br><span class="text-muted text-xs">{{ m.description }}</span>{% endif %}{% if m.evidence_url %}<br><a class="link text-xs" href="{{ m.evidence_url }}" target="_blank" rel="noopener">Evidence ↗</a>{% endif %}</td>
+      <td class="px-3 py-2 align-top whitespace-nowrap">{% if m.due_date %}{{ m.due_date|date:"D j M Y" }}{% elif m.due_week %}Week {{ m.due_week }}{% else %}—{% endif %}{% if m.payment_pct %}<br><span class="text-muted text-xs">{{ m.payment_pct|floatformat:0 }} % of price</span>{% endif %}</td>
+      <td class="px-3 py-2 align-top whitespace-nowrap">{% if m.status == "accepted" %}<span class="badge badge-neutral">Accepted</span>{% elif m.status == "delivered" %}<span class="badge badge-neutral">Delivered · awaiting acceptance</span>{% elif m.status == "returned" %}<span class="badge badge-neutral text-danger">Returned</span>{% else %}<span class="text-muted">Planned</span>{% endif %}{% if m.is_overdue %}<br><span class="text-danger text-xs">past due</span>{% endif %}</td>
+      <td class="px-3 py-2 align-top whitespace-nowrap">{% if m.delivered_on %}{{ m.delivered_on|date:"D j M Y" }}{% else %}—{% endif %}</td>
+      <td class="px-3 py-2 align-top">{% if m.decided_at %}{{ m.decided_by.full_name }} · {{ m.decided_at|date:"D j M Y H:i" }}{% if m.remarks %}<br><span class="text-muted text-xs">{{ m.remarks }}</span>{% endif %}{% else %}—{% endif %}</td>
+      {% if can_decide %}<td class="px-3 py-2 align-top">
+        {% if m.status == "planned" or m.status == "returned" %}
+        <form method="post" action="{% url 'governance:milestone_action' m.pk %}" class="flex flex-col gap-1">{% csrf_token %}<input type="hidden" name="action" value="delivered"><input type="url" name="evidence_url" placeholder="Link to the deliverable (optional)" class="text-xs"><button class="btn-secondary btn-sm">Mark delivered</button></form>
+        {% elif m.status == "delivered" %}
+        <form method="post" action="{% url 'governance:milestone_action' m.pk %}" class="flex flex-col gap-1">{% csrf_token %}<textarea name="remarks" rows="2" placeholder="Remarks (required to return)" class="text-xs"></textarea>
+          <div class="flex gap-1"><button class="btn-success btn-sm" name="action" value="accept">Accept</button><button class="btn-danger btn-sm" name="action" value="return" formnovalidate>Return</button></div></form>
+        {% else %}
+        <form method="post" action="{% url 'governance:milestone_action' m.pk %}">{% csrf_token %}<input type="hidden" name="action" value="reopen"><button class="btn-ghost btn-sm text-xs">Reopen</button></form>
+        {% endif %}
+      </td>{% endif %}
+    </tr>{% endfor %}</tbody></table>
+  </div>
+</section>
+{% endblock %}

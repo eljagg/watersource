@@ -19,9 +19,11 @@ def greeting_context(user) -> dict:
     word = "Good morning" if now.hour < 12 else "Good afternoon" if now.hour < 17 else "Good evening"
     ctx = {"greeting": word, "first_name": (user.full_name or user.email).split()[0], "today": now, "recent_views": list(user.recent_views.all()[:5]), "waiting": None}
     if getattr(user, "is_staff_user", False):
+        from apps.governance.services import can_view_executive
         from apps.workflow.engine import queue_for
 
         ctx["waiting"] = queue_for(user).count()
+        ctx["can_view_executive"] = can_view_executive(user)
     return ctx
 
 

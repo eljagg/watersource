@@ -2,6 +2,15 @@
 
 All notable changes to WaterSource Jamaica. Dates are the date the change landed on `main`.
 
+## [0.13.0] — 17 Oct 2026
+
+Package 4 of the WRA stakeholder model (design doc 17): the executive view for the governance layer.
+
+### Added
+- **Executive view** at Home → "Executive view" tile (also from Dashboards): for the Managing Director's Office and the Computer & GIS Unit (ICT Manager), administrators, BI analysts and superusers. Headline tiles — licences issued this year (count and m³/day), applications in progress with the last 90 days' decisions and licences expiring within 90 days, WMUs over 85 % of safe yield, milestones accepted. Sections — **water allocation by WMU** (band bar and the units above 85 %), **backlog by branch** (open items, past target, waiting on applicant, oldest), **data quality** (flagged share of submitted rows, last 30 days against the 30 before, with the cleansing-queue counts), **adoption by unit** (latest Super User sign-off, Work Plan M17).
+- **Milestone acceptance log** (`apps.governance`, `governance.Milestone`): the bid's payment milestones M1–M9 (weeks 5, 9, 18, 20, 24, 27, 30, 34, 36) and the adoption milestone M17, created at every deploy by `bootstrap_milestones` (titles follow design doc 12's stages and are editable in Admin console → Governance → Milestones, with due dates and payment shares). The **approver of record** — an administrator in the Computer & GIS Unit, or a superuser — marks a milestone delivered (with an optional evidence link), then **accepts** it on the Steering Committee's behalf or **returns** it with remarks; every decision is audited (`milestone.delivered` / `milestone.accepted` / `milestone.returned`). Everyone else sees the log read-only.
+- Demo data: M1 and M2 accepted, M3 delivered and awaiting acceptance (only while every milestone is still planned, so real decisions are never overwritten).
+
 ## [0.12.0] — 17 Oct 2026
 
 Map package C (map research, 11 Oct).

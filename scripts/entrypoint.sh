@@ -24,6 +24,7 @@ schema_step() {
   python manage.py bootstrap_admin
   python manage.py bootstrap_workflows
   python manage.py bootstrap_categories
+  python manage.py bootstrap_milestones
   python manage.py load_reference_data
   case "${DEMO_DATA:-0}" in
     1|reseed) python manage.py load_boundaries --demo-shapes ;;

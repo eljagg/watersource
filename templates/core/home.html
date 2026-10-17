@@ -28,6 +28,7 @@
     <a class="tile block p-5" href="{% url 'reports:index' %}"><h2 class="text-base">Dashboards</h2><p class="text-body mt-1 text-sm">Licensing, monitoring, submissions and executive views.</p></a>
     <a class="tile block p-5" href="{% url 'reports:wall' %}" target="_blank" rel="noopener"><h2 class="text-base">Wall display ↗</h2><p class="text-body mt-1 text-sm">Full-screen rotation for the operations room.</p></a>
     {% if user.is_staff %}<a class="tile block p-5" href="{% url 'admin:index' %}"><h2 class="text-base">Admin console</h2><p class="text-body mt-1 text-sm">Reference data, wells and stations, categories, workflows, users.</p></a>{% endif %}
+    {% if can_view_executive %}<a class="tile block p-5" href="{% url 'governance:index' %}"><h2 class="text-base">Executive view</h2><p class="text-body mt-1 text-sm">Licences, WMU utilisation, backlog by branch, data quality, milestone acceptance log.</p></a>{% endif %}
     {% if user.is_superuser or user|has_role:"finance" or user|has_role:"administrator" %}<a class="tile block p-5" href="{% url 'exports:finance' %}"><h2 class="text-base">Finance export</h2><p class="text-body mt-1 text-sm">Licence register and abstraction returns as CSV.</p></a>{% endif %}
     <a class="tile block p-5" href="/api/docs/"><h2 class="text-base">API docs</h2><p class="text-body mt-1 text-sm">OpenAPI reference for the REST API and submission endpoint.</p></a>
   </div>

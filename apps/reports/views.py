@@ -74,9 +74,12 @@ def index(request):
     """List of the dashboards with their question."""
     if not _can_view_dashboards(request.user):
         raise PermissionDenied
+    from apps.governance.services import can_view_executive
+
     from .models import DisplaySettings
 
-    return render(request, "reports/index.html", {"dashboards": [DASHBOARDS[s] for s in WALL_ORDER], "refresh_minutes": DisplaySettings.get().data_refresh_minutes})
+    return render(request, "reports/index.html", {"dashboards": [DASHBOARDS[s] for s in WALL_ORDER], "refresh_minutes": DisplaySettings.get().data_refresh_minutes,
+                                                  "can_view_executive": can_view_executive(request.user)})
 
 
 @login_required

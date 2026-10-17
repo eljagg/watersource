@@ -273,6 +273,7 @@ class Command(BaseCommand):
         from apps.workflow.models import WorkflowInstance
 
         self.wmu = {w.code: w for w in WMU.objects.all()}
+        self._demo_milestones()
         self.basin = {b.code: b for b in Basin.objects.all()}
         self.hsu = HydrostratUnit.objects.first()
         changed = []
@@ -368,6 +369,26 @@ class Command(BaseCommand):
             doc.save()
             n += 1
         return n
+
+    def _demo_milestones(self):
+        """v0.13.0: show the milestone log with M1–M2 accepted and M3 awaiting acceptance (only while every milestone is still planned)."""
+        from apps.governance.models import Milestone, MilestoneStatus
+
+        qs = Milestone.objects.all()
+        if not qs.exists() or qs.exclude(status=MilestoneStatus.PLANNED).exists():
+            return
+        admin = User.objects.filter(email="demo.admin@wra-demo.local").first()
+        if admin is None:
+            return
+        for code, days_ago in (("M1", 120), ("M2", 85)):
+            m = qs.filter(code=code).first()
+            if m:
+                m.mark_delivered(admin, on=timezone.localdate() - timedelta(days=days_ago + 3))
+                m.decide(admin, True, "DEMO — accepted at the Steering Committee meeting.")
+                Milestone.objects.filter(pk=m.pk).update(decided_at=timezone.now() - timedelta(days=days_ago))
+        m3 = qs.filter(code="M3").first()
+        if m3:
+            m3.mark_delivered(admin, on=timezone.localdate() - timedelta(days=4))
 
     def _prune_orphans(self):
         """Remove workflow instances whose subject no longer exists (left behind by earlier re-seeds)."""
